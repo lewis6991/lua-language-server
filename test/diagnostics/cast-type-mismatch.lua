@@ -1,13 +1,13 @@
-TEST [[
+TEST([[
 ---@type string|boolean
 local t
 
 ---@cast t string
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string|boolean
 local t
 
 ---@cast t <!number!>
-]]
+]])

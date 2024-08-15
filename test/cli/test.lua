@@ -1,1 +1,1 @@
-require 'cli.visualize.test'
+require('cli.visualize.test')

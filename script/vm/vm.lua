@@ -2,19 +2,14 @@ local guide = require('parser.guide')
 local files = require('files')
 local timer = require('timer')
 
-local setmetatable = setmetatable
-local log = log
-local xpcall = xpcall
-local mathHuge = math.huge
-
 local weakMT = { __mode = 'kv' }
 
 --- @class vm
-local m = {}
+local M = {}
 
-m.ID_SPLITE = '\x1F'
+M.ID_SPLITE = '\x1F'
 
-function m.getSpecial(source)
+function M.getSpecial(source)
   if not source then
     return nil
   end
@@ -23,12 +18,12 @@ end
 
 --- @param source parser.object
 --- @return string?
-function m.getKeyName(source)
+function M.getKeyName(source)
   if not source then
     return nil
   end
   if source.type == 'call' then
-    local special = m.getSpecial(source.node)
+    local special = M.getSpecial(source.node)
     if special == 'rawset' or special == 'rawget' then
       return guide.getKeyNameOfLiteral(source.args[2])
     end
@@ -36,12 +31,12 @@ function m.getKeyName(source)
   return guide.getKeyName(source)
 end
 
-function m.getKeyType(source)
+function M.getKeyType(source)
   if not source then
     return nil
   end
   if source.type == 'call' then
-    local special = m.getSpecial(source.node)
+    local special = M.getSpecial(source.node)
     if special == 'rawset' or special == 'rawget' then
       return guide.getKeyTypeOfLiteral(source.args[2])
     end
@@ -51,7 +46,7 @@ end
 
 --- @param source parser.object
 --- @return parser.object?
-function m.getObjectValue(source)
+function M.getObjectValue(source)
   if source.value then
     return source.value
   end
@@ -63,8 +58,8 @@ end
 
 --- @param source parser.object
 --- @return parser.object?
-function m.getObjectFunctionValue(source)
-  local value = m.getObjectValue(source)
+function M.getObjectFunctionValue(source)
+  local value = M.getObjectValue(source)
   if value == nil then
     return
   end
@@ -72,39 +67,39 @@ function m.getObjectFunctionValue(source)
     return value
   end
   if value.type == 'getlocal' then
-    return m.getObjectFunctionValue(value.node)
+    return M.getObjectFunctionValue(value.node)
   end
   return value
 end
 
-m.cacheTracker = setmetatable({}, weakMT)
+M.cacheTracker = setmetatable({}, weakMT)
 
-function m.flushCache()
-  if m.cache then
-    m.cache.dead = true
+function M.flushCache()
+  if M.cache then
+    M.cache.dead = true
   end
-  m.cacheVersion = files.globalVersion
-  m.cache = {}
-  m.cacheActiveTime = mathHuge
-  m.locked = setmetatable({}, weakMT)
-  m.cacheTracker[m.cache] = true
+  M.cacheVersion = files.globalVersion
+  M.cache = {}
+  M.cacheActiveTime = math.huge
+  M.locked = setmetatable({}, weakMT)
+  M.cacheTracker[M.cache] = true
 end
 
-function m.getCache(name, weak)
-  if m.cacheVersion ~= files.globalVersion then
-    m.flushCache()
+function M.getCache(name, weak)
+  if M.cacheVersion ~= files.globalVersion then
+    M.flushCache()
   end
-  m.cacheActiveTime = timer.clock()
-  if not m.cache[name] then
-    m.cache[name] = weak and setmetatable({}, weakMT) or {}
+  M.cacheActiveTime = timer.clock()
+  if not M.cache[name] then
+    M.cache[name] = weak and setmetatable({}, weakMT) or {}
   end
-  return m.cache[name]
+  return M.cache[name]
 end
 
 local function init()
-  m.flushCache()
+  M.flushCache()
 
-  -- 可以在一段时间不活动后清空缓存，不过目前看起来没有必要
+  -- It's possible to clear the cache after a period of inactivity, but it doesn't seem necessary at the moment.
   --timer.loop(1, function ()
   --    if timer.clock() - m.cacheActiveTime > 10.0 then
   --        log.info('Flush cache: Inactive')
@@ -116,4 +111,4 @@ end
 
 xpcall(init, log.error)
 
-return m
+return M

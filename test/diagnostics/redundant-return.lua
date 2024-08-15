@@ -1,18 +1,18 @@
-TEST [[
+TEST([[
 local function f()
     <!return!>
 end
 f()
-]]
+]])
 
-TEST [[
+TEST([[
 local function f()
     return nil
 end
 f()
-]]
+]])
 
-TEST [[
+TEST([[
 local function f()
     local function x()
         <!return!>
@@ -21,9 +21,9 @@ local function f()
     return true
 end
 f()
-]]
+]])
 
-TEST [[
+TEST([[
 local function f()
     local function x()
         return true
@@ -31,4 +31,4 @@ local function f()
     return x()
 end
 f()
-]]
+]])

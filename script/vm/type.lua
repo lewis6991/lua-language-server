@@ -624,41 +624,39 @@ function vm.getTableValue(uri, tnode, knode, inversion)
       result:merge(vm.compileNode(tn.node))
     end
     if tn.type == 'table' then
-      if vm.isUnknown(knode) then
-        goto CONTINUE
-      end
-      for _, field in ipairs(tn) do
-        if field.type == 'tableindex' and field.value then
-          result:merge(vm.compileNode(field.value))
-        end
-        if field.type == 'tablefield' and field.value then
-          if inversion then
-            if vm.isSubType(uri, 'string', knode) then
-              result:merge(vm.compileNode(field.value))
-            end
-          else
-            if vm.isSubType(uri, knode, 'string') then
-              result:merge(vm.compileNode(field.value))
+      if not vm.isUnknown(knode) then
+        for _, field in ipairs(tn) do
+          if field.type == 'tableindex' and field.value then
+            result:merge(vm.compileNode(field.value))
+          end
+          if field.type == 'tablefield' and field.value then
+            if inversion then
+              if vm.isSubType(uri, 'string', knode) then
+                result:merge(vm.compileNode(field.value))
+              end
+            else
+              if vm.isSubType(uri, knode, 'string') then
+                result:merge(vm.compileNode(field.value))
+              end
             end
           end
-        end
-        if field.type == 'tableexp' and field.value and field.tindex == 1 then
-          if inversion then
-            if vm.isSubType(uri, 'integer', knode) then
-              result:merge(vm.compileNode(field.value))
-            end
-          else
-            if vm.isSubType(uri, knode, 'integer') then
-              result:merge(vm.compileNode(field.value))
+          if field.type == 'tableexp' and field.value and field.tindex == 1 then
+            if inversion then
+              if vm.isSubType(uri, 'integer', knode) then
+                result:merge(vm.compileNode(field.value))
+              end
+            else
+              if vm.isSubType(uri, knode, 'integer') then
+                result:merge(vm.compileNode(field.value))
+              end
             end
           end
-        end
-        if field.type == 'varargs' then
-          result:merge(vm.compileNode(field))
+          if field.type == 'varargs' then
+            result:merge(vm.compileNode(field))
+          end
         end
       end
     end
-    ::CONTINUE::
   end
   if result:isEmpty() then
     return nil
@@ -693,24 +691,22 @@ function vm.getTableKey(uri, tnode, vnode, reverse)
       result:merge(vm.declareGlobal('type', 'integer'))
     end
     if tn.type == 'table' then
-      if vm.isUnknown(tnode) then
-        goto CONTINUE
-      end
-      for _, field in ipairs(tn) do
-        if field.type == 'tableindex' then
-          if field.index then
-            result:merge(vm.compileNode(field.index))
+      if not vm.isUnknown(tnode) then
+        for _, field in ipairs(tn) do
+          if field.type == 'tableindex' then
+            if field.index then
+              result:merge(vm.compileNode(field.index))
+            end
           end
-        end
-        if field.type == 'tablefield' then
-          result:merge(vm.declareGlobal('type', 'string'))
-        end
-        if field.type == 'tableexp' then
-          result:merge(vm.declareGlobal('type', 'integer'))
+          if field.type == 'tablefield' then
+            result:merge(vm.declareGlobal('type', 'string'))
+          end
+          if field.type == 'tableexp' then
+            result:merge(vm.declareGlobal('type', 'integer'))
+          end
         end
       end
     end
-    ::CONTINUE::
   end
   if result:isEmpty() then
     return nil

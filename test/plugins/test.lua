@@ -1,3 +1,3 @@
-require 'plugins.ast.test'
-require 'plugins.ffi.test'
-require 'plugins.node.test'
+require('plugins.ast.test')
+require('plugins.ffi.test')
+require('plugins.node.test')

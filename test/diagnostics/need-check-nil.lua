@@ -1,27 +1,27 @@
-TEST [[
+TEST([[
 ---@type string?
 local x
 
 local s = <!x!>:upper()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string?
 local x
 
 S = <!x!>:upper()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string?
 local x
 
 if x then
     S = x:upper()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string?
 local x
 
@@ -30,31 +30,31 @@ if not x then
 end
 
 S = x:upper()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun()?
 local x
 
 S = <!x!>()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type integer?
 local x
 
 T = {}
 T[<!x!>] = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local x, y
 local z = x and y
 
 print(z.y)
-]]
+]])
 
-TEST [[
+TEST([[
 local x, y
 function x()
     y()
@@ -65,4 +65,4 @@ function y()
 end
 
 x()
-]]
+]])

@@ -1,24 +1,24 @@
-local lclient  = require 'lclient'
-local util     = require 'utility'
-local ws       = require 'workspace'
-local files    = require 'files'
-local furi     = require 'file-uri'
-local fs       = require 'bee.filesystem'
-local platform = require 'bee.platform'
+local lclient = require('lclient')
+local util = require('utility')
+local ws = require('workspace')
+local files = require('files')
+local furi = require('file-uri')
+local fs = require('bee.filesystem')
+local platform = require('bee.platform')
 
 ---@async
-lclient():start(function (client)
-    client:registerFakers()
-    client:initialize()
+lclient():start(function(client)
+  client:registerFakers()
+  client:initialize()
 
-    ws.awaitReady()
+  ws.awaitReady()
 
-    client:notify('textDocument/didOpen', {
-        textDocument = {
-            uri = furi.encode('D:/test/1.lua'),
-            languageId = 'lua',
-            version = 0,
-            text = [[
+  client:notify('textDocument/didOpen', {
+    textDocument = {
+      uri = furi.encode('D:/test/1.lua'),
+      languageId = 'lua',
+      version = 0,
+      text = [[
 ---@class AAA
 ---@source file:///xxx.lua:50
 ---@field x number
@@ -43,16 +43,16 @@ D2 = 1
 
 ---@source 2.lua
 D3 = 1
-]]
-        }
-    })
+]],
+    },
+  })
 
-    client:notify('textDocument/didOpen', {
-        textDocument = {
-            uri = furi.encode('main.lua'),
-            languageId = 'lua',
-            version = 0,
-            text = [[
+  client:notify('textDocument/didOpen', {
+    textDocument = {
+      uri = furi.encode('main.lua'),
+      languageId = 'lua',
+      version = 0,
+      text = [[
 ---@type AAA
 local a
 
@@ -64,129 +64,129 @@ print(YY)
 print(BBB)
 print(D2)
 print(D3)
-]]
-        }
-    })
+]],
+    },
+  })
 
-    local locations = client:awaitRequest('textDocument/definition', {
-        textDocument = { uri = furi.encode('main.lua') },
-        position = { line = 3, character = 9 },
-    })
+  local locations = client:awaitRequest('textDocument/definition', {
+    textDocument = { uri = furi.encode('main.lua') },
+    position = { line = 3, character = 9 },
+  })
 
+  assert(util.equal(locations, {
+    {
+      uri = 'file:///xxx.lua',
+      range = {
+        start = { line = 49, character = 0 },
+        ['end'] = { line = 49, character = 0 },
+      },
+    },
+  }))
+
+  local locations = client:awaitRequest('textDocument/definition', {
+    textDocument = { uri = furi.encode('main.lua') },
+    position = { line = 4, character = 9 },
+  })
+
+  assert(util.equal(locations, {
+    {
+      uri = 'file:///yyy.lua',
+      range = {
+        start = { line = 29, character = 0 },
+        ['end'] = { line = 29, character = 0 },
+      },
+    },
+  }))
+
+  local locations = client:awaitRequest('textDocument/definition', {
+    textDocument = { uri = furi.encode('main.lua') },
+    position = { line = 5, character = 7 },
+  })
+
+  assert(util.equal(locations, {
+    {
+      uri = 'file:///lib.c',
+      range = {
+        start = { line = 0, character = 0 },
+        ['end'] = { line = 0, character = 0 },
+      },
+    },
+  }))
+
+  local locations = client:awaitRequest('textDocument/definition', {
+    textDocument = { uri = furi.encode('main.lua') },
+    position = { line = 6, character = 7 },
+  })
+
+  assert(util.equal(locations, {
+    {
+      uri = 'file:///lib.c',
+      range = {
+        start = { line = 29, character = 20 },
+        ['end'] = { line = 29, character = 20 },
+      },
+    },
+  }))
+
+  local locations = client:awaitRequest('textDocument/definition', {
+    textDocument = { uri = furi.encode('main.lua') },
+    position = { line = 7, character = 10 },
+  })
+
+  assert(util.equal(locations, {
+    {
+      uri = 'file:///lib.c',
+      range = {
+        start = { line = 0, character = 0 },
+        ['end'] = { line = 0, character = 0 },
+      },
+    },
+  }))
+
+  local locations = client:awaitRequest('textDocument/definition', {
+    textDocument = { uri = furi.encode('main.lua') },
+    position = { line = 8, character = 7 },
+  })
+
+  assert(util.equal(locations, {
+    {
+      uri = 'file:///lib.c',
+      range = {
+        start = { line = 0, character = 0 },
+        ['end'] = { line = 0, character = 0 },
+      },
+    },
+  }))
+
+  local locations = client:awaitRequest('textDocument/definition', {
+    textDocument = { uri = furi.encode('main.lua') },
+    position = { line = 9, character = 7 },
+  })
+
+  if platform.os == 'windows' then
     assert(util.equal(locations, {
-        {
-            uri = 'file:///xxx.lua',
-            range = {
-                start   = { line = 49, character = 0 },
-                ['end'] = { line = 49, character = 0 },
-            }
-        }
+      {
+        uri = 'file:///d%3A/xxx/2.lua',
+        range = {
+          start = { line = 0, character = 0 },
+          ['end'] = { line = 0, character = 0 },
+        },
+      },
     }))
 
     local locations = client:awaitRequest('textDocument/definition', {
-        textDocument = { uri = furi.encode('main.lua') },
-        position = { line = 4, character = 9 },
+      textDocument = { uri = furi.encode('main.lua') },
+      position = { line = 10, character = 7 },
     })
 
     assert(util.equal(locations, {
-        {
-            uri = 'file:///yyy.lua',
-            range = {
-                start   = { line = 29, character = 0 },
-                ['end'] = { line = 29, character = 0 },
-            }
-        }
+      {
+        uri = 'file:///d%3A/test/2.lua',
+        range = {
+          start = { line = 0, character = 0 },
+          ['end'] = { line = 0, character = 0 },
+        },
+      },
     }))
-
-    local locations = client:awaitRequest('textDocument/definition', {
-        textDocument = { uri = furi.encode('main.lua') },
-        position = { line = 5, character = 7 },
-    })
-
-    assert(util.equal(locations, {
-        {
-            uri = 'file:///lib.c',
-            range = {
-                start   = { line = 0, character = 0 },
-                ['end'] = { line = 0, character = 0 },
-            }
-        }
-    }))
-
-    local locations = client:awaitRequest('textDocument/definition', {
-        textDocument = { uri = furi.encode('main.lua') },
-        position = { line = 6, character = 7 },
-    })
-
-    assert(util.equal(locations, {
-        {
-            uri = 'file:///lib.c',
-            range = {
-                start   = { line = 29, character = 20 },
-                ['end'] = { line = 29, character = 20 },
-            }
-        }
-    }))
-
-    local locations = client:awaitRequest('textDocument/definition', {
-        textDocument = { uri = furi.encode('main.lua') },
-        position = { line = 7, character = 10 },
-    })
-
-    assert(util.equal(locations, {
-        {
-            uri = 'file:///lib.c',
-            range = {
-                start   = { line = 0, character = 0 },
-                ['end'] = { line = 0, character = 0 },
-            }
-        }
-    }))
-
-    local locations = client:awaitRequest('textDocument/definition', {
-        textDocument = { uri = furi.encode('main.lua') },
-        position = { line = 8, character = 7 },
-    })
-
-    assert(util.equal(locations, {
-        {
-            uri = 'file:///lib.c',
-            range = {
-                start   = { line = 0, character = 0 },
-                ['end'] = { line = 0, character = 0 },
-            }
-        }
-    }))
-
-    local locations = client:awaitRequest('textDocument/definition', {
-        textDocument = { uri = furi.encode('main.lua') },
-        position = { line = 9, character = 7 },
-    })
-
-    if platform.os == 'windows' then
-        assert(util.equal(locations, {
-            {
-                uri = 'file:///d%3A/xxx/2.lua',
-                range = {
-                    start   = { line = 0, character = 0 },
-                    ['end'] = { line = 0, character = 0 },
-                }
-            }
-        }))
-
-        local locations = client:awaitRequest('textDocument/definition', {
-            textDocument = { uri = furi.encode('main.lua') },
-            position = { line = 10, character = 7 },
-        })
-
-        assert(util.equal(locations, {
-            {
-                uri = 'file:///d%3A/test/2.lua',
-                range = {
-                    start   = { line = 0, character = 0 },
-                    ['end'] = { line = 0, character = 0 },
-                }
-            }
-        }))
-    end
+  end
 end)

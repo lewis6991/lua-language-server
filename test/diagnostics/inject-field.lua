@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 ---@class Class
 local m = {}
 
@@ -9,9 +9,9 @@ local m
 
 m.xx = 1 -- OK
 m.<!yy!> = 1 -- Warning
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 local m = {}
 
@@ -22,25 +22,25 @@ local m
 
 m.xx = 1 -- OK
 m.yy = 1 -- OK
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type { xx: number }
 local m
 
 m.xx = 1 -- OK
 m.<!yy!> = 1 -- Warning
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type { xx: number, [any]: any }
 local m
 
 m.xx = 1 -- OK
 m.yy = 1 -- OK
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 ---@field x number
 
@@ -49,9 +49,9 @@ local t
 
 t.x = 1 -- OK
 t.<!y!> = 2 -- Warning
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 ---@field x number
 ---@field [any] any
@@ -61,10 +61,9 @@ local t
 
 t.x = 1 -- OK
 t.y = 2 -- OK
-]]
+]])
 
-
-TEST [[
+TEST([[
 ---@class (exact) Class
 ---@field x number
 local m = {
@@ -81,9 +80,9 @@ function m:init() -- OK
     function self:<!xx!>() -- Warning
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 local m = {
     xx = 1, -- OK
@@ -94,4 +93,4 @@ local m
 
 m.xx = 1 -- OK
 m.<!yy!> = 1 -- Warning
-]]
+]])

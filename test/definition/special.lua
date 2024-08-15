@@ -1,19 +1,19 @@
-TEST [[
+TEST([[
 _ENV.<!x!> = 1
 print(<?x?>)
-]]
+]])
 
-TEST [[
+TEST([[
 _G.<!x!> = 1
 print(<?x?>)
-]]
+]])
 
-TEST [[
+TEST([[
 <!rawset(_G, 'x', 1)!>
 print(<?x?>)
-]]
+]])
 
-TEST [[
+TEST([[
 local mt
 mt.__index = mt
 function mt:<!method1!>()
@@ -21,16 +21,16 @@ end
 
 local obj = setmetatable({}, mt)
 obj:<?method1?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local mt
 function mt:<!method1!>()
 end
 
 local obj = setmetatable({}, { __index = mt })
 obj:<?method1?>()
-]]
+]])
 
 -- 不再支持在变量的引用中使用 setmetatable 操作。
 -- 这会将引用转换为定义，为了搜索定义去检查引用性价比太差了。
@@ -93,7 +93,7 @@ obj:<?method1?>()
 --obj:x()
 --]]
 
-TEST [[
+TEST([[
 local sm = setmetatable
 local mt
 mt.__index = mt
@@ -102,9 +102,9 @@ end
 
 local obj = sm({}, mt)
 obj:<?method1?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:<!x!>()
 end
@@ -114,10 +114,10 @@ function obj:x()
 end
 
 mt:<?x?>()
-]]
+]])
 
 -- TODO 通过代码执行顺序来判断?
-TEST [[
+TEST([[
 local mt = {}
 function mt:<!x!>()
 end
@@ -127,9 +127,9 @@ function obj:<!x!>()
 end
 
 obj:<?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 
 mt.<!xx!> = 1
@@ -137,4 +137,4 @@ mt.<!xx!> = 1
 mt.yy = function (self)
     print(self.<?xx?>)
 end
-]]
+]])

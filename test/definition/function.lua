@@ -1,29 +1,28 @@
-
-TEST [[
+TEST([[
 function <!x!> () end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local function <!x!> () end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 local function <!x!> ()
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 function <!x!>()
 end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!f!> = <!function () end!>
 <?f?>()
-]]
+]])

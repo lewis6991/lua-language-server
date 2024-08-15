@@ -1,11 +1,11 @@
-TEST [[
+TEST([[
 ---@param x number
 local function f(x) end
 
 f(<!true!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 
 ---@param n A
@@ -19,8 +19,8 @@ local a = {}
 a.x = XX
 
 f(a.x)
-]]
-TEST [[
+]])
+TEST([[
 ---@alias A string|boolean
 
 ---@param x string|boolean
@@ -30,9 +30,9 @@ local function f(x) end
 local x
 
 f(x)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias A string|boolean
 
 ---@param x A
@@ -42,9 +42,9 @@ local function f(x) end
 local x
 
 f(x)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param b boolean
 local function f(b)
 end
@@ -55,9 +55,9 @@ local t
 if t then
     f(t)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@enum A
 local t = {
     x = 1,
@@ -72,9 +72,9 @@ f(<!t!>)
 f(t.x)
 f(1)
 f(<!3!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@enum A
 local t = {
     x = { h = 1 },
@@ -88,9 +88,9 @@ end
 f(t.x)
 f(t.y)
 f(<!{ h = 1 }!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@enum(key) A
 local t = {
     x = 1,
@@ -104,9 +104,9 @@ end
 f('x')
 f('y')
 f(<!'z'!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic T: string | boolean | table
 ---@param x T
 ---@return T
@@ -115,9 +115,9 @@ local function f(x)
 end
 
 f(<!1!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param opts {a:number, b:number}
 local function foo(opts)
 
@@ -127,9 +127,9 @@ end
 local function bar(opts)
     foo(opts)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param opts {a:number, b:number}
 local function foo(opts)
 
@@ -139,9 +139,9 @@ end
 local function bar(opts)
     foo(<!opts!>)  -- this should raise linting error
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param opts {[number]: boolean}
 local function foo(opts)
 
@@ -151,9 +151,9 @@ end
 local function bar(opts)
     foo(opts)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic T
 ---@param v1 T
 ---@param v2 T|table
@@ -161,9 +161,9 @@ local function func(v1, v2)
 end
 
 func('hello', 'world')
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic T1, T2, T3, T4, T5
 ---@param f fun(): T1?, T2?, T3?, T4?, T5?
 ---@return T1?, T2?, T3?, T4?, T5?
@@ -174,9 +174,9 @@ end
 local a, b = foo(function()
     return 1
 end)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic T1, T2, T3, T4, T5
 ---@param f fun(): T1|nil, T2|nil, T3|nil, T4|nil, T5|nil
 ---@return T1?, T2?, T3?, T4?, T5?
@@ -187,9 +187,9 @@ end
 local a, b = foo(function()
     return 1
 end)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param v integer
 ---@return boolean
 local function is_string(v)
@@ -197,9 +197,9 @@ local function is_string(v)
 end
 
 print(is_string(3))
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param p integer|string
 local function get_val(p)
     local is_number = type(p) == 'number'
@@ -207,9 +207,9 @@ local function get_val(p)
 end
 
 get_val('hi')
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 local Class = {}
 
@@ -220,9 +220,9 @@ end
 
 Class.staticCreator(<!true!>)
 Class<!:!>staticCreator() -- Expecting a waring
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 
 ---@class B : A
@@ -237,17 +237,17 @@ local function func(x) end
 ---@type C|D
 local var
 func(var)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class MyClass
 ---@overload fun(x : string) : MyClass
 local MyClass = {}
 
 local w = MyClass(<!1!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@enum(key) A
 local t1 = {
     x = 1,
@@ -263,9 +263,9 @@ local function f(v) end
 
 f 'x'
 f 'y'
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y number
@@ -276,9 +276,9 @@ local a = {x = "", y = 0}
 function f(a) end
 
 f(a)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y number
@@ -289,9 +289,9 @@ local a = {x = ""}
 function f(a) end
 
 f(<!a!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y number
@@ -302,9 +302,9 @@ local a = {x = "", y = ""}
 function f(a) end
 
 f(<!a!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y? B
@@ -318,9 +318,9 @@ local a = {x = "b", y = {x = "c"}}
 function f(a) end
 
 f(a)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y B
@@ -334,9 +334,9 @@ local a = {x = "b", y = {}}
 function f(a) end
 
 f(<!a!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 
@@ -347,4 +347,4 @@ local a = {}
 function f(a) end
 
 f(a)
-]]
+]])

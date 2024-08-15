@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -7,9 +7,9 @@ TEST [[
 
 ---@type A
 local t = <!{}!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -20,9 +20,9 @@ TEST [[
 local t = <!{
     x = 1,
 }!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -34,9 +34,9 @@ local t = <!{
     x = 1,
     y = 2,
 }!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -49,9 +49,9 @@ local t = {
     y = 2,
     z = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -63,9 +63,9 @@ local t = {
     x = 1,
     z = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -76,9 +76,9 @@ TEST [[
 local function f(a) end
 
 f <!{}!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -91,9 +91,9 @@ local function f(a) end
 f <!{
     x = 1,
 }!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -107,9 +107,9 @@ f <!{
     x = 1,
     y = 2,
 }!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -124,9 +124,9 @@ f {
     y = 2,
     z = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
@@ -140,16 +140,16 @@ f {
     x = 1,
     z = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@class A
 ---@field x number
 local t = {}
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 
 ---@class A
@@ -157,9 +157,9 @@ TEST [[
 
 ---@class A
 local t = {}
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 
 ---@class Foo
@@ -175,9 +175,9 @@ local a = {
         c = 3,
     }
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 
 ---@class Foo
@@ -196,17 +196,17 @@ local b = {
     b = 2,
     c = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x integer
 
 ---@type A
 return <!{}!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x number
 
@@ -217,9 +217,9 @@ TEST [[
 local t = <!{
     z = 1,
 }!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x number
 
@@ -230,9 +230,9 @@ TEST [[
 local t = {
     y = 1,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 
 ---@class Foo
@@ -257,9 +257,9 @@ local x = {
 	bc = 3,
 	bd = 4,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 
 ---@class Foo
@@ -283,9 +283,9 @@ local x = {
 	b = 2,
 	c = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 
 ---@class Foo
@@ -308,9 +308,9 @@ local x = <!{
 	a = 1,
 	b = 2,
 }!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 
 ---@class Foo
@@ -334,22 +334,22 @@ local x = <!{
 	bb = 2,
 	bd = 4,
 }!>
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class A
 ---@field [1] string
 ---@field x number
 
 ---@type A
 local t = {x = 1, ""}
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class A
 ---@field [1] string
 ---@field x number
 
 ---@type A
 local t = <!{x = 1}!>
-]]
+]])

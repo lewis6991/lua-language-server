@@ -111,35 +111,33 @@ function mt:resolve(uri, args)
         local uvalueNode = vm.compileNode(ufield.extends)
         local firstField = ufieldNode:get(1)
         local firstValue = uvalueNode:get(1)
-        if not firstField or not firstValue then
-          goto CONTINUE
-        end
-        if firstField.type == 'doc.generic.name' and firstValue.type == 'doc.generic.name' then
-          -- { [number]: number} -> { [K]: V }
-          local tfieldNode = vm.getTableKey(uri, node, 'any', true)
-          local tvalueNode = vm.getTableValue(uri, node, 'any', true)
-          if tfieldNode then
-            resolve(firstField, tfieldNode)
-          end
-          if tvalueNode then
-            resolve(firstValue, tvalueNode)
-          end
-        else
-          if ufieldNode:get(1).type == 'doc.generic.name' then
-            -- { [number]: number}|number[] -> { [K]: number }
-            local tnode = vm.getTableKey(uri, node, uvalueNode, true)
-            if tnode then
-              resolve(firstField, tnode)
+        if firstField and firstValue then
+          if firstField.type == 'doc.generic.name' and firstValue.type == 'doc.generic.name' then
+            -- { [number]: number} -> { [K]: V }
+            local tfieldNode = vm.getTableKey(uri, node, 'any', true)
+            local tvalueNode = vm.getTableValue(uri, node, 'any', true)
+            if tfieldNode then
+              resolve(firstField, tfieldNode)
             end
-          elseif uvalueNode:get(1).type == 'doc.generic.name' then
-            -- { [number]: number}|number[] -> { [number]: V }
-            local tnode = vm.getTableValue(uri, node, ufieldNode, true)
-            if tnode then
-              resolve(firstValue, tnode)
+            if tvalueNode then
+              resolve(firstValue, tvalueNode)
+            end
+          else
+            if ufieldNode:get(1).type == 'doc.generic.name' then
+              -- { [number]: number}|number[] -> { [K]: number }
+              local tnode = vm.getTableKey(uri, node, uvalueNode, true)
+              if tnode then
+                resolve(firstField, tnode)
+              end
+            elseif uvalueNode:get(1).type == 'doc.generic.name' then
+              -- { [number]: number}|number[] -> { [number]: V }
+              local tnode = vm.getTableValue(uri, node, ufieldNode, true)
+              if tnode then
+                resolve(firstValue, tnode)
+              end
             end
           end
         end
-        ::CONTINUE::
       end
       return
     end
@@ -181,31 +179,27 @@ function mt:resolve(uri, args)
     for obj in sign:eachObject() do
       if obj.type == 'doc.generic.name' then
         genericsNames[obj[1]] = true
-        goto CONTINUE
-      end
-      if
-        obj.type == 'doc.type.table'
-        or obj.type == 'doc.type.function'
-        or obj.type == 'doc.type.array'
-      then
-        ---@cast obj parser.object
-        local hasGeneric
-        guide.eachSourceType(obj, 'doc.generic.name', function(src)
-          hasGeneric = true
-          genericsNames[src[1]] = true
-        end)
-        if hasGeneric then
-          goto CONTINUE
+      else
+        local hasGeneric = false
+        if
+          obj.type == 'doc.type.table'
+          or obj.type == 'doc.type.function'
+          or obj.type == 'doc.type.array'
+        then
+          ---@cast obj parser.object
+          guide.eachSourceType(obj, 'doc.generic.name', function(src)
+            hasGeneric = true
+            genericsNames[src[1]] = true
+          end)
+        end
+
+        if not hasGeneric and obj.type ~= 'variable' and obj.type ~= 'local' then
+          local view = vm.getInfer(obj):view(uri)
+          if view then
+            knownTypes[view] = true
+          end
         end
       end
-      if obj.type == 'variable' or obj.type == 'local' then
-        goto CONTINUE
-      end
-      local view = vm.getInfer(obj):view(uri)
-      if view then
-        knownTypes[view] = true
-      end
-      ::CONTINUE::
     end
     return knownTypes, genericsNames
   end
@@ -219,20 +213,21 @@ function mt:resolve(uri, args)
     local newArgNode = vm.createNode()
     local needRemoveNil = sign:hasFalsy()
     for n in argNode:eachObject() do
+      local skip = false
       if needRemoveNil then
         if n.type == 'nil' then
-          goto CONTINUE
+          skip = true
         end
         if n.type == 'global' and n.cate == 'type' and n.name == 'nil' then
-          goto CONTINUE
+          skip = true
         end
       end
-      local view = vm.getInfer(n):view(uri)
-      if knownTypes[view] then
-        goto CONTINUE
+      if not skip then
+        local view = vm.getInfer(n):view(uri)
+        if not knownTypes[view] then
+          newArgNode:merge(n)
+        end
       end
-      newArgNode:merge(n)
-      ::CONTINUE::
     end
     if not needRemoveNil and argNode:isOptional() then
       newArgNode:addOptional()

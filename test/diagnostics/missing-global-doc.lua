@@ -1,14 +1,14 @@
 -- check global functions
-TEST [[
+TEST([[
 <!function FG0()
 end!>
 
 ---comment
 function FG1()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 function FGP0(<!p!>)
   print(p)
 end
@@ -23,9 +23,9 @@ end
 function FGP2(p)
   print(p)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 function FGPP0(<!p0!>, <!p1!>)
   print(p0, p1)
 end
@@ -47,9 +47,9 @@ end
 function FGPP3(p0, p1)
   print(p0, p1)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 function FGR0()
   return <!0!>
 end
@@ -64,9 +64,9 @@ end
 function FGR2()
   return 0
 end
-]]
+]])
 
-TEST [[
+TEST([[
 function FGRR0()
   return <!0!>, <!1!>
 end
@@ -88,10 +88,9 @@ end
 function FGRR3()
   return 0, 1
 end
-]]
+]])
 
-
-TEST [[
+TEST([[
 function FGPR0(<!p!>)
   print(p)
   return <!0!>
@@ -124,11 +123,11 @@ function FGPR4(p)
   print(p)
   return 0
 end
-]]
+]])
 
 -- check local functions
 
-TEST [[
+TEST([[
 local function FL0()
 end
 
@@ -139,9 +138,9 @@ local function FL1()
 end
 
 FL1()
-]]
+]])
 
-TEST [[
+TEST([[
 local function FLP0(p)
   print(p)
 end
@@ -162,9 +161,9 @@ local function FLP2(p)
 end
 
 FLP2(0)
-]]
+]])
 
-TEST [[
+TEST([[
 local function FLPP0(p0, p1)
   print(p0, p1)
 end
@@ -194,9 +193,9 @@ local function FLPP3(p0, p1)
 end
 
 FLPP3(0, 1)
-]]
+]])
 
-TEST [[
+TEST([[
 local function FLR0()
   return 0
 end
@@ -217,9 +216,9 @@ local function FLR2()
 end
 
 local vr2 = FLR2()
-]]
+]])
 
-TEST [[
+TEST([[
 local function FLRR0()
   return 0, 1
 end
@@ -249,9 +248,9 @@ local function FLRR3()
 end
 
 local vrr3, _ = FLRR3()
-]]
+]])
 
-TEST [[
+TEST([[
 local function FLPR0(p)
   print(p)
   return 0
@@ -294,4 +293,4 @@ local function FLPR4(p)
 end
 
 local vpr4 = FLPR4(0)
-]]
+]])

@@ -1,25 +1,25 @@
-TEST [[
+TEST([[
 ---@return number
 function F()
     return <!true!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number?
 function F()
     return 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number?
 function F()
     return nil
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number, number
 local function f()
     return 1, 1
@@ -29,9 +29,9 @@ end
 function F()
     return <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return boolean, number
 local function f()
     return true, 1
@@ -41,9 +41,9 @@ end
 function F()
     return <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return boolean, number?
 local function f()
     return true, 1
@@ -53,9 +53,9 @@ end
 function F()
     return 1, f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number, number?
 local function f()
     return 1, 1
@@ -65,9 +65,9 @@ end
 function F()
     return 1, <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x number?
 
@@ -77,9 +77,9 @@ function F()
     local t
     return t.x
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x number?
 local t = {}
@@ -88,17 +88,17 @@ local t = {}
 function F()
     return t.x
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param ... number
 local function f(...)
 end
 
 f(nil)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number
 function F()
     local n = 0
@@ -107,9 +107,9 @@ function F()
     end
     return n
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param x boolean
 ---@return number
 ---@overload fun(): boolean
@@ -120,9 +120,9 @@ local function f(x)
         return false
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param x boolean
 ---@return number
 ---@overload fun()
@@ -133,9 +133,9 @@ local function f(x)
         return
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param x boolean
 ---@return number
 ---@overload fun()
@@ -144,9 +144,9 @@ local function f(x)
         return 1
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param x boolean
 ---@return number
 ---@overload fun(): boolean, boolean
@@ -157,11 +157,11 @@ local function f(x)
         return false, false
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun():number
 local function f()
     return <!true!>
 end
-]]
+]])

@@ -1,22 +1,22 @@
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
 end
 
 <!f()!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
 end
 
 X = f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -25,9 +25,9 @@ end
 for i = 1, 2 do
     <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -36,9 +36,9 @@ end
 for i = 1, 2 do
     local v = f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -48,9 +48,9 @@ while true do
     <!f()!>
     break
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -60,9 +60,9 @@ while true do
     local v = f()
     break
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -72,9 +72,9 @@ repeat
     <!f()!>
     break
 until true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -84,9 +84,9 @@ repeat
     local v = f()
     break
 until true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -95,9 +95,9 @@ end
 for index, value in ipairs({}) do
     <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -106,9 +106,9 @@ end
 for index, value in ipairs({}) do
     local v = f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -117,9 +117,9 @@ end
 if 1 == 1 then
     <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -128,9 +128,9 @@ end
 if 1 == 1 then
     local v = f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -141,9 +141,9 @@ if 1 == 1 then
 else
     <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -154,9 +154,9 @@ if 1 == 1 then
 else
     local v = f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -169,9 +169,9 @@ elseif 1 == 2 then
 else
     local v = f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -184,9 +184,9 @@ elseif 1 == 2 then
 else
     local v = f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -198,9 +198,9 @@ end
 bar(function ()
     <!f()!>
 end)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -212,9 +212,9 @@ end
 bar(function ()
     local v = f()
 end)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -223,9 +223,9 @@ end
 do
     <!f()!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -234,9 +234,9 @@ end
 do
     local v = f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 2
@@ -244,9 +244,9 @@ end
 
 for i = 1, f() do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function list_iter(t)
     local i = 0
@@ -260,9 +260,9 @@ end
 local t = {10, 20, 30}
 for element in list_iter(t) do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@nodiscard
 local function f()
     return 1
@@ -270,4 +270,4 @@ end
 
 if f() then
 end
-]]
+]])

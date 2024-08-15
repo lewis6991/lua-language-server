@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 ---@class Class
 ---@param <!x!> Class
 ---@param y Class
@@ -9,4 +9,4 @@ end
 
 local _
 f(_, _)
-]]
+]])

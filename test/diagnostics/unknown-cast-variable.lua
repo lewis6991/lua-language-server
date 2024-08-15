@@ -1,8 +1,8 @@
-TEST [[
+TEST([[
 ---@cast <!x!> integer
-]]
+]])
 
-TEST [[
+TEST([[
 local x, y
 ---@cast y number
-]]
+]])

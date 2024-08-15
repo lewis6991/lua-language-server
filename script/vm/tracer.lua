@@ -183,20 +183,18 @@ function mt:getLastAssign(start, finish)
       ---@cast assign parser.object
       obj = assign
     end
-    if obj.start < start then
-      goto CONTINUE
+    if obj.start >= start then
+      if (obj.effect or obj.range or obj.start) >= finish then
+        break
+      end
+      local objBlock = guide.getTopBlock(obj)
+      if not objBlock then
+        break
+      end
+      if objBlock.start <= finish and objBlock.finish >= finish then
+        lastAssign = obj
+      end
     end
-    if (obj.effect or obj.range or obj.start) >= finish then
-      break
-    end
-    local objBlock = guide.getTopBlock(obj)
-    if not objBlock then
-      break
-    end
-    if objBlock.start <= finish and objBlock.finish >= finish then
-      lastAssign = obj
-    end
-    ::CONTINUE::
   end
   return lastAssign
 end
@@ -766,24 +764,22 @@ end
 function mt:lookIntoBlock(block, start, node)
   self:resetCastsIndex(start)
   for _, action in ipairs(block) do
-    if (action.effect or action.start) < start then
-      goto CONTINUE
-    end
-    if self.careMap[action] then
-      node = self:lookIntoChild(action, node)
-      if
-        action.type == 'do'
-        or action.type == 'loop'
-        or action.type == 'in'
-        or action.type == 'repeat'
-      then
+    if (action.effect or action.start) >= start then
+      if self.careMap[action] then
+        node = self:lookIntoChild(action, node)
+        if
+          action.type == 'do'
+          or action.type == 'loop'
+          or action.type == 'in'
+          or action.type == 'repeat'
+        then
+          return
+        end
+      end
+      if action.finish > start and self.assignMap[action] then
         return
       end
     end
-    if action.finish > start and self.assignMap[action] then
-      return
-    end
-    ::CONTINUE::
   end
   self.nodes[block] = node
   if block.type == 'repeat' then

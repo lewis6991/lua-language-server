@@ -384,7 +384,7 @@ local function packSymbols(symbols)
     return o1 < o2
   end)
   await.delay()
-  -- 处理嵌套
+  -- handle nesting
   return packChild(symbols)
 end
 

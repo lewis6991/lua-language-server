@@ -1,15 +1,15 @@
-local config = require 'config'
+local config = require('config')
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
 ---@field public z number
 local t
 print(t.x)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -19,9 +19,9 @@ TEST [[
 local t
 
 print(t.<!x!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -31,9 +31,9 @@ TEST [[
 local t
 
 print(t.y)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -45,9 +45,9 @@ TEST [[
 local t
 
 print(t.<!y!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -59,8 +59,8 @@ TEST [[
 local t
 
 print(t.z)
-]]
-TEST [[
+]])
+TEST([[
 ---@class A
 ---@field _id number
 
@@ -68,10 +68,10 @@ TEST [[
 local t
 
 print(t._id)
-]]
+]])
 
 config.set(nil, 'Lua.doc.privateName', { '_*' })
-TEST [[
+TEST([[
 ---@class A
 ---@field _id number
 
@@ -84,8 +84,8 @@ print(t.<!_id!>)
 local t2
 
 print(t2.<!_id!>)
-]]
-TEST [[
+]])
+TEST([[
 ---@class A
 local A = {
     _id = 0
@@ -100,12 +100,12 @@ print(t.<!_id!>)
 local t2
 
 print(t2.<!_id!>)
-]]
+]])
 
 config.set(nil, 'Lua.doc.privateName', nil)
 
 config.set(nil, 'Lua.doc.protectedName', { '_*' })
-TEST [[
+TEST([[
 ---@class A
 local A = {
     _id = 0
@@ -120,9 +120,9 @@ print(t.<!_id!>)
 local t2
 
 print(t2._id)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field _id number
 
@@ -135,13 +135,13 @@ print(t.<!_id!>)
 local t2
 
 print(t2._id)
-]]
+]])
 config.set(nil, 'Lua.doc.protectedName', nil)
 
-config.set(nil, 'Lua.doc.regengine', 'lua' )
+config.set(nil, 'Lua.doc.regengine', 'lua')
 config.set(nil, 'Lua.doc.privateName', { '^_[%w_]*%w$' })
 config.set(nil, 'Lua.doc.protectedName', { '^_[%w_]*_$' })
-TEST [[
+TEST([[
 ---@class A
 ---@field _id_ number
 ---@field _user number
@@ -155,12 +155,12 @@ print(t.<!_user!>)
 local t2
 print(t2._id_)
 print(t2.<!_user!>)
-]]
+]])
 config.set(nil, 'Lua.doc.privateName', nil)
 config.set(nil, 'Lua.doc.protectedName', nil)
-config.set(nil, 'Lua.doc.regengine', nil )
+config.set(nil, 'Lua.doc.regengine', nil)
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 local mt = {}
@@ -168,9 +168,9 @@ local mt = {}
 function mt:init()
     print(self.x)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@diagnostic disable: missing-fields
 ---@class A
@@ -183,9 +183,9 @@ function mt:init()
 
     obj.x = 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 ---@diagnostic disable: missing-fields
 ---@class A
@@ -198,4 +198,4 @@ mt.init = function ()
 
     obj.x = 1
 end
-]]
+]])

@@ -11,7 +11,7 @@ local config = require('config')
 --- @field package _async? boolean
 --- @field package _nodiscard? boolean
 
----获取class与alias
+--- Get class and alias
 --- @param suri string
 --- @param name? string
 --- @return parser.object[]
@@ -346,14 +346,13 @@ function vm.isAsyncCall(call)
   return false
 end
 
---- @param uri string
 --- @param doc parser.object
 --- @param results table[]
-local function makeDiagRange(uri, doc, results)
+local function makeDiagRange(doc, results)
   local names
   if doc.names then
     names = {}
-    for i, nameUnit in ipairs(doc.names) do
+    for _, nameUnit in ipairs(doc.names) do
       local name = nameUnit[1]
       names[name] = true
     end
@@ -423,7 +422,7 @@ function vm.isDiagDisabledAt(uri, position, name, err)
     cache.diagnosticRanges = {}
     for _, doc in ipairs(status.ast.docs) do
       if doc.type == 'doc.diagnostic' then
-        makeDiagRange(uri, doc, cache.diagnosticRanges)
+        makeDiagRange(doc, cache.diagnosticRanges)
       end
     end
     table.sort(cache.diagnosticRanges, function(a, b)

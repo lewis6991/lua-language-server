@@ -1,30 +1,29 @@
-
-TEST [[
+TEST([[
 local function x(a, b)
     return a, b
 end
 x(1)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param a integer
 ---@param b integer
 local function x(a, b)
     return a, b
 end
 <!x(1)!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param a integer
 ---@param b integer
 local function x(a, b)
     return a, b
 end
 <!x()!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param a integer
 ---@param b integer
 ---@param ... integer
@@ -32,18 +31,18 @@ local function x(a, b, ...)
     return a, b, ...
 end
 x(1, 2)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param a integer
 ---@param b integer
 local function f(a, b)
 end
 
 f(...)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param a integer
 ---@param b integer
 local function f(a, b)
@@ -54,37 +53,37 @@ local function return2Numbers()
 end
 
 f(return2Numbers())
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param a integer
 ---@param b? integer
 local function x(a, b)
     return a, b
 end
 x(1)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param b integer?
 local function x(a, b)
     return a, b
 end
 x(1)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param b integer|nil
 local function x(a, b)
     return a, b
 end
 x(1)
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {}
 
 function t:init() end
 
 <!t.init()!>
-]]
+]])

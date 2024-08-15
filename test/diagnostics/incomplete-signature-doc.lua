@@ -2,7 +2,7 @@
 -- about the structure of these test cases
 --
 -- the following test cases are grouped by the number of parameters and return values of the functions
--- so first global functions with: 
+-- so first global functions with:
 -- no parameter and return value (FG), one parameter (FGP), two parameters (FGPP),
 -- one return value (FGR), two return values (FGRR) and parameter and return value (FGPR)
 -- after that, these groups are also done for local functions (FL, FLP, ...)
@@ -16,7 +16,7 @@
 -- global functions no parameter, no return value
 -- no incomplete signature docs possible
 
-TEST [[
+TEST([[
 function FG0()
 end
 
@@ -27,11 +27,11 @@ end
 ---@async
 function FG1_()
 end
-]]
+]])
 
 -- global functions with single parameter, no return value
 -- no incomplete signature docs possible
-TEST [[
+TEST([[
 function FGP0(p)
   print(p)
 end
@@ -51,11 +51,11 @@ end
 function FGP2(p)
   print(p)
 end
-]]
+]])
 
 -- global functions with two parameters, no return value
 -- incomplete signature docs when exactly one of the parameters is documented
-TEST [[
+TEST([[
 function FGPP0(p0, p1)
   print(p0, p1)
 end
@@ -88,11 +88,11 @@ end
 function FGPP3(p0, p1)
   print(p0, p1)
 end
-]]
+]])
 
 -- global functions with no parameter, single return value
 -- no incomplete signature docs possible
-TEST [[
+TEST([[
 function FGR0()
   return 0
 end
@@ -112,11 +112,11 @@ end
 function FGR2()
   return 0
 end
-]]
+]])
 
 -- global functions with no parameter, two return values
 -- incomplete signature docs when exactly one of the return values is documented
-TEST [[
+TEST([[
 function FGRR0()
   return 0, 1
 end
@@ -143,11 +143,11 @@ end
 function FGRR3()
   return 0, 1
 end
-]]
+]])
 
 -- global functions with one parameter, one return value
 -- incomplete signature docs when exactly one of parameter or return value is documented
-TEST [[
+TEST([[
 function FGPR0(p)
   print(p)
   return 0
@@ -186,11 +186,11 @@ function FGPR4(p)
   print(p)
   return 0
 end
-]]
+]])
 
 -- local functions with no parameter, no return value
 -- no incomplete signature docs possible
-TEST [[
+TEST([[
 local function FL0()
 end
 
@@ -204,11 +204,11 @@ FL1()
 
 ---@async
 local function FL1_()
-]]
+]])
 
 -- local functions with single parameter, no return value
 -- no incomplete signature docs possible
-TEST [[
+TEST([[
 local function FLP0(p)
   print(p)
 end
@@ -234,11 +234,11 @@ local function FLP2(p)
 end
 
 FLP2(0)
-]]
+]])
 
 -- local functions with two parameters, no return value
 -- incomplete signature docs when exactly one of the parameters is documented
-TEST [[
+TEST([[
 local function FLPP0(p0, p1)
   print(p0, p1)
 end
@@ -273,11 +273,11 @@ local function FLPP3(p0, p1)
 end
 
 FLPP3(0, 1)
-]]
+]])
 
 -- local functions with no parameter, single return value
 -- no incomplete signature docs possible
-TEST [[
+TEST([[
 local function FLR0()
   return 0
 end
@@ -303,11 +303,11 @@ local function FLR2()
 end
 
 local vr2 = FLR2()
-]]
+]])
 
 -- local functions with no parameter, two return values
 -- incomplete signature docs when exactly one of the return values is documented
-TEST [[
+TEST([[
 local function FLRR0()
   return 0, 1
 end
@@ -342,11 +342,11 @@ local function FLRR3()
 end
 
 local vrr3, _ = FLRR3()
-]]
+]])
 
 -- local functions with one parameter, one return value
 -- incomplete signature docs when exactly one of parameter or return value is documented
-TEST [[
+TEST([[
 local function FLPR0(p)
   print(p)
   return 0
@@ -395,4 +395,4 @@ local function FLPR4(p)
 end
 
 local vpr4 = FLPR4(0)
-]]
+]])

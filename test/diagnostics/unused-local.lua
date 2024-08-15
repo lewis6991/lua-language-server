@@ -1,99 +1,99 @@
-local config = require 'config'
+local config = require('config')
 
-TEST [[
+TEST([[
 local <!x!>
-]]
+]])
 
-TEST [[
+TEST([[
 local y
 local x <close> = y
-]]
+]])
 
-TEST [[
+TEST([[
 local function x()
 end
 x()
-]]
+]])
 
-TEST [[
+TEST([[
 return function (x)
     x.a = 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!t!> = {}
 <!t!>.a = 1
-]]
+]])
 
-TEST [[
+TEST([[
 InstanceName = 1
 Instance = _G[InstanceName]
-]]
+]])
 
-TEST [[
+TEST([[
 local _ = (''):sub(1, 2)
-]]
+]])
 
-TEST [[
+TEST([[
 local mt, x
 function mt:m()
     function x:m()
     end
 end
 return mt, x
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:f()
 end
 return mt
-]]
+]])
 
-TEST [[
+TEST([[
 local <!mt!> = {}
 function <!mt!>:f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!> = {}
 <!x!>.a = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!> = {}
 <!x!>['a'] = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(<!self!>)
     return 'something'
 end
 f()
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(var)
     print(var)
 end
 local var
 f(var)
-]]
+]])
 
-TEST [[
+TEST([[
 local <!t!> = {}
 <!t!>[1] = 1
-]]
+]])
 
 config.add(nil, 'Lua.diagnostics.unusedLocalExclude', 'll_*')
 
-TEST [[
+TEST([[
 local <!xx!>
 local ll_1
 local ll_2
 local <!ll!>
-]]
+]])
 
 config.remove(nil, 'Lua.diagnostics.unusedLocalExclude', 'll_*')

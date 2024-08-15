@@ -1,34 +1,34 @@
-TEST [[
+TEST([[
 <!print()
 ('string')!>:sub(1, 1)
-]]
+]])
 
-TEST [[
+TEST([[
 print()
 ('string')
-]]
+]])
 
-TEST [[
+TEST([[
 print
 {}
 {}
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 return x
     : f(1)
     : f(1)
-]]
+]])
 
-TEST [[
+TEST([[
 print()
 'string'
-]]
+]])
 
-TEST [[
+TEST([[
 print
 {
     x = 1,
 }
-]]
+]])

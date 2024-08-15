@@ -1,36 +1,36 @@
-TEST [[
+TEST([[
 ---@type iolib
 _ENV = io
 <!print!>(stderr) -- `print` is warning but `stderr` is not
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type iolib
 local _ENV = io
 <!print!>(stderr) -- `print` is warning but `stderr` is not
-]]
+]])
 
-TEST [[
+TEST([[
 local _ENV = { print = print }
 print(1)
-]]
+]])
 
-TEST [[
+TEST([[
 _ENV = {}
 GLOBAL = 1 --> _ENV.GLOBAL = 1
-]]
+]])
 
-TEST [[
+TEST([[
 _ENV = {}
 local _ = print --> local _ = _ENV.print
-]]
+]])
 
-TEST [[
+TEST([[
 GLOBAL = 1
 _ENV = nil
-]]
+]])
 
-TEST [[
+TEST([[
 print(1)
 _ENV = nil
-]]
+]])

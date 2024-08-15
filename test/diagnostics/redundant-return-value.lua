@@ -1,25 +1,25 @@
-TEST [[
+TEST([[
 ---@type fun():number
 local function f()
     return 1, <!true!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number, number?
 function F()
     return 1, 1, <!1!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number, number?
 function F()
     return 1, 1, <!1!>, <!2!>, <!3!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@meta
 
 ---@return number, number
@@ -29,4 +29,4 @@ local function r2() end
 function F()
     return 1, <!r2()!>
 end
-]]
+]])

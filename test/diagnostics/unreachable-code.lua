@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 if X then
     return false
 elseif X then
@@ -7,9 +7,9 @@ else
     return false
 end
 <!return true!>
-]]
+]])
 
-TEST [[
+TEST([[
 function X()
     if X then
         return false
@@ -20,31 +20,31 @@ function X()
     end
     <!return true!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 while true do
 end
 
 <!print(1)!>
-]]
+]])
 
-TEST [[
+TEST([[
 while true do
 end
 
 <!print(1)!>
-]]
+]])
 
-TEST [[
+TEST([[
 while X do
     X = 1
 end
 
 print(1)
-]]
+]])
 
-TEST [[
+TEST([[
 while true do
     if not X then
         break
@@ -54,9 +54,9 @@ end
 print(1)
 
 do return end
-]]
+]])
 
-TEST [[
+TEST([[
 local done = false
 
 local function set_done()
@@ -68,4 +68,4 @@ while not done do
 end
 
 print(1)
-]]
+]])

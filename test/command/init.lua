@@ -1,1 +1,1 @@
-require 'command.auto-require'
+require('command.auto-require')

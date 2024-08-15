@@ -1,7 +1,7 @@
-local thread = require 'bee.thread'
-local fw     = require 'filewatch'
-local fs     = require 'bee.filesystem'
-local fsu    = require 'fs-utility'
+local thread = require('bee.thread')
+local fw = require('filewatch')
+local fs = require('bee.filesystem')
+local fsu = require('fs-utility')
 
 local path = fs.path(LOGPATH) / 'fw'
 
@@ -13,8 +13,8 @@ local _ <close> = fw.watch(path:string(), true)
 fsu.saveFile(path / 'test.txt', 'test')
 
 local events
-fw.event(function (ev, filename)
-    events[#events+1] = {ev, filename}
+fw.event(function(ev, filename)
+  events[#events + 1] = { ev, filename }
 end)
 
 thread.sleep(1000)

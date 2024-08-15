@@ -1,37 +1,37 @@
-TEST [[
+TEST([[
 local <!t!>
 a = {
     <?t?>
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local t
 t.<!x!> = 1
 t.<?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 t.<!x!> = 1
 t.<?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!t!>
 t.x = 1
 <?t?>.x = 1
-]]
+]])
 
-TEST [[
+TEST([[
 t.<!x!> = 1
 t.<?x?>.y = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local t
 t.<!x!> = 1
 t.<?x?>()
-]]
+]])
 
 --TEST [[
 --local t
@@ -45,77 +45,77 @@ t.<?x?>()
 --t[<?true?>]()
 --]]
 
-TEST [[
+TEST([[
 local t
 t[<!"method"!>] = 1
 t[<?"method"?>]()
-]]
+]])
 
-TEST [[
+TEST([[
 local t
 t[<!"longString"!>] = 1
 t[ <?[==[longString]==]?> ]()
-]]
+]])
 
-TEST [[
+TEST([[
 local t
 t.<!x!> = 1
 t[<?'x'?>]()
-]]
+]])
 
-TEST [[
+TEST([[
 local t
 t.<!a!> = 1
 t.<?a?>.b()
-]]
+]])
 
-TEST [[
+TEST([[
 local t
 local <!x!>
 t[<?x?>]()
-]]
+]])
 
-TEST[[
+TEST([[
 local <!t!>
 local _ = {
     _ = <?t?>
 }
-]]
+]])
 
-TEST[[
+TEST([[
 local <!t!>
 t {
     _ = <?t?>.x
 }
-]]
+]])
 
-TEST[[
+TEST([[
 local t = {
     <!insert!> = 1,
 }
 t.<?insert?>()
-]]
+]])
 
-TEST[[
+TEST([[
 local t = {
     [<!'insert'!>] = 1,
 }
 t.<?insert?>()
-]]
+]])
 
-TEST[[
+TEST([[
 local t;t = {
     <!insert!> = 1,
 }
 t.<?insert?>()
-]]
+]])
 
-TEST[[
+TEST([[
 local t;t = {
     <!insert!> = 1,
 }
 t.<?insert?>()
-]]
+]])
 
 --TEST[[
 --local t = {
@@ -124,7 +124,7 @@ t.<?insert?>()
 --y.<?insert?>()
 --]]
 
-TEST[[
+TEST([[
 local t = {
     <!insert!> = 1,
 }
@@ -132,34 +132,32 @@ local y = {
     insert = 1,
 }
 t.<?insert?>()
-]]
+]])
 
-
-TEST [[
+TEST([[
 local x
 x.y.<!z!> = 1
 print(x.y.<?z?>)
-]]
+]])
 
-
-TEST [[
+TEST([[
 local x
 x.y = {
     <!z!> = 1
 }
 print(x.y.<?z?>)
-]]
+]])
 
-TEST [[
+TEST([[
 local x = {
     y = {
         <!z!> = 1
     }
 }
 print(x.y.<?z?>)
-]]
+]])
 
-TEST [[
+TEST([[
 local function f()
     local t = {
         <!x!> = 1,
@@ -168,7 +166,7 @@ local function f()
 end
 local t = f()
 t.<?x?>
-]]
+]])
 
 --TEST [[
 --local t = { <!a!> }
@@ -176,7 +174,7 @@ t.<?x?>
 --print(t[<?1?>])
 --]]
 
-TEST [[
+TEST([[
 local t = {
     <!<?x?>!> = 1,
 }
@@ -184,4 +182,4 @@ local t = {
 local y
 
 t.x = y
-]]
+]])

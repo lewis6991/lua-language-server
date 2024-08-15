@@ -1,72 +1,66 @@
-local define = require 'proto.define'
-local config = require 'config'
+local define = require('proto.define')
+local config = require('config')
 
-config.set(nil, 'Lua.completion.callSnippet',    'Disable')
+config.set(nil, 'Lua.completion.callSnippet', 'Disable')
 config.set(nil, 'Lua.completion.keywordSnippet', 'Disable')
-config.set(nil, 'Lua.completion.workspaceWord',  false)
+config.set(nil, 'Lua.completion.workspaceWord', false)
 
 ContinueTyping = true
 
-TEST [[
+TEST([[
 local zabcde
 za<??>
-]]
-{
-    {
-        label = 'zabcde',
-        kind = define.CompletionItemKind.Variable,
-    }
-}
+]])({
+  {
+    label = 'zabcde',
+    kind = define.CompletionItemKind.Variable,
+  },
+})
 
-TEST [[
+TEST([[
 -- zabcde
 io.z<??>
-]]
-{
-    {
-        label = 'zabcde',
-        kind = define.CompletionItemKind.Text,
-    }
-}
+]])({
+  {
+    label = 'zabcde',
+    kind = define.CompletionItemKind.Text,
+  },
+})
 
-
-TEST [[
+TEST([[
 -- provider
 pro<??>
-]]
-{
-    {
-        label = 'provider',
-        kind = define.CompletionItemKind.Text,
-    }
-}
+]])({
+  {
+    label = 'provider',
+    kind = define.CompletionItemKind.Text,
+  },
+})
 
-TEST [[
+TEST([[
 ---@param n '"abcdefg"'
 local function f(n) end
 
 f 'abc<??>'
-]]
-{
-    {
-        label    = "'abcdefg'",
-        kind     = define.CompletionItemKind.EnumMember,
-        textEdit = EXISTS,
-    }
-}
+]])({
+  {
+    label = "'abcdefg'",
+    kind = define.CompletionItemKind.EnumMember,
+    textEdit = EXISTS,
+  },
+})
 
-TEST [[
+TEST([[
 ---@type '"abcdefg"'
 local t
 
 if t == 'abc<??>'
-]]
-{
-    {
-        label    = "'abcdefg'",
-        kind     = define.CompletionItemKind.EnumMember,
-        textEdit = EXISTS,
-    }
-}
+]])({
+  {
+    label = "'abcdefg'",
+    kind = define.CompletionItemKind.EnumMember,
+    textEdit = EXISTS,
+  },
+})
 
 ContinueTyping = false

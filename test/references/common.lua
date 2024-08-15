@@ -1,182 +1,182 @@
-local config = require "config"
-TEST [[
+local config = require('config')
+TEST([[
 local <~a~> = 1
 <!a!> = <!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 <~a~> = 1
 <!a!> = <!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 local t
 t.<~a~> = 1
 t.<!a!> = t.<!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 t.<~a~> = 1
 t.<!a!> = t.<!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 :: <!LABEL!> ::
 goto <~LABEL~>
 if true then
     goto <!LABEL!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 :: <~LABEL~> ::
 goto <!LABEL!>
 if true then
     goto <!LABEL!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local a = 1
 local <~a~> = 1
 <!a!> = <!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 local <~a~>
 local b = <!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {
     <~a~> = 1
 }
 print(t.<!a!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {
     <~a~> = 1
 }
 t.<!a!> = 1
-]]
+]])
 
-TEST [[
+TEST([[
 t[<~'a'~>] = 1
 print(t.<!a!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {
     [<~'a'~>] = 1
 }
 print(t.<!a!>)
-]]
+]])
 
-TEST [[
+TEST([[
 table.<!dump!>()
 function table.<~dump~>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {}
 t.<~x~> = 1
 t[a.b.c] = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {}
 t.x = 1
 t[a.b.<~x~>] = 1
-]]
+]])
 
-TEST [[
+TEST([[
 self = {
     results = {
         <~labels~> = {},
     }
 }
 self[self.results.<!labels!>] = lbl
-]]
+]])
 
-TEST [[
+TEST([[
 a.b.<~c~> = 1
 print(a.b.<!c!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local <!mt!> = {}
 function mt:x()
     <~self~>:x()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <~mt~> = {}
 function <!mt!>:x()
     self:x()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:<!x!>()
     self:<~x~>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:<~x~>()
     self:<!x!>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 a.<!b!>.c = 1
 print(a.<~b~>.c)
-]]
+]])
 
-TEST [[
+TEST([[
 _G.<~xxx~> = 1
 
 print(<!xxx!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class <~Class~>
 ---@type <!Class!>
 ---@type <!Class!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 local <~t~>
 ---@type Class
 local x
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 local t
 ---@type Class
 local <~x~>
-]]
+]])
 
 -- BUG
-TEST [[
+TEST([[
 ---@return <~xxx~>
 function f() end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@class B: A
 
 ---@type A
 local <~t~>
-]]
+]])
 
 --TEST [[
 -----@class A
@@ -192,7 +192,7 @@ local <~t~>
 --c.<!x!> = 1
 --]]
 
-TEST [[
+TEST([[
 ---@class a
 local a = { }
 ---@class b
@@ -200,24 +200,24 @@ local b = { }
 
 a.color = { 1, 1, 1 }
 b.<~color~> = a.color
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias <~A~> number
 
 ---@type <!A!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field <~x~> number
 
 ---@type A
 local t
 print(t.<!x!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field <!x!> number
 
@@ -230,9 +230,9 @@ t1.<~x~> = 1
 local t2
 
 t2.<!x!> = 1
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias lang 'en' | 'de'
 
 ---@class A
@@ -245,4 +245,4 @@ a.test = 'en'
 local b
 
 b.<?<!test!>?> = a.test
-]]
+]])

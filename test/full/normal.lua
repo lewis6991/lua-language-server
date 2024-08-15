@@ -1,39 +1,39 @@
-TEST [[
+TEST([[
 do
     x = 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 return nil, 1, true, 'xx'
-]]
+]])
 
-TEST [[
+TEST([[
 return a
-]]
+]])
 
-TEST [[
+TEST([[
 retrun a.b:c(1, 2, ...)[1][name]
-]]
+]])
 
-TEST [[
+TEST([[
 return 1 + 1
-]]
+]])
 
-TEST [[
+TEST([[
 return -1
-]]
+]])
 
-TEST [[
+TEST([[
 return ...
-]]
+]])
 
-TEST [[
+TEST([[
 return function (a, b, ...)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 return {
     a = 1,
     b = {
@@ -44,100 +44,100 @@ return {
     h,
     1,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ::LABEL::
 goto LABEL
 goto NEXT
 ::NEXT::
-]]
+]])
 
-TEST [[
+TEST([[
 a, b, c = 1, 2, ...
-]]
+]])
 
-TEST [[
+TEST([[
 local a, b, c = 1, 2, ...
-]]
+]])
 
-TEST [[
+TEST([[
 a[#a+1] = 1
-]]
+]])
 
-TEST [[
+TEST([[
 xx(a, b, 2, 3, ...)
-]]
+]])
 
-TEST [[
+TEST([[
 if a then
 elseif b then
 elseif c then
 else
 end
-]]
+]])
 
-TEST [[
+TEST([[
 for i = 1, 10, 1 do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 for a, b, c in pairs(t) do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 while true do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 repeat
 until true
-]]
+]])
 
-TEST [[
+TEST([[
 function xx:yy(a, b, c, ...)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function xx(a, b, c, ...)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local v = 1
 local function xx()
     print(v)
 end
 local v = 2
 xx()
-]]
+]])
 
-TEST [[
+TEST([[
 return {
     1, 2, 3
 }
-]]
+]])
 
-TEST [[
+TEST([[
 return function ()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 t[...] = 1
-]]
+]])
 
-TEST [[
+TEST([[
 return {
     [...] = ...
 }
-]]
+]])
 
-TEST [[
+TEST([[
 -- 选取单位
 ---@param center point
 ---@param radius number
@@ -145,13 +145,13 @@ TEST [[
 ---@return unit[]
 function scene:selectByCylinder(center, radius, height)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local x = ,
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type any|fun():nil
 local t    
-]]
+]])

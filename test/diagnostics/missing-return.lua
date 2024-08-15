@@ -1,28 +1,28 @@
-TEST [[
+TEST([[
 ---@type fun():number
 local function f()
 <!!>end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun():number?
 local function f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun():...
 local function f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number
 function F()
     X = 1<!!>
 end
-]]
-TEST [[
+]])
+TEST([[
 local A
 ---@return number
 function F()
@@ -30,9 +30,9 @@ function F()
         return 1
     end<!!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local A, B
 ---@return number
 function F()
@@ -42,9 +42,9 @@ function F()
         return 2
     end<!!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local A, B
 ---@return number
 function F()
@@ -56,9 +56,9 @@ function F()
         return 3
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local A, B
 ---@return number
 function F()
@@ -69,37 +69,37 @@ function F()
         return 3
     end<!!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return any
 function F()
     X = 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return any, number
 function F()
     X = 1<!!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number, any
 function F()
     X = 1<!!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return any, any
 function F()
     X = 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local A
 ---@return number
 function F()
@@ -110,9 +110,9 @@ function F()
     end
     error('should not be here')
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local A
 ---@return number
 function F()
@@ -122,9 +122,9 @@ function F()
         end
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local A
 ---@return number
 function F()
@@ -134,9 +134,9 @@ function F()
         end
     end<!!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local A
 ---@return number
 function F()
@@ -148,11 +148,11 @@ function F()
         end
     end
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number?
 function F()
 
 end
-]]
+]])

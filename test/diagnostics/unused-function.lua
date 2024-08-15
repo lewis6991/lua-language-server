@@ -1,48 +1,47 @@
-TEST [[
+TEST([[
 local <!function x()
 end!>
-]]
+]])
 
-TEST [[
+TEST([[
 local x = <!function () end!>
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 x = <!function () end!>
-]]
+]])
 
-TEST [[
+TEST([[
 local <!function x()
 end!>
 local <!function y()
     x()
 end!>
-]]
+]])
 
-TEST [[
+TEST([[
 local f = <!function () end!>
-]]
+]])
 
-TEST [[
+TEST([[
 local f;f = <!function () end!>
-]]
+]])
 
-TEST [[
+TEST([[
 local <!function f() end!>
-]]
+]])
 
-TEST [[
+TEST([[
 local <!function f()
     f()
 end!>
-]]
+]])
 
-
-TEST [[
+TEST([[
 local <!function test()
 end!>
 
 local <!function foo ()
 end!>
-]]
+]])

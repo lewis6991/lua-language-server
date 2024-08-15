@@ -1,6 +1,5 @@
 local files = require('files')
 local lang = require('language')
-local define = require('proto.define')
 local guide = require('parser.guide')
 local vm = require('vm')
 local await = require('await')
@@ -26,7 +25,6 @@ local function getTopFunctionOfIf(source)
     end
     source = source.parent
   end
-  return nil
 end
 
 --- @async

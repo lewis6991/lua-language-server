@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 ---@class A
 ---@operator <!xxx!>: A
-]]
+]])

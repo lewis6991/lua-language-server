@@ -8,7 +8,7 @@ local util = require('utility')
 local plugin = require('plugin')
 
 --- @class require-path
-local m = {}
+local M = {}
 
 --- @class require-manager
 --- @field scp scope
@@ -261,7 +261,7 @@ end
 --- @param uri string
 --- @param path string
 --- @return require-manager.visibleResult[]
-function m.getVisiblePath(uri, path)
+function M.getVisiblePath(uri, path)
   local scp = scope.getScope(uri)
   ---@type require-manager
   local mgr = scp:get('requireManager') or scp:set('requireManager', createRequireManager(scp))
@@ -272,7 +272,7 @@ end
 --- @param name string
 --- @return string[]
 --- @return table<string, string>?
-function m.findUrisByRequireName(uri, name)
+function M.findUrisByRequireName(uri, name)
   local scp = scope.getScope(uri)
   ---@type require-manager
   local mgr = scp:get('requireManager') or scp:set('requireManager', createRequireManager(scp))
@@ -283,7 +283,7 @@ end
 --- @param uri string
 --- @param name string
 --- @return boolean
-function m.isMatchedUri(suri, uri, name)
+function M.isMatchedUri(suri, uri, name)
   local searchers = config.get(suri, 'Lua.runtime.path')
   local strict = config.get(suri, 'Lua.runtime.pathStrict')
   local separator = config.get(suri, 'Lua.completion.requireSeparator')
@@ -307,14 +307,14 @@ function m.isMatchedUri(suri, uri, name)
   return false
 end
 
-files.watch(function(ev, uri)
+files.watch(function(_ev, _uri)
   for _, scp in ipairs(workspace.folders) do
     scp:set('requireManager', nil)
   end
   scope.fallback:set('requireManager', nil)
 end)
 
-config.watch(function(uri, key, value, oldValue)
+config.watch(function(uri, key, _value, _oldValue)
   if
     key == 'Lua.completion.requireSeparator'
     or key == 'Lua.runtime.path'
@@ -325,4 +325,4 @@ config.watch(function(uri, key, value, oldValue)
   end
 end)
 
-return m
+return M

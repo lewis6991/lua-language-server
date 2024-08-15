@@ -1,7 +1,7 @@
 local gc = require('gc')
 
 --- @class scope.manager
-local m = {}
+local M = {}
 
 --- @alias scope.type '"override"'|'"folder"'|'"fallback"'
 
@@ -88,7 +88,7 @@ end
 --- @param uri string
 --- @return boolean
 function mt:isVisible(uri)
-  return self:isChildUri(uri) or self:isLinkedUri(uri) or self == m.getScope(uri)
+  return self:isChildUri(uri) or self:isLinkedUri(uri) or self == M.getScope(uri)
 end
 
 --- @param uri string
@@ -147,9 +147,9 @@ function mt:remove()
     return
   end
   self._removed = true
-  for i, scp in ipairs(m.folders) do
+  for i, scp in ipairs(M.folders) do
     if scp == self then
-      table.remove(m.folders, i)
+      table.remove(M.folders, i)
       break
     end
   end
@@ -173,31 +173,31 @@ local function createScope(scopeType)
   return scope
 end
 
-function m.reset()
+function M.reset()
   ---@type scope[]
-  m.folders = {}
-  m.override = createScope('override')
-  m.fallback = createScope('fallback')
+  M.folders = {}
+  M.override = createScope('override')
+  M.fallback = createScope('fallback')
 end
 
-m.reset()
+M.reset()
 
 --- @param uri string
 --- @return scope
-function m.createFolder(uri)
+function M.createFolder(uri)
   local scope = createScope('folder')
   scope.uri = uri
 
   local inserted = false
-  for i, otherScope in ipairs(m.folders) do
+  for i, otherScope in ipairs(M.folders) do
     if #uri > #otherScope.uri then
-      table.insert(m.folders, i, scope)
+      table.insert(M.folders, i, scope)
       inserted = true
       break
     end
   end
   if not inserted then
-    table.insert(m.folders, scope)
+    table.insert(M.folders, scope)
   end
 
   return scope
@@ -205,8 +205,8 @@ end
 
 --- @param uri string
 --- @return scope?
-function m.getFolder(uri)
-  for _, scope in ipairs(m.folders) do
+function M.getFolder(uri)
+  for _, scope in ipairs(M.folders) do
     if scope:isChildUri(uri) then
       return scope
     end
@@ -216,25 +216,25 @@ end
 
 --- @param uri string
 --- @return scope?
-function m.getLinkedScope(uri)
-  if m.override and m.override:isLinkedUri(uri) then
-    return m.override
+function M.getLinkedScope(uri)
+  if M.override and M.override:isLinkedUri(uri) then
+    return M.override
   end
-  for _, scope in ipairs(m.folders) do
+  for _, scope in ipairs(M.folders) do
     if scope:isLinkedUri(uri) then
       return scope
     end
   end
-  if m.fallback:isLinkedUri(uri) then
-    return m.fallback
+  if M.fallback:isLinkedUri(uri) then
+    return M.fallback
   end
   return nil
 end
 
 --- @param uri? string
 --- @return scope
-function m.getScope(uri)
-  return uri and (m.getFolder(uri) or m.getLinkedScope(uri)) or m.fallback
+function M.getScope(uri)
+  return uri and (M.getFolder(uri) or M.getLinkedScope(uri)) or M.fallback
 end
 
-return m
+return M

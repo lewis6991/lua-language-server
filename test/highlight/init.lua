@@ -1,148 +1,150 @@
 ---@diagnostic disable: await-in-sync
-local core  = require 'core.highlight'
-local files = require 'files'
-local catch = require 'catch'
+local core = require('core.highlight')
+local files = require('files')
+local catch = require('catch')
 
 local function founded(targets, results)
-    if #targets ~= #results then
-        return false
+  if #targets ~= #results then
+    return false
+  end
+  for _, target in ipairs(targets) do
+    for _, result in ipairs(results) do
+      if target[1] == result[1] and target[2] == result[2] then
+        goto NEXT
+      end
     end
-    for _, target in ipairs(targets) do
-        for _, result in ipairs(results) do
-            if target[1] == result[1] and target[2] == result[2] then
-                goto NEXT
-            end
-        end
-        do return false end
-        ::NEXT::
+    do
+      return false
     end
-    return true
+    ::NEXT::
+  end
+  return true
 end
 
 function TEST(script)
-    local newScript, catched = catch(script, '!')
-    files.setText(TESTURI, newScript)
-    for _, enter in ipairs(catched['!']) do
-        local start, finish = enter[1], enter[2]
-        local pos = (start + finish) // 2
-        local positions = core(TESTURI, pos)
-        assert(positions)
-        local results = {}
-        for _, position in ipairs(positions) do
-            results[#results+1] = { position.start, position.finish }
-        end
-        assert(founded(catched['!'], results))
+  local newScript, catched = catch(script, '!')
+  files.setText(TESTURI, newScript)
+  for _, enter in ipairs(catched['!']) do
+    local start, finish = enter[1], enter[2]
+    local pos = (start + finish) // 2
+    local positions = core(TESTURI, pos)
+    assert(positions)
+    local results = {}
+    for _, position in ipairs(positions) do
+      results[#results + 1] = { position.start, position.finish }
     end
-    files.remove(TESTURI)
+    assert(founded(catched['!'], results))
+  end
+  files.remove(TESTURI)
 end
 
-TEST [[
+TEST([[
 local <!a!> = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local <!a!> = 1
 <!a!> = 2
 <!a!> = <!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 t.<!a!> = 1
 a = t.<!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!a!> = <!a!>
 <!a!> = <!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 t = {
     [<!"a"!>] = 1,
     <!a!> = 1,
 }
 t[<!'a'!>] = 1
 a = t.<!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 :: <!a!> ::
 goto <!a!>
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(<!a!>)
     return <!a!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local s = <!'asd/gadasd.fad.zxczg'!>
-]]
+]])
 
-TEST [[
+TEST([[
 local b = <!true!>
-]]
+]])
 
-TEST [[
+TEST([[
 local n = <!nil!>
-]]
+]])
 
-TEST [[
+TEST([[
 local n = <!1.2354!>
-]]
+]])
 
-TEST [[
+TEST([[
 local <!function!> f () <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!function!> f () <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 return <!function!> () <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!if!> true <!then!>
 <!elseif!> true <!then!>
 <!elseif!> true <!then!>
 <!else!>
 <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!for!> _ <!in!> _ <!do!>
 <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!for!> i = 1, 10 <!do!>
 <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!while!> true <!do!>
 <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!repeat!>
 <!until!> true
-]]
+]])
 
-TEST [[
+TEST([[
 <!do!>
 <!end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!TEST1!> = 1
 TEST2 = 2
-]]
+]])
 
-TEST [[
+TEST([[
 local zing = foo
 local foo = 4
 
@@ -153,4 +155,4 @@ local bar = {
 bar.<!baz!> = 5
 
 print(bar.<!baz!>)
-]]
+]])

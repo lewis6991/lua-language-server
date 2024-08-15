@@ -65,30 +65,28 @@ vm.OP_OTHER_MAP = util.revertMap(otherMap)
 --- @return vm.node?
 local function checkOperators(operators, op, value, result)
   for _, operator in ipairs(operators) do
-    if operator.op[1] ~= op or not operator.extends then
-      goto CONTINUE
-    end
-    if value and operator.exp then
-      local valueNode = vm.compileNode(value)
-      local expNode = vm.compileNode(operator.exp)
-      local uri = guide.getUri(operator)
-      for vo in valueNode:eachObject() do
-        if vm.isSubType(uri, vo, expNode) then
-          if not result then
-            result = vm.createNode()
+    if not (operator.op[1] ~= op or not operator.extends) then
+      if value and operator.exp then
+        local valueNode = vm.compileNode(value)
+        local expNode = vm.compileNode(operator.exp)
+        local uri = guide.getUri(operator)
+        for vo in valueNode:eachObject() do
+          if vm.isSubType(uri, vo, expNode) then
+            if not result then
+              result = vm.createNode()
+            end
+            result:merge(vm.compileNode(operator.extends))
+            return result
           end
-          result:merge(vm.compileNode(operator.extends))
-          return result
         end
+      else
+        if not result then
+          result = vm.createNode()
+        end
+        result:merge(vm.compileNode(operator.extends))
+        return result
       end
-    else
-      if not result then
-        result = vm.createNode()
-      end
-      result:merge(vm.compileNode(operator.extends))
-      return result
     end
-    ::CONTINUE::
   end
   return result
 end

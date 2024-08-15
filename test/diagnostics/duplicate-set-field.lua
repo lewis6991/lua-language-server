@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 local m = {}
 
 function <!m:fff!>()
@@ -8,9 +8,9 @@ function <!m:fff!>()
 end
 
 return m
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 
 function <!m:fff!>()
@@ -22,36 +22,36 @@ do
 end
 
 return m
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 
 m.x = true
 m.x = false
 
 return m
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 
 m.x = io.open('')
 m.x = nil
 
 return m
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 X = {}
 
 function <!X.f!>() end
 
 function <!X.f!>() end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@meta
 
 ---@class A
@@ -60,9 +60,9 @@ X = {}
 function X.f() end
 
 function X.f() end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 X = {}
 
@@ -71,4 +71,4 @@ if true then
 else
     function X.f() end
 end
-]]
+]])

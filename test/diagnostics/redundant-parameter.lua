@@ -1,103 +1,103 @@
-TEST [[
+TEST([[
 local function x(a, b)
     return a, b
 end
 x(1, 2, <!3!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local function x(a, b, ...)
     return a, b, ...
 end
 x(1, 2, 3, 4, 5)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun(a, b, ...)
 local x
 x(1, 2, 3, 4, 5)
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 function m:x(a, b)
     return a, b
 end
 m:x(1, 2, <!3!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 function m:x(a, b)
     return a, b
 end
 m.x(m, 2, 3, <!4!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 function m.x(a, b)
     return a, b
 end
 m:x(1, <!2!>, <!3!>, <!4!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 function m.x()
 end
 m:x()
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(a, b)
     return a, b
 end
 f(1, 2, <!3!>, <!4!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:f(a, b)
     return a, b
 end
 mt.f(mt, 2, 3, <!4!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt.f(a, b)
     return a, b
 end
 mt:f(1, <!2!>, <!3!>, <!4!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:f(a, b)
     return a, b
 end
 mt:f(1, 2, <!3!>, <!4!>)
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(a, b, ...)
     return a, b, ...
 end
 f(1, 2, 3, 4)
-]]
+]])
 
-TEST [[
+TEST([[
 local _ = next({}, 1, <!2!>)
 print(1, 2, 3, 4, 5)
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(callback)
     callback(1, 2, 3)
 end
 f(function () end)
-]]
+]])
 
 --TEST [[
 --local realTostring = tostring
@@ -107,50 +107,50 @@ f(function () end)
 --tostring(1)
 --]]
 
-TEST [[
+TEST([[
 local f = load('')
 if f then
     f(1, 2, 3)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 function m.open()
 end
 
 m:open()
-]]
+]])
 
-TEST [[
+TEST([[
 local m = {}
 function m:open()
 end
 
 m.open(m)
-]]
+]])
 
-TEST [[
+TEST([[
 table.insert({}, 1, 2, <!3!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@overload fun(...)
 local function f() end
 
 f(1)
-]]
+]])
 
-TEST [[
+TEST([[
 function F() end
 
 ---@param x boolean
 function F(x) end
 
 F(k())
-]]
+]])
 
-TEST [[
+TEST([[
 local function f()
     return 1, 2, 3
 end
@@ -159,9 +159,9 @@ local function k()
 end
 
 k(<!f()!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@diagnostic disable: unused-local
 local function f()
     return 1, 2, 3
@@ -172,9 +172,9 @@ local function k(x)
 end
 
 k(f())
-]]
+]])
 
-TEST [[
+TEST([[
 ---@meta
 
 ---@param x fun()
@@ -186,9 +186,9 @@ local function f2()
 end
 
 f1(f2())
-]]
+]])
 
-TEST [[
+TEST([[
 ---@meta
 
 ---@type fun():integer
@@ -198,9 +198,9 @@ local f
 local function foo(x) end
 
 foo(f())
-]]
+]])
 
-TEST [[
+TEST([[
 ---@meta
 ---@diagnostic disable: duplicate-set-field
 ---@class A
@@ -211,4 +211,4 @@ function m.ff() end
 function m.ff(x) end
 
 m.ff(1)
-]]
+]])

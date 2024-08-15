@@ -1,13 +1,13 @@
-local config = require 'config'
+local config = require('config')
 
-TEST [[
+TEST([[
 local x = 123
 x = 321
 <!Y!> = "global"
 <!z!> = "global"
-]]
+]])
 
-TEST [[
+TEST([[
 local function test1()
     print()
 end
@@ -15,9 +15,9 @@ end
 function <!Test2!>()
     print()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function closure1()
     local elem1 = 1
     <!elem2!> = 2
@@ -27,29 +27,28 @@ function <!Closure2!>()
     local elem1 = 1
     <!elem2!> = 2
 end
-]]
+]])
 
 -- add elements to exemption list
-config.set(nil, 'Lua.diagnostics.globals',
-{
-    'GLOBAL1',
-    'GLOBAL2',
-    'GLOBAL_CLOSURE'
+config.set(nil, 'Lua.diagnostics.globals', {
+  'GLOBAL1',
+  'GLOBAL2',
+  'GLOBAL_CLOSURE',
 })
 
-TEST [[
+TEST([[
 GLOBAL1 = "allowed"
 <!global2!> = "not allowed"
 <!GLOBAL3!> = "not allowed"
-]]
+]])
 
-TEST [[
+TEST([[
 function GLOBAL1()
     print()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function closure1()
     local elem1 = 1
     GLOBAL1 = 2
@@ -60,4 +59,4 @@ function GLOBAL_CLOSURE()
     GLOBAL2 = 2
     <!elem2!> = 2
 end
-]]
+]])

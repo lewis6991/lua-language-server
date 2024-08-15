@@ -4,7 +4,6 @@ local await = require('await')
 local files = require('files')
 local config = require('config.config')
 local client = require('client')
-local util = require('utility')
 local furi = require('file-uri')
 local pub = require('pub')
 
@@ -192,13 +191,13 @@ function mt:isRemoved()
 end
 
 --- @class workspace.loading.manager
-local m = {}
+local M = {}
 
 --- @type table<workspace.loading, boolean>
-m._loadings = setmetatable({}, { __mode = 'k' })
+M._loadings = setmetatable({}, { __mode = 'k' })
 
 --- @return workspace.loading
-function m.create(scp)
+function M.create(scp)
   local loading = setmetatable({
     scp = scp,
     _bar = progress.create(scp.uri, lang.script('WORKSPACE_LOADING', scp.uri), 0.5),
@@ -206,15 +205,15 @@ function m.create(scp)
     _cache = {},
     _sets = {},
   }, mt)
-  m._loadings[loading] = true
+  M._loadings[loading] = true
   return loading
 end
 
-function m.count()
+function M.count()
   local num = 0
-  for ld in pairs(m._loadings) do
+  for ld in pairs(M._loadings) do
     if ld:isRemoved() then
-      m._loadings[ld] = nil
+      M._loadings[ld] = nil
     else
       num = num + 1
     end
@@ -222,4 +221,4 @@ function m.count()
   return num
 end
 
-return m
+return M

@@ -1,18 +1,18 @@
-TEST [[
+TEST([[
 local _ <close> = <!1!>
-]]
+]])
 
-TEST [[
+TEST([[
 local _ <close> = <!''!>
-]]
+]])
 
-TEST [[
+TEST([[
 local c <close> = <!(function () return 1 end)()!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type unknown
 local t
 
 local _ <close> = t
-]]
+]])

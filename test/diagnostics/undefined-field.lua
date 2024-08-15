@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 ---@class Foo
 ---@field field1 integer
 local mt = {}
@@ -38,10 +38,10 @@ print(v3.abc)
 local mt3
 function mt3:method() return 1 end
 print(mt3:method())
-]]
+]])
 
 -- checkUndefinedField 通过type找到class
-TEST [[
+TEST([[
 ---@class Foo
 local Foo
 function Foo:method1() end
@@ -50,10 +50,10 @@ function Foo:method1() end
 local v
 v:method1()
 v:<!method2!>() -- doc.class.name
-]]
+]])
 
 -- checkUndefinedField 通过type找到class，涉及到 class 继承版
-TEST [[
+TEST([[
 ---@class Foo
 local Foo
 function Foo:method1() end
@@ -66,27 +66,27 @@ local v
 v:method1()
 v:<!method2!>() -- doc.class.name
 v:method3()
-]]
+]])
 
 -- checkUndefinedField 类名和类变量同名，类变量被直接使用
-TEST [[
+TEST([[
 ---@class Foo
 local Foo
 function Foo:method1() end
 Foo:<!method2!>() -- doc.class
 Foo:<!method2!>() -- doc.class
-]]
+]])
 
 -- checkUndefinedField 没有@class的不检测
-TEST [[
+TEST([[
 local Foo
 function Foo:method1()
     return Foo:method2() -- table
 end
-]]
+]])
 
 -- checkUndefinedField 类名和类变量不同名，类变量被直接使用、使用self
-TEST [[
+TEST([[
 ---@class Foo
 local mt
 function mt:method1()
@@ -94,10 +94,10 @@ function mt:method1()
     self:method1()
     return self.<!method2!>() -- doc.class.name
 end
-]]
+]])
 
 -- checkUndefinedField 当会推导成多个class类型时
-TEST [[
+TEST([[
 ---@class Foo
 local mt
 function mt:method1() end
@@ -113,36 +113,36 @@ local v2
 v2 = v
 v2:method1()
 v2:<!method2!>()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type table
 T1 = {}
 print(T1.f1)
 ---@type tablelib
 T2 = {}
 print(T2.<!f2!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string|table
 local n
 
 print(n.x)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type 'x'
 local t
 
 local n = t:upper()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias A 'x'
 
 ---@type A
 local t
 
 local n = t:upper()
-]]
+]])

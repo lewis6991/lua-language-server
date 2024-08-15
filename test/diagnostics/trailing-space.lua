@@ -1,32 +1,32 @@
-TEST [[
+TEST([[
 <!    !>
-]]
+]])
 
-TEST [[
+TEST([[
 
 <!    !>
-]]
+]])
 
-TEST [[
+TEST([[
 X = 1<!  !>
-]]
+]])
 
-TEST [[
+TEST([[
 X = [=[  
     ]=]
-]]
+]])
 
-TEST [[
+TEST([[
 -- xxxx  
-]]
+]])
 
-TEST [[
+TEST([[
 -- [=[  
    ]=]
-]]
+]])
 
-TEST [=[
+TEST([=[
 return [[   
     
 ]]
-]=]
+]=])

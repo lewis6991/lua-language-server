@@ -1,16 +1,16 @@
-TEST [[
+TEST([[
 ---@field <!x Class!>
 ---@class Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@field <!x Class!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 ---
 ---@field x Class
-]]
+]])

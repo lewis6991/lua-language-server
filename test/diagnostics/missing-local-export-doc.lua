@@ -1,5 +1,5 @@
 -- check global functions
-TEST [[
+TEST([[
 local mod = {}
 
 local <!function fl0()
@@ -18,9 +18,9 @@ end
 mod.fl0 = fl0
 mod.fl1 = fl1
 return mod
-]]
+]])
 
-TEST [[
+TEST([[
 local mod = {}
   
 local function flp0(<!p!>)
@@ -41,9 +41,9 @@ end
 mod.flp0 = flp0
 mod.flp1 = flp1
 return mod
-]]
+]])
 
-TEST [[
+TEST([[
 local mod = {}
 
 local function flpp0(<!p0!>, <!p1!>)
@@ -73,9 +73,9 @@ mod.flpp1 = flpp1
 mod.flpp2 = flpp2
 mod.flpp3 = flpp3
 return mod
-]]
+]])
 
-TEST [[
+TEST([[
 local mod = {}
 
 local function flr0()
@@ -97,9 +97,9 @@ mod.flr0 = flr0
 mod.flr1 = flr1
 mod.flr2 = flr2
 return mod
-]]
+]])
 
-TEST [[
+TEST([[
 local mod = {}
 
 local function flrr0()
@@ -128,9 +128,9 @@ mod.flrr0 = flrr0
 mod.flrr1 = flrr1
 mod.flrr2 = flrr2
 return mod
-]]
+]])
 
-TEST [[
+TEST([[
 local mod = {}
 
 local function flpr0(<!p!>)
@@ -172,4 +172,4 @@ mod.flpr2 = flpr2
 mod.flpr3 = flpr3
 mod.flpr4 = flpr4
 return mod
-]]
+]])

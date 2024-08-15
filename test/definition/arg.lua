@@ -1,19 +1,19 @@
-TEST [[
+TEST([[
 local function xx (<!xx!>)
     <?xx?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!mt!>
 function mt:x()
     <?self?>()
 end
 mt:x()
-]]
+]])
 
-TEST [[
+TEST([[
 function mt:x(<!self!>)
     <?self?>()
 end
-]]
+]])

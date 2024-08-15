@@ -1,6 +1,6 @@
-require 'crossfile.definition'
-require 'crossfile.infer'
-require 'crossfile.references'
-require 'crossfile.hover'
-require 'crossfile.completion'
-require 'crossfile.diagnostic'
+require('crossfile.definition')
+require('crossfile.infer')
+require('crossfile.references')
+require('crossfile.hover')
+require('crossfile.completion')
+require('crossfile.diagnostic')

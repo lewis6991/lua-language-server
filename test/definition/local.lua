@@ -1,61 +1,61 @@
-TEST [[
+TEST([[
 local <!x!>
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local z, y, <!x!>
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!> = 1
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local z, y, <!x!> = 1
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 local <!x!>
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 do
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 do
     local x
 end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 if <?x?> then
     local x
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 if x then
     local x
 elseif <?x?> then
     local x
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 if x then
     local x
@@ -65,9 +65,9 @@ else
     local x
 end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 if x then
     <?x?>()
@@ -76,120 +76,120 @@ elseif x then
 else
     local x
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 for x = 1, 10 do
 end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 for <!x!> = 1, 10 do
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 for x in x do
 end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 for x in <?x?> do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 for <!x!> in x do
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 for z, y, <!x!> in x do
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 while <?x?> do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 while x do
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 while x do
     local x
 end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 repeat
     <?x?>()
 until true
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 repeat
     local x
 until true
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 repeat
 until <?x?>
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 repeat
     local <!x!>
 until <?x?>
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 function _()
     local x
 end
 <?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 return function ()
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 local x = function ()
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <?<!x!>?>
-]]
+]])

@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 ---@param cb fun()
 local function f(cb)
     return cb
@@ -10,9 +10,9 @@ local function af()
 end
 
 f(<!af!>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param cb async fun()
 local function f(cb)
     return cb
@@ -24,9 +24,9 @@ local function af()
 end
 
 f(af)
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(cb)
     cb()
 end
@@ -39,10 +39,10 @@ local function af()
 end
 
 return af
-]]
+]])
 
-TEST [[
+TEST([[
 local _ = type(function () ---@async
     return nil
 end)
-]]
+]])

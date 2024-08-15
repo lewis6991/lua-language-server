@@ -1,32 +1,32 @@
-TEST [[
+TEST([[
 <!if true then
 end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!if true then
 else
 end!>
-]]
+]])
 
-TEST [[
+TEST([[
 if true then
 else
     return
 end
-]]
+]])
 
-TEST [[
+TEST([[
 while true do
 end
-]]
+]])
 
-TEST [[
+TEST([[
 <!for _ = 1, 10 do
 end!>
-]]
+]])
 
-TEST [[
+TEST([[
 <!for _ in pairs({}) do
 end!>
-]]
+]])

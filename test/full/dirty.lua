@@ -1,15 +1,15 @@
-TEST [[
+TEST([[
 a.
-]]
+]])
 
-TEST [[
+TEST([[
 a:
-]]
+]])
 
-TEST [[
+TEST([[
 end
-]]
+]])
 
-TEST [[
+TEST([[
 table.02X
-]]
+]])

@@ -1,28 +1,28 @@
-local config = require "config"
+local config = require('config')
 
-TEST [[
+TEST([[
 local <!x!>
 function _(x)
 end
 function _()
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 function _(<!x!>)
     do return end
     <?x?>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!a!>
 function a:b()
     a:b()
     <?self?>()
 end
-]]
+]])
 
 --TEST [[
 --function _(...)
@@ -32,85 +32,85 @@ end
 --end
 --]]
 
-TEST [[
+TEST([[
 local <!a!>
 (<?a?> / b)()
-]]
+]])
 
-TEST [[
+TEST([[
 local <!args!>
 io.load(root / <?args?>.source / 'API' / path)
-]]
+]])
 
-TEST [[
+TEST([[
 obj[#<?obj?>+1] = {}
-]]
+]])
 
-TEST [[
+TEST([[
 self = {
     <!results!> = {}
 }
 self[self.<?results?>] = lbl
-]]
+]])
 
-TEST [[
+TEST([[
 self = {
     results = {
         <!labels!> = {},
     }
 }
 self[self.results.<?labels?>] = lbl
-]]
+]])
 
-TEST [[
+TEST([[
 self.results = {
     <!labels!> = {},
 }
 self[self.results.<?labels?>] = lbl
-]]
+]])
 
-TEST [[
+TEST([[
 self.results.<!labels!> = {}
 self[self.results.<?labels?>] = lbl
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:<!x!>()
 end
 mt:x()
 mt:<?x?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local function func(<!a!>)
     x = {
         xx(),
         <?a?>,
     }
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local <!x!>
 local t = {
     ...,
     <?x?>,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local a
 local <!b!>
 return f(), <?b?>
-]]
+]])
 
-TEST [[
+TEST([[
 local a = os.clock()
 local <?<!b!>?> = os.clock()
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 
 function mt:<!add!>(a, b)
@@ -122,9 +122,9 @@ end
 
 local t = init()
 t:<?add?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 mt.__index = mt
 
@@ -137,30 +137,30 @@ end
 
 local t = init()
 t:<?add?>()
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {}
 t.f1 = 1
 t.<!f2!> = t.f1
 
 print(t.<?f2?>)
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {}
 t.f1 = 1
 t.<!f2!> = t.f1
 t.f1 = t.f2
 
 print(t.<?f2?>)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string
 string.xx = ''
 string.xx:<?format?>()
-]]
+]])
 
 --TEST [[
 -----@class Foo
@@ -179,7 +179,7 @@ string.xx:<?format?>()
 --v.<?bar1?>
 --]]
 
-TEST [[
+TEST([[
 local A, B
 
 function A:get1()
@@ -237,24 +237,24 @@ end
 
 local <!b!> = B:get()
 print(<?b?>)
-]]
+]])
 
-TEST [[
+TEST([[
 g[a.b.c] = 1
 print(g.<?x?>)
-]]
+]])
 
-TEST [[
+TEST([[
 local function f()
     return ''
 end
 
 local <?<!s!>?> = ''
-]]
+]])
 
-TEST [[
+TEST([[
 local t, a
 local <!v!> = t[a]
 
 t[a] = <?v?>
-]]
+]])

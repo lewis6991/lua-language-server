@@ -1,6 +1,6 @@
-local config = require 'config'
+local config = require('config')
 
-TEST [[
+TEST([[
 ---@class A
 local a = {}
 a.<~x~> = 1
@@ -10,9 +10,9 @@ local function f() end
 
 local b = f()
 return b.<!x!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local a = {}
 a.<~x~> = 1
@@ -23,21 +23,21 @@ local function f() end
 
 local a, b = f()
 return a.x, b.<!x!>
-]]
+]])
 
-TEST [[
+TEST([[
 local <~mt~> = {}
 function <!mt!>:x()
     self:x()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 function mt:<~x~>()
     self:<!x!>()
 end
-]]
+]])
 
 --TEST [[
 -----@class Dog
@@ -81,15 +81,15 @@ local _, <!f2!> = f()
 ]]
 ]=]
 
-TEST [[
+TEST([[
 ---@class A
 local t
 
 ---@class B: A
 local <~v~>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Dog
 local Dog = {}
 function Dog:<~eat~>()
@@ -104,9 +104,9 @@ end
 
 local v1 = foobar(Dog)
 v1:<!eat!>()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Dog
 local Dog = {}
 function Dog:<~eat~>()
@@ -125,9 +125,9 @@ end
 
 local v1 = Master:foobar("", Dog)
 v1.<!eat!>()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 A = {}
 
@@ -138,4 +138,4 @@ end
 function TestB(param)
     param:<!TestA!>()
 end
-]]
+]])

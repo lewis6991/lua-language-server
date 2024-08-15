@@ -1,15 +1,15 @@
-TEST [[
+TEST([[
 ---@alias <!A!> integer
 ---@alias <!A!> integer
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@class B
 ---@alias <!A!> B
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias A integer
 ---@alias(partial) A integer
 
@@ -18,4 +18,4 @@ TEST [[
 
 ---@enum(key) C
 ---@enum(key, partial) C
-]]
+]])

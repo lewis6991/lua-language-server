@@ -1,111 +1,111 @@
-TEST [[
+TEST([[
 local x = 0
 
 <!x!> = true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type integer
 local x
 
 <!x!> = true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type unknown
 local x
 
 x = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type unknown
 local x
 
 x = 1
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type unknown|nil
 local x
 
 x = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local x = {}
 
 x = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string
 local x
 
 <?x?> = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string?
 local x
 
 x = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type table
 local x
 
 <!x!> = nil
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 
 x = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type integer
 local x
 
 ---@type number
 <!x!> = f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number
 local x
 
 ---@type integer
 x = f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number|boolean
 local x
 
 ---@type string
 <!x!> = f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number|boolean
 local x
 
 ---@type boolean
 x = f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number|boolean
 local x
 
 ---@type boolean|string
 <!x!> = f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type boolean
 local x
 
@@ -114,9 +114,9 @@ if not x then
 end
 
 x = f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type boolean
 local x
 
@@ -124,30 +124,30 @@ local x
 local y
 
 <!x!> = y
-]]
+]])
 
-TEST [[
+TEST([[
 local y = true
 
 local x
 x = 1
 x = y
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {}
 
 local x = 0
 x = x + #t
-]]
+]])
 
-TEST [[
+TEST([[
 local x = 0
 
 x = 1.0
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 
 local t = {}
@@ -156,37 +156,37 @@ local t = {}
 local a
 
 t = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type integer
 local x
 
 x = 1.0
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type integer
 local x
 
 <!x!> = 1.5
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type integer
 local x
 
 x = 1 + G
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type integer
 local x
 
 x = 1 + G
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias A integer
 
 ---@type A
@@ -196,43 +196,43 @@ local a
 local b
 
 b = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string[]
 local t
 
 <!t!> = 'xxx'
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type 1|2
 local x
 
 x = 1
 x = 2
 <!x!> = 3
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type 'x'|'y'
 local x
 
 x = 'x'
 x = 'y'
 <!x!> = 'z'
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {
     x = 1,
 }
 
 local x
 t[x] = true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type table<string, string>
 local x
 
@@ -240,9 +240,9 @@ local x
 local y
 
 <!x!> = y
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type table<string, string>
 local x
 
@@ -250,9 +250,9 @@ local x
 local y
 
 <!x!> = y
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type table<string, string>
 local x
 
@@ -260,9 +260,9 @@ local x
 local y
 
 x = y
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type { x: number, y: number }
 local t1
 
@@ -270,9 +270,9 @@ local t1
 local t2
 
 <!t1!> = t2
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type { x: number, [integer]: number }
 local t1
 
@@ -280,9 +280,9 @@ local t1
 local t2
 
 <!t1!> = t2
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 
 if X then
@@ -296,24 +296,22 @@ end
 local y = x
 
 <!y!> = nil
-]]
-(function (diags)
-    local diag = diags[1]
-    assert(diag.message == [[
+]])(function(diags)
+  local diag = diags[1]
+  assert(diag.message == [[
 已显式定义变量的类型为 `string` ，不能再将其类型转换为 `nil`。
 - `nil` 无法匹配 `string`
 - 类型 `nil` 无法匹配 `string`]])
 end)
 
-TEST [[
+TEST([[
 ---@type 'A'|'B'|'C'|'D'|'E'|'F'|'G'|'H'|'I'|'J'|'K'|'L'|'M'|'N'|'O'|'P'|'Q'|'R'|'S'|'T'|'U'|'V'|'W'|'X'|'Y'|'Z'
 local x
 
 <!x!> = nil
-]]
-(function (diags)
-    local diag = diags[1]
-    assert(diag.message == [[
+]])(function(diags)
+  local diag = diags[1]
+  assert(diag.message == [[
 已显式定义变量的类型为 `'A'|'B'|'C'|'D'|'E'...(+21)` ，不能再将其类型转换为 `nil`。
 - `nil` 无法匹配 `'A'|'B'|'C'|'D'|'E'...(+21)`
 - `nil` 无法匹配 `'A'|'B'|'C'|'D'|'E'...(+21)` 中的任何子类
@@ -333,7 +331,7 @@ local x
 - 类型 `nil` 无法匹配 `'A'`]])
 end)
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y number
@@ -343,9 +341,9 @@ local a = {x = "", y = 0}
 ---@type A
 local v
 v = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y number
@@ -355,9 +353,9 @@ local a = {x = ""}
 ---@type A
 local v
 <!v!> = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y number
@@ -367,9 +365,9 @@ local a = {x = "", y = ""}
 ---@type A
 local v
 <!v!> = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y? B
@@ -382,9 +380,9 @@ local a = {x = "b", y = {x = "c"}}
 ---@type A
 local v
 v = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 ---@field y B
@@ -397,4 +395,4 @@ local a = {x = "b", y = {}}
 ---@type A
 local v
 <!v!> = a
-]]
+]])

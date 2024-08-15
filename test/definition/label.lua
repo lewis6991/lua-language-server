@@ -1,29 +1,29 @@
-TEST [[
+TEST([[
 ::<!LABEL!>::
 goto <?LABEL?>
-]]
+]])
 
-TEST [[
+TEST([[
 goto <?LABEL?>
 ::<!LABEL!>::
-]]
+]])
 
-TEST [[
+TEST([[
 ::LABEL::
 function _()
     goto <?LABEL?>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 do
     goto <?LABEL?>
 end
 ::<!LABEL!>::
-]]
+]])
 
-TEST [[
+TEST([[
 ::LABEL::
 goto <?LABEL?>
 ::<!LABEL!>::
-]]
+]])

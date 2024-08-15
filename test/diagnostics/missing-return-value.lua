@@ -1,34 +1,34 @@
-TEST [[
+TEST([[
 ---@type fun():number
 local function f()
     <!return!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number
 function F()
     <!return!>
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number, number
 function F()
     <!return!> 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number, number?
 function F()
     return 1
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return ...
 function F()
     return
 end
-]]
+]])

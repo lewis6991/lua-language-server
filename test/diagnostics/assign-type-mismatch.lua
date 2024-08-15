@@ -1,13 +1,13 @@
-local config = require 'config'
+local config = require('config')
 
-TEST [[
+TEST([[
 local m = {}
 
 ---@type integer[]
 m.ints = {}
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x A
 
@@ -15,9 +15,9 @@ TEST [[
 local t
 
 t.x = {}
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x integer
 
@@ -25,9 +25,9 @@ TEST [[
 local t
 
 <!t.x!> = true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x integer
 
@@ -38,9 +38,9 @@ local t
 local y
 
 <!t.x!> = y
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local m
 
@@ -50,9 +50,9 @@ m.x = 1
 local t
 
 <!t.x!> = true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local m
 
@@ -60,9 +60,9 @@ local m
 m.x = 1
 
 <!m.x!> = true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local mt
 
@@ -72,9 +72,9 @@ mt.x = 1
 function mt:init()
     <!self.x!> = true
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x integer
 
@@ -82,52 +82,52 @@ TEST [[
 local t = {
     <!x!> = true
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type boolean[]
 local t = {}
 
 t[5] = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type table<string, true>
 local t = {}
 
 t['x'] = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type [boolean]
 local t = { <![1]!> = nil }
 
 t = nil
-]]
+]])
 
-TEST [[
+TEST([[
 local t = { true }
 
 t[1] = nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local t = {
     x = 1
 }
 
 <!t.x!> = true
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number
 local t
 
 t = 1
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number
 local t
 
@@ -135,9 +135,9 @@ local t
 local y
 
 t = y
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local m
 
@@ -145,9 +145,9 @@ local m
 m.x = 1
 
 <!m.x!> = {}
-]]
+]])
 
-TEST [[
+TEST([[
 local n
 
 if G then
@@ -159,9 +159,9 @@ end
 local t = {
     x = n,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type boolean[]
 local t = {}
 
@@ -169,29 +169,29 @@ local t = {}
 local x
 
 t[#t+1] = x
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number
 local n
 ---@type integer
 local i
 
 <?i?> = n
-]]
+]])
 
 config.set(nil, 'Lua.type.castNumberToInteger', true)
-TEST [[
+TEST([[
 ---@type number
 local n
 ---@type integer
 local i
 
 i = n
-]]
+]])
 
 config.set(nil, 'Lua.type.castNumberToInteger', false)
-TEST [[
+TEST([[
 ---@type number|boolean
 local nb
 
@@ -199,10 +199,10 @@ local nb
 local n
 
 <?n?> = nb
-]]
+]])
 
 config.set(nil, 'Lua.type.weakUnionCheck', true)
-TEST [[
+TEST([[
 ---@type number|boolean
 local nb
 
@@ -210,10 +210,10 @@ local nb
 local n
 
 n = nb
-]]
+]])
 
 config.set(nil, 'Lua.type.weakUnionCheck', false)
-TEST [[
+TEST([[
 ---@class Option: string
 
 ---@param x Option
@@ -223,14 +223,14 @@ local function f(x) end
 local x = 'aaa'
 
 f(x)
-]]
+]])
 config.set(nil, 'Lua.type.weakUnionCheck', true)
 
-TEST [[
+TEST([[
 ---@type number
 local <!x!> = 'aaa'
-]]
-TEST [[
+]])
+TEST([[
 ---@class X
 
 ---@class A
@@ -238,11 +238,11 @@ local mt = G
 
 ---@type X
 mt._x = nil
-]]
+]])
 config.set(nil, 'Lua.type.weakUnionCheck', false)
 
 config.set(nil, 'Lua.type.weakNilCheck', true)
-TEST [[
+TEST([[
 ---@type number?
 local nb
 
@@ -250,9 +250,9 @@ local nb
 local n
 
 n = nb
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type number|nil
 local nb
 
@@ -260,51 +260,51 @@ local nb
 local n
 
 n = nb
-]]
+]])
 config.set(nil, 'Lua.type.weakNilCheck', false)
 
-TEST [[
+TEST([[
 ---@class A
 local a = {}
 
 ---@class B
 local <!b!> = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local a = {}
 
 ---@class B: A
 local b = a
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local a = {}
 a.__index = a
 
 ---@class B: A
 local b = setmetatable({}, a)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local a = {}
 
 ---@class B: A
 local b = setmetatable({}, {__index = a})
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local a = {}
 
 ---@class B
 local <!b!> = setmetatable({}, {__index = a})
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x number?
 local a
@@ -314,9 +314,9 @@ local a
 local b
 
 b.x = a.x
-]]
+]])
 
-TEST [[
+TEST([[
 
 ---@class A
 ---@field x number?
@@ -326,39 +326,38 @@ local a
 local t
 
 t = a.x
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 mt.x = 1
 mt.x = nil
-]]
+]])
 
 config.set(nil, 'Lua.type.weakUnionCheck', true)
-TEST [[
+TEST([[
 ---@type number
 local x = G
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic T
 ---@param x T
 ---@return T
 local function f(x)
     return x
 end
-]]
+]])
 config.set(nil, 'Lua.type.weakUnionCheck', false)
 
-
-TEST [[
+TEST([[
 ---@alias test boolean
 
 ---@type test
 local <!test!> = 4
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class MyClass
 local MyClass = {}
 
@@ -370,45 +369,45 @@ function MyClass:new()
 
     print(myObject.initialField)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class T
 local t = {
     x = nil
 }
 
 t.x = 1
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type {[1]: string, [10]: number, xx: boolean}
 local t = {
     <!true!>,
     <![10]!> = 's',
     <!xx!> = 1,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type boolean[]
 local t = { <!1!>, <!2!>, <!3!> }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type boolean[]
 local t = { true, false, nil }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type boolean|nil
 local x
 
 ---@type boolean[]
 local t = { true, false, x }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@enum Enum
 local t = {
     x = 1,
@@ -420,14 +419,14 @@ local y
 
 ---@type integer
 local x = y
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string|string[]|string[][]
 local t = {{'a'}}
-]]
+]])
 
-TEST [[
+TEST([[
 local A = "Hello"
 local B = "World"
 
@@ -435,9 +434,9 @@ local B = "World"
 
 ---@type myLiteralAliases
 local x = A
-]]
+]])
 
-TEST [[
+TEST([[
 local enum = { a = 1, b = 2 }
 
 ---@type { [integer] : boolean }
@@ -446,9 +445,9 @@ local t = {
     <![enum.b]!> = 2,
     <![3]!> = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class SomeClass
 ---@field [1] string
 -- ...
@@ -457,25 +456,25 @@ TEST [[
 local function some_fn(some_param) return end
 
 some_fn { { "test" } } -- <- diagnostic: "Cannot assign `table` to `string`."
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string[]
 local arr = {
     <!3!>,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type (string|boolean)[]
 local arr2 = {
     <!3!>, -- no warnings
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {}
 t.a = 1
 t.a = 2
 return t
-]]
+]])

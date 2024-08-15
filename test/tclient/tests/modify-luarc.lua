@@ -1,377 +1,407 @@
-local lclient  = require 'lclient'
-local util     = require 'utility'
-local ws       = require 'workspace'
-local jsonc    = require 'jsonc'
-local jsonb    = require 'json-beautify'
-local client   = require 'client'
-local provider = require 'provider'
-local json     = require 'json'
-local config   = require 'config'
+local lclient = require('lclient')
+local util = require('utility')
+local ws = require('workspace')
+local jsonc = require('jsonc')
+local jsonb = require('json-beautify')
+local client = require('client')
+local provider = require('provider')
+local json = require('json')
+local config = require('config')
 
 local configPath = LOGPATH .. '/modify-luarc.json'
 
 ---@async
-lclient():start(function (languageClient)
-    languageClient:registerFakers()
+lclient():start(function(languageClient)
+  languageClient:registerFakers()
 
-    CONFIGPATH = configPath
+  CONFIGPATH = configPath
 
-    languageClient:initialize()
+  languageClient:initialize()
 
-    ws.awaitReady()
+  ws.awaitReady()
 
-    -------------------------------
+  -------------------------------
 
-    util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
+  util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
 
-    provider.updateConfig()
+  provider.updateConfig()
 
-    client.setConfig({
-        {
-            action = 'set',
-            key    = 'Lua.runtime.version',
-            value  = 'LuaJIT',
-        }
+  client.setConfig({
+    {
+      action = 'set',
+      key = 'Lua.runtime.version',
+      value = 'LuaJIT',
+    },
+  })
+
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['runtime.version'] = 'LuaJIT',
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      ['Lua.runtime.version'] = json.null,
     })
+  )
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['runtime.version'] = 'LuaJIT',
-    }))
+  provider.updateConfig()
 
-    -------------------------------
+  client.setConfig({
+    {
+      action = 'set',
+      key = 'Lua.runtime.version',
+      value = 'LuaJIT',
+    },
+  })
 
-    util.saveFile(configPath, jsonb.beautify {
-        ['Lua.runtime.version'] = json.null,
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['Lua.runtime.version'] = 'LuaJIT',
+  }))
+
+  -------------------------------
+
+  util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
+
+  provider.updateConfig()
+
+  client.setConfig({
+    {
+      action = 'add',
+      key = 'Lua.diagnostics.disable',
+      value = 'undefined-global',
+    },
+  })
+
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['diagnostics.disable'] = {
+      'undefined-global',
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      ['Lua.diagnostics.disable'] = {},
     })
+  )
 
-    provider.updateConfig()
+  provider.updateConfig()
 
-    client.setConfig({
-        {
-            action = 'set',
-            key    = 'Lua.runtime.version',
-            value  = 'LuaJIT',
-        }
+  client.setConfig({
+    {
+      action = 'add',
+      key = 'Lua.diagnostics.disable',
+      value = 'undefined-global',
+    },
+  })
+
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['Lua.diagnostics.disable'] = {
+      'undefined-global',
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      ['Lua.diagnostics.disable'] = {
+        'unused-local',
+      },
     })
+  )
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['Lua.runtime.version'] = 'LuaJIT',
-    }))
+  provider.updateConfig()
 
-    -------------------------------
+  client.setConfig({
+    {
+      action = 'add',
+      key = 'Lua.diagnostics.disable',
+      value = 'undefined-global',
+    },
+  })
 
-    util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['Lua.diagnostics.disable'] = {
+      'unused-local',
+      'undefined-global',
+    },
+  }))
 
-    provider.updateConfig()
+  -------------------------------
 
-    client.setConfig({
-        {
-            action = 'add',
-            key    = 'Lua.diagnostics.disable',
-            value  = 'undefined-global',
-        }
+  util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
+
+  provider.updateConfig()
+
+  client.setConfig({
+    {
+      action = 'prop',
+      key = 'Lua.runtime.special',
+      prop = 'include',
+      value = 'require',
+    },
+  })
+
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['runtime.special'] = {
+      ['include'] = 'require',
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      ['Lua.runtime.special'] = json.createEmptyObject(),
     })
+  )
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['diagnostics.disable'] = {
-            'undefined-global',
-        }
-    }))
+  provider.updateConfig()
 
-    -------------------------------
+  client.setConfig({
+    {
+      action = 'prop',
+      key = 'Lua.runtime.special',
+      prop = 'include',
+      value = 'require',
+    },
+  })
 
-    util.saveFile(configPath, jsonb.beautify {
-        ['Lua.diagnostics.disable'] = {}
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['Lua.runtime.special'] = {
+      ['include'] = 'require',
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      ['Lua.runtime.special'] = {
+        ['import'] = 'require',
+      },
     })
+  )
 
-    provider.updateConfig()
+  provider.updateConfig()
 
-    client.setConfig({
-        {
-            action = 'add',
-            key    = 'Lua.diagnostics.disable',
-            value  = 'undefined-global',
-        }
+  client.setConfig({
+    {
+      action = 'prop',
+      key = 'Lua.runtime.special',
+      prop = 'include',
+      value = 'require',
+    },
+  })
+
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['Lua.runtime.special'] = {
+      ['import'] = 'require',
+      ['include'] = 'require',
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      ['runtime.version'] = json.null,
     })
+  )
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['Lua.diagnostics.disable'] = {
-            'undefined-global',
-        }
-    }))
+  provider.updateConfig()
 
-    -------------------------------
+  client.setConfig({
+    {
+      action = 'set',
+      key = 'Lua.runtime.version',
+      value = 'LuaJIT',
+    },
+  })
 
-    util.saveFile(configPath, jsonb.beautify {
-        ['Lua.diagnostics.disable'] = {
-            'unused-local'
-        }
-    })
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['runtime.version'] = 'LuaJIT',
+  }))
 
-    provider.updateConfig()
+  -------------------------------
 
-    client.setConfig({
-        {
-            action = 'add',
-            key    = 'Lua.diagnostics.disable',
-            value  = 'undefined-global',
-        }
-    })
-
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['Lua.diagnostics.disable'] = {
-            'unused-local',
-            'undefined-global',
-        }
-    }))
-
-    -------------------------------
-
-    util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
-
-    provider.updateConfig()
-
-    client.setConfig({
-        {
-            action = 'prop',
-            key    = 'Lua.runtime.special',
-            prop   = 'include',
-            value  = 'require',
-        }
-    })
-
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['runtime.special'] = {
-            ['include'] = 'require',
-        }
-    }))
-
-    -------------------------------
-
-    util.saveFile(configPath, jsonb.beautify {
-        ['Lua.runtime.special'] = json.createEmptyObject()
-    })
-
-    provider.updateConfig()
-
-    client.setConfig({
-        {
-            action = 'prop',
-            key    = 'Lua.runtime.special',
-            prop   = 'include',
-            value  = 'require',
-        }
-    })
-
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['Lua.runtime.special'] = {
-            ['include'] = 'require',
-        }
-    }))
-
-    -------------------------------
-
-    util.saveFile(configPath, jsonb.beautify {
-        ['Lua.runtime.special'] = {
-            ['import'] = 'require',
-        }
-    })
-
-    provider.updateConfig()
-
-    client.setConfig({
-        {
-            action = 'prop',
-            key    = 'Lua.runtime.special',
-            prop   = 'include',
-            value  = 'require',
-        }
-    })
-
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['Lua.runtime.special'] = {
-            ['import']  = 'require',
-            ['include'] = 'require',
-        }
-    }))
-
-    -------------------------------
-
-    util.saveFile(configPath, jsonb.beautify {
-        ['runtime.version'] = json.null,
-    })
-
-    provider.updateConfig()
-
-    client.setConfig({
-        {
-            action = 'set',
-            key    = 'Lua.runtime.version',
-            value  = 'LuaJIT',
-        }
-    })
-
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['runtime.version'] = 'LuaJIT',
-    }))
-
-    -------------------------------
-
-    util.saveFile(configPath, jsonb.beautify {
-        Lua = {
-            runtime = {
-                version = json.null,
-            }
-        }
-    })
-
-    provider.updateConfig()
-
-    client.setConfig({
-        {
-            action = 'set',
-            key    = 'Lua.runtime.version',
-            value  = 'LuaJIT',
-        }
-    })
-
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        Lua = {
-            runtime = {
-                version = 'LuaJIT',
-            }
-        }
-    }))
-
-    -------------------------------
-
-    util.saveFile(configPath, jsonb.beautify {
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      Lua = {
         runtime = {
-            version = json.null,
-        }
+          version = json.null,
+        },
+      },
     })
+  )
 
-    provider.updateConfig()
+  provider.updateConfig()
 
-    client.setConfig({
-        {
-            action = 'set',
-            key    = 'Lua.runtime.version',
-            value  = 'LuaJIT',
-        }
+  client.setConfig({
+    {
+      action = 'set',
+      key = 'Lua.runtime.version',
+      value = 'LuaJIT',
+    },
+  })
+
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    Lua = {
+      runtime = {
+        version = 'LuaJIT',
+      },
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      runtime = {
+        version = json.null,
+      },
     })
+  )
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        runtime = {
-            version = 'LuaJIT',
-        }
-    }))
+  provider.updateConfig()
 
-    -------------------------------
+  client.setConfig({
+    {
+      action = 'set',
+      key = 'Lua.runtime.version',
+      value = 'LuaJIT',
+    },
+  })
 
-    util.saveFile(configPath, jsonb.beautify {
-        diagnostics = {
-            disable = {
-                'unused-local',
-            }
-        }
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    runtime = {
+      version = 'LuaJIT',
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      diagnostics = {
+        disable = {
+          'unused-local',
+        },
+      },
     })
+  )
 
-    provider.updateConfig()
+  provider.updateConfig()
 
-    client.setConfig({
-        {
-            action = 'add',
-            key    = 'Lua.diagnostics.disable',
-            value  = 'undefined-global',
-        }
+  client.setConfig({
+    {
+      action = 'add',
+      key = 'Lua.diagnostics.disable',
+      value = 'undefined-global',
+    },
+  })
+
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    diagnostics = {
+      disable = {
+        'unused-local',
+        'undefined-global',
+      },
+    },
+  }))
+
+  -------------------------------
+
+  util.saveFile(
+    configPath,
+    jsonb.beautify({
+      runtime = {
+        special = {
+          import = 'require',
+        },
+      },
     })
+  )
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        diagnostics = {
-            disable = {
-                'unused-local',
-                'undefined-global',
-            }
-        }
-    }))
+  provider.updateConfig()
 
-    -------------------------------
+  client.setConfig({
+    {
+      action = 'prop',
+      key = 'Lua.runtime.special',
+      prop = 'include',
+      value = 'require',
+    },
+  })
 
-    util.saveFile(configPath, jsonb.beautify {
-        runtime = {
-            special = {
-                import = 'require',
-            }
-        }
-    })
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    runtime = {
+      special = {
+        import = 'require',
+        include = 'require',
+      },
+    },
+  }))
 
-    provider.updateConfig()
+  -------------------------------
+  -- merrge other configs --
+  -------------------------------
 
-    client.setConfig({
-        {
-            action = 'prop',
-            key    = 'Lua.runtime.special',
-            prop   = 'include',
-            value  = 'require',
-        }
-    })
+  util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        runtime = {
-            special = {
-                import  = 'require',
-                include = 'require',
-            }
-        }
-    }))
+  provider.updateConfig()
 
-    -------------------------------
-    -- merrge other configs --
-    -------------------------------
+  config.add(nil, 'Lua.diagnostics.globals', 'x')
+  config.add(nil, 'Lua.diagnostics.globals', 'y')
 
-    util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
+  client.setConfig({
+    {
+      action = 'add',
+      key = 'Lua.diagnostics.globals',
+      value = 'z',
+    },
+  })
 
-    provider.updateConfig()
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['diagnostics.globals'] = { 'x', 'y', 'z' },
+  }))
 
-    config.add(nil, 'Lua.diagnostics.globals', 'x')
-    config.add(nil, 'Lua.diagnostics.globals', 'y')
+  -------------------------------
 
-    client.setConfig({
-        {
-            action = 'add',
-            key    = 'Lua.diagnostics.globals',
-            value  = 'z',
-        }
-    })
+  util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
 
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['diagnostics.globals'] = { 'x', 'y', 'z' }
-    }))
+  provider.updateConfig()
 
-    -------------------------------
+  config.prop(nil, 'Lua.runtime.special', 'kx', 'require')
+  config.prop(nil, 'Lua.runtime.special', 'ky', 'require')
 
-    util.saveFile(configPath, jsonb.beautify(json.createEmptyObject()))
+  client.setConfig({
+    {
+      action = 'prop',
+      key = 'Lua.runtime.special',
+      prop = 'kz',
+      value = 'require',
+    },
+  })
 
-    provider.updateConfig()
-
-    config.prop(nil, 'Lua.runtime.special', 'kx', 'require')
-    config.prop(nil, 'Lua.runtime.special', 'ky', 'require')
-
-    client.setConfig({
-        {
-            action = 'prop',
-            key    = 'Lua.runtime.special',
-            prop   = 'kz',
-            value  = 'require',
-        }
-    })
-
-    assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
-        ['runtime.special'] = {
-            ['kx'] = 'require',
-            ['ky'] = 'require',
-            ['kz'] = 'require',
-        }
-    }))
+  assert(util.equal(jsonc.decode_jsonc(util.loadFile(configPath)), {
+    ['runtime.special'] = {
+      ['kx'] = 'require',
+      ['ky'] = 'require',
+      ['kz'] = 'require',
+    },
+  }))
 end)

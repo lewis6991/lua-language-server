@@ -1,19 +1,19 @@
-TEST [[
+TEST([[
 ---@type <!A!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@type A|<!B!>|<!C!>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class AAA
 ---@alias B AAA
 
 ---@type B
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias B <!AAA!>
-]]
+]])

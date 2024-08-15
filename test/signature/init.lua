@@ -1,145 +1,130 @@
-local core  = require 'core.signature'
-local files = require 'files'
-local catch = require 'catch'
+local core = require('core.signature')
+local files = require('files')
+local catch = require('catch')
 
 rawset(_G, 'TEST', true)
 
 ---@diagnostic disable: await-in-sync
 function TEST(script)
-    return function (expect)
-        local newScript, catched1 = catch(script, '?')
-        files.setText(TESTURI, newScript)
-        local hovers = core(TESTURI, catched1['?'][1][1])
-        if hovers then
-            assert(#hovers == #expect)
-            for i, hover in ipairs(hovers) do
-                local newExpect, catched2 = catch(expect[i], '!')
-                local arg = hover.params[hover.index]
+  return function(expect)
+    local newScript, catched1 = catch(script, '?')
+    files.setText(TESTURI, newScript)
+    local hovers = core(TESTURI, catched1['?'][1][1])
+    if hovers then
+      assert(#hovers == #expect)
+      for i, hover in ipairs(hovers) do
+        local newExpect, catched2 = catch(expect[i], '!')
+        local arg = hover.params[hover.index]
 
-                assert(newExpect == hover.label)
-                if arg then
-                    assert(catched2['!'][1] ~= nil)
-                    assert(catched2['!'][1][1] == arg.label[1])
-                    assert(catched2['!'][1][2] == arg.label[2])
-                else
-                    assert(#catched2['!'] == 0)
-                end
-            end
+        assert(newExpect == hover.label)
+        if arg then
+          assert(catched2['!'][1] ~= nil)
+          assert(catched2['!'][1][1] == arg.label[1])
+          assert(catched2['!'][1][2] == arg.label[2])
         else
-            assert(expect == nil)
+          assert(#catched2['!'] == 0)
         end
-        files.remove(TESTURI)
+      end
+    else
+      assert(expect == nil)
     end
+    files.remove(TESTURI)
+  end
 end
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(<??>
-]]
-{'function x(<!a: any!>, b: any)'}
+]])({ 'function x(<!a: any!>, b: any)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(<??>)
-]]
-{'function x(<!a: any!>, b: any)'}
+]])({ 'function x(<!a: any!>, b: any)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(xxx<??>)
-]]
-{'function x(<!a: any!>, b: any)'}
+]])({ 'function x(<!a: any!>, b: any)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(xxx, <??>)
-]]
-{'function x(a: any, <!b: any!>)'}
+]])({ 'function x(a: any, <!b: any!>)' })
 
-TEST [[
+TEST([[
 function mt:f(a)
 end
 
 mt:f(<??>
-]]
-{'(method) mt:f(<!a: any!>)'}
+]])({ '(method) mt:f(<!a: any!>)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
     return 1
 end
 
 x(<??>
-]]
-{'function x(<!a: any!>, b: any)'}
+]])({ 'function x(<!a: any!>, b: any)' })
 
-TEST [[
+TEST([[
 local function x(a, ...)
     return 1
 end
 
 x(1, 2, 3, <??>
-]]
-{'function x(a: any, <!...any!>)'}
+]])({ 'function x(a: any, <!...any!>)' })
 
-TEST [[
+TEST([[
 (''):sub(<??>
-]]
-{'(method) string:sub(<!i: integer!>, j?: integer)'}
+]])({ '(method) string:sub(<!i: integer!>, j?: integer)' })
 
-TEST [[
+TEST([[
 (''):sub(1)<??>
-]]
-(nil)
+]])(nil)
 
-TEST [[
+TEST([[
 local function f(a, b, c)
 end
 
 f(1, 'string<??>')
-]]
-{'function f(a: any, <!b: any!>, c: any)'}
+]])({ 'function f(a: any, <!b: any!>, c: any)' })
 
-TEST [[
+TEST([[
 pcall(function () <??> end)
-]]
-(nil)
+]])(nil)
 
-TEST [[
+TEST([[
 table.unpack {<??>}
-]]
-(nil)
+]])(nil)
 
-TEST [[
+TEST([[
 ---@type fun(x: number, y: number):boolean
 local zzzz
 zzzz(<??>)
-]]
-{'function zzzz(<!x: number!>, y: number)'}
+]])({ 'function zzzz(<!x: number!>, y: number)' })
 
-TEST [[
+TEST([[
 ('abc'):format(f(<??>))
-]]
-(nil)
+]])(nil)
 
-TEST [[
+TEST([[
 function Foo(param01, param02)
 
 end
 
 Foo(<??>)
-]]
-{'function Foo(<!param01: any!>, param02: any)'}
+]])({ 'function Foo(<!param01: any!>, param02: any)' })
 
-TEST [[
+TEST([[
 function f1(a, b)
 end
 
@@ -147,74 +132,65 @@ function f2(c, d)
 end
 
 f2(f1(),<??>)
-]]
-{'function f2(c: any, <!d: any!>)'}
+]])({ 'function f2(c: any, <!d: any!>)' })
 
-TEST [[
+TEST([[
 local function f(a, b, c)
 end
 
 f({},<??>)
-]]
-{'function f(a: any, <!b: any!>, c: any)'}
+]])({ 'function f(a: any, <!b: any!>, c: any)' })
 
-TEST [[
+TEST([[
 for _ in pairs(<??>) do
 end
-]]
-{'function pairs(<!t: <T:table>!>)'}
+]])({ 'function pairs(<!t: <T:table>!>)' })
 
-TEST [[
+TEST([[
 function m:f()
 end
 
 m.f(<??>)
-]]
-{'function m.f(<!self: any!>)'}
+]])({ 'function m.f(<!self: any!>)' })
 
-TEST [[
+TEST([[
 ---@alias nnn table<number, string>
 
 ---@param x nnn
 local function f(x, y, z) end
 
 f(<??>)
-]]
-{'function f(<!x: table<number, string>!>, y: any, z: any)'}
+]])({ 'function f(<!x: table<number, string>!>, y: any, z: any)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(  aaaa  <??>, 2)
-]]
-{"function x(<!a: any!>, b: any)"}
+]])({ 'function x(<!a: any!>, b: any)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(<??>   aaaa  , 2)
-]]
-{'function x(<!a: any!>, b: any)'}
+]])({ 'function x(<!a: any!>, b: any)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(aaaa  ,<??>    2)
-]]
-{'function x(a: any, <!b: any!>)'}
+]])({ 'function x(a: any, <!b: any!>)' })
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x(aaaa  ,    2     <??>)
-]]
-{'function x(a: any, <!b: any!>)'}
+]])({ 'function x(a: any, <!b: any!>)' })
 
-TEST [[
+TEST([[
 local fooC
 
 ---test callback
@@ -225,16 +201,14 @@ function fooC(callback, par) end
 fooC(function (x, s)
     
 end,<??>)
-]]
-{'function fooC(callback: fun(x: number, s: string):nil, <!par: number!>)'}
+]])({ 'function fooC(callback: fun(x: number, s: string):nil, <!par: number!>)' })
 
-TEST [[
+TEST([[
 (function (a, b)
 end)(<??>)
-]]
-{'function (<!a: any!>, b: any)'}
+]])({ 'function (<!a: any!>, b: any)' })
 
-TEST [[
+TEST([[
 ---@overload fun()
 ---@overload fun(a:number)
 ---@param a number
@@ -242,14 +216,13 @@ TEST [[
 function X(a, b) end
 
 X(<??>)
-]]
-{
-'function X()',
-'function X(<!a: number!>)',
-'function X(<!a: number!>, b: number)',
-}
+]])({
+  'function X()',
+  'function X(<!a: number!>)',
+  'function X(<!a: number!>, b: number)',
+})
 
-TEST [[\
+TEST([[\
 ---@overload fun()
 ---@overload fun(a:number)
 ---@param a number
@@ -257,13 +230,12 @@ TEST [[\
 function X(a, b) end
 
 X(<?1?>)
-]]
-{
-'function X(<!a: number!>)',
-'function X(<!a: number!>, b: number)',
-}
+]])({
+  'function X(<!a: number!>)',
+  'function X(<!a: number!>, b: number)',
+})
 
-TEST [[
+TEST([[
 ---@overload fun()
 ---@overload fun(a:number)
 ---@param a number
@@ -271,12 +243,11 @@ TEST [[
 function X(a, b) end
 
 X(1, <??>)
-]]
-{
-'function X(a: number, <!b: number!>)',
-}
+]])({
+  'function X(a: number, <!b: number!>)',
+})
 
-TEST [[
+TEST([[
 ---@overload fun()
 ---@overload fun(a:number)
 ---@param a number
@@ -284,12 +255,11 @@ TEST [[
 function X(a, b) end
 
 X(1, <?2?>)
-]]
-{
-'function X(a: number, <!b: number!>)',
-}
+]])({
+  'function X(a: number, <!b: number!>)',
+})
 
-TEST [[
+TEST([[
 ---@alias A { x:number, y:number, z:number }
 
 ---comment
@@ -300,25 +270,23 @@ function X(a, b)
 end
 
 X({}, <??>)
-]]
-{
-'function X(a: { x: number, y: number, z: number }, <!b: string!>)'
-}
+]])({
+  'function X(a: { x: number, y: number, z: number }, <!b: string!>)',
+})
 
-TEST [[
+TEST([[
 ---@overload fun(x: number)
 ---@overload fun(x: number, y: number)
 local function f(...)
 end
 
 f(<??>)
-]]
-{
-'function f(<!x: number!>)',
-'function f(<!x: number!>, y: number)',
-}
+]])({
+  'function f(<!x: number!>)',
+  'function f(<!x: number!>, y: number)',
+})
 
-TEST [[
+TEST([[
 ---@class A
 ---@overload fun(x: number)
 
@@ -326,12 +294,11 @@ TEST [[
 local t
 
 t(<??>)
-]]
-{
-'function (<!x: number!>)',
-}
+]])({
+  'function (<!x: number!>)',
+})
 
-TEST [[
+TEST([[
 ---@class 😅
 
 ---@param a 😅
@@ -340,12 +307,11 @@ local function f(a, b)
 end
 
 f(1, 2<??>)
-]]
-{
-'function f(a: 😅, <!b: integer!>)',
-}
+]])({
+  'function f(a: 😅, <!b: integer!>)',
+})
 
-TEST [[
+TEST([[
 ---@class A
 ---@field event fun(self: self, ev: "onChat", c: string)
 ---@field event fun(self: self, ev: "onTimer", t: integer)
@@ -354,12 +320,11 @@ TEST [[
 local t
 
 t:event("onChat", <??>)
-]]
-{
-'(method) (ev: "onChat", <!c: string!>)',
-}
+]])({
+  '(method) (ev: "onChat", <!c: string!>)',
+})
 
-TEST [[
+TEST([[
 ---@class A
 ---@field event fun(self: self, ev: "onChat", c: string)
 ---@field event fun(self: self, ev: "onTimer", t: integer)
@@ -368,34 +333,31 @@ TEST [[
 local t
 
 t:event("onTimer", <??>)
-]]
-{
-'(method) (ev: "onTimer", <!t: integer!>)',
-}
+]])({
+  '(method) (ev: "onTimer", <!t: integer!>)',
+})
 
-local config = require 'config'
-config.set(nil, "Lua.type.inferParamType", true)
+local config = require('config')
+config.set(nil, 'Lua.type.inferParamType', true)
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 
 x("1", <??>)
-]]
-{
-'function x(a: string, <!b: any!>)'
-}
+]])({
+  'function x(a: string, <!b: any!>)',
+})
 
-TEST [[
+TEST([[
 local function x(a)
    
 end
 x('str')
 x(1)
 x(<??>)
-]]
-{
-'function x(<!a: string|integer!>)',
-}
+]])({
+  'function x(<!a: string|integer!>)',
+})
 
-config.set(nil, "Lua.type.inferParamType", false)
+config.set(nil, 'Lua.type.inferParamType', false)

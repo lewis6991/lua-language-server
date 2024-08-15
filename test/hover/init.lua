@@ -1,44 +1,41 @@
-local core       = require 'core.hover'
-local files      = require 'files'
-local catch      = require 'catch'
-local config     = require 'config'
+local core = require('core.hover')
+local files = require('files')
+local catch = require('catch')
+local config = require('config')
 
 rawset(_G, 'TEST', true)
 
 ---@diagnostic disable: await-in-sync
 function TEST(script)
-    return function (expect)
-        local newScript, catched = catch(script, '?')
-        files.setText(TESTURI, newScript)
-        local hover = core.byUri(TESTURI, catched['?'][1][1])
-        assert(hover)
-        expect = expect:gsub('^[\r\n]*(.-)[\r\n]*$', '%1'):gsub('\r\n', '\n')
-        local label = hover:string():gsub('\r\n', '\n'):match('```lua[\r\n]*(.-)[\r\n]*```')
-        assert(expect == label)
-        files.remove(TESTURI)
-    end
+  return function(expect)
+    local newScript, catched = catch(script, '?')
+    files.setText(TESTURI, newScript)
+    local hover = core.byUri(TESTURI, catched['?'][1][1])
+    assert(hover)
+    expect = expect:gsub('^[\r\n]*(.-)[\r\n]*$', '%1'):gsub('\r\n', '\n')
+    local label = hover:string():gsub('\r\n', '\n'):match('```lua[\r\n]*(.-)[\r\n]*```')
+    assert(expect == label)
+    files.remove(TESTURI)
+  end
 end
 
-TEST [[
+TEST([[
 local function <?x?>(a, b)
 end
-]]
-"function x(a: any, b: any)"
+]])('function x(a: any, b: any)')
 
-TEST [[
+TEST([[
 local <?function?> x(a, b)
 end
-]]
-"function x(a: any, b: any)"
+]])('function x(a: any, b: any)')
 
-TEST [[
+TEST([[
 local function x(a, b)
 end
 <?x?>()
-]]
-"function x(a: any, b: any)"
+]])('function x(a: any, b: any)')
 
-TEST [[
+TEST([[
 local mt = {}
 mt.__index = mt
 
@@ -49,10 +46,9 @@ end
 local obj = setmetatable({}, mt)
 
 obj:<?init?>(1, '测试')
-]]
-[[
+]])([[
 (method) mt:init(a: any, b: any, c: any)
-]]
+]])
 
 --TEST [[
 --local mt = {}
@@ -88,7 +84,7 @@ obj:<?init?>(1, '测试')
 --function Class:init(a: any, b: any, c: any)
 --]]
 
-TEST [[
+TEST([[
 local mt = {}
 mt.__index = mt
 
@@ -99,13 +95,12 @@ end
 local obj = setmetatable({}, mt)
 
 obj:<?init?>(1, '测试')
-]]
-[[
+]])([[
 (method) mt:init(a: any, b: any, c: any)
   -> table
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 mt.__index = mt
 
@@ -117,58 +112,49 @@ local obj = setmetatable({}, mt)
 
 obj:init(1, '测试')
 obj.<?init?>(obj, 1, '测试')
-]]
-[[
+]])([[
 (method) mt:init(a: any, b: any, c: any)
   -> table
-]]
+]])
 
-TEST [[
+TEST([[
 function obj.xxx()
 end
 
 obj.<?xxx?>()
-]]
-"function obj.xxx()"
+]])('function obj.xxx()')
 
-TEST [[
+TEST([[
 obj.<?xxx?>()
-]]
-[[(global) obj.xxx: unknown]]
+]])([[(global) obj.xxx: unknown]])
 
-TEST [[
+TEST([[
 local <?x?> = 1
-]]
-"local x: integer = 1"
+]])('local x: integer = 1')
 
-TEST [[
+TEST([[
 <?x?> = 1
-]]
-"(global) x: integer = 1"
+]])('(global) x: integer = 1')
 
-TEST [[
+TEST([[
 local t = {}
 t.<?x?> = 1
-]]
-"(field) t.x: integer = 1"
+]])('(field) t.x: integer = 1')
 
-TEST [[
+TEST([[
 t = {}
 t.<?x?> = 1
-]]
-"(global) t.x: integer = 1"
+]])('(global) t.x: integer = 1')
 
-TEST [[
+TEST([[
 t = {
     <?x?> = 1
 }
-]]
-"(field) x: integer = 1"
+]])('(field) x: integer = 1')
 
-TEST [[
+TEST([[
 local <?obj?> = {}
-]]
-"local obj: table"
+]])('local obj: table')
 
 --TEST [[
 --local mt = {}
@@ -227,78 +213,69 @@ local <?obj?> = {}
 --]]
 --"local root: bee::filesystem"
 
-TEST [[
+TEST([[
 <?print?>()
-]]
-[[
+]])([[
 function print(...any)
-]]
+]])
 
-TEST [[
+TEST([[
 string.<?sub?>()
-]]
-[[
+]])([[
 function string.sub(s: string|number, i: integer, j?: integer)
   -> string
-]]
+]])
 
-TEST[[
+TEST([[
 ('xx'):<?sub?>()
-]]
-[[function string.sub(s: string|number, i: integer, j?: integer)
-  -> string]]
+]])([[function string.sub(s: string|number, i: integer, j?: integer)
+  -> string]])
 
-TEST [[
+TEST([[
 local <?v?> = collectgarbage()
-]]
-"local v: any"
+]])('local v: any')
 
-TEST [[
+TEST([[
 local type
 w2l:get_default()[<?type?>]
-]]
-"local type: unknown"
+]])('local type: unknown')
 
-TEST [[
+TEST([[
 <?load?>()
-]]
-[=[
+]])([=[
 function load(chunk: string|function, chunkname?: string, mode?: "b"|"bt"|"t", env?: table)
   -> function?
   2. error_message: string?
-]=]
+]=])
 
-TEST [[
+TEST([[
 string.<?lower?>()
-]]
-[[
+]])([[
 function string.lower(s: string|number)
   -> string
-]]
+]])
 
 -- 不根据传入值推测参数类型
-TEST [[
+TEST([[
 local function x(a, ...)
 end
 
 <?x?>(1, 2, 3, 4, 5, 6, 7)
-]]
-[[
+]])([[
 function x(a: any, ...any)
-]]
+]])
 
-TEST [[
+TEST([[
 local function x()
     return y()
 end
 
 <?x?>()
-]]
-[[
+]])([[
 function x()
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 
 function mt:add(a, b)
@@ -310,12 +287,11 @@ end
 
 local t = init()
 t:<?add?>()
-]]
-[[
+]])([[
 (method) mt:add(a: any, b: any)
-]]
+]])
 
-TEST [[
+TEST([[
 local mt = {}
 mt.__index = mt
 
@@ -328,15 +304,13 @@ end
 
 local t = init()
 t:<?add?>()
-]]
-[[
+]])([[
 (method) mt:add(a: any, b: any)
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = - 1000
-]]
-[[local t: integer = -1000]]
+]])([[local t: integer = -1000]])
 
 -- TODO 暂不支持
 --TEST [[
@@ -345,64 +319,57 @@ local <?t?> = - 1000
 --]]
 --[[local c: string]]
 
-TEST [[
+TEST([[
 local function f()
     return ...
 end
 local <?n?> = f()
-]]
-[[local n: unknown]]
+]])([[local n: unknown]])
 
-TEST [[
+TEST([[
 local <?n?> = table.unpack(t)
-]]
-[[local n: unknown]]
+]])([[local n: unknown]])
 
-TEST [[
+TEST([[
 local <?n?>
 table.pack(n)
-]]
-[[
+]])([[
 local n: unknown
-]]
+]])
 
-TEST [[
+TEST([[
 local s = <?'abc中文'?>
-]]
-[[9 个字节，5 个字符]]
+]])([[9 个字节，5 个字符]])
 
-TEST [[
+TEST([[
 local n = <?0xff?>
-]]
-[[255]]
+]])([[255]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     a = 1,
     b = 2,
     c = 3,
 }
-]]
-[[
+]])([[
 local t: {
     a: integer = 1,
     b: integer = 2,
     c: integer = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {}
 t.a = 1
 t.a = true
-]]
-[[
+]])([[
 local t: {
     a: boolean|integer = 1|true,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     a = 1,
     [1] = 2,
@@ -413,8 +380,7 @@ local <?t?> = {
     ["b"] = 7,
     ["012"] = 8,
 }
-]]
-[[
+]])([[
 local t: {
     a: integer = 1,
     [1]: integer = 2,
@@ -423,57 +389,53 @@ local t: {
     ["b"]: integer = 7,
     ["012"]: integer = 8,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {}
 t[#t+1] = 1
 t[#t+1] = 1
 
 local any = collectgarbage()
 t[any] = any
-]]
-[[
+]])([[
 local t: table
-]]
+]])
 
-TEST[[
+TEST([[
 local x = 1
 local y = x
 print(<?y?>)
-]]
-[[
+]])([[
 local y: integer = 1
-]]
+]])
 
-TEST[[
+TEST([[
 local mt = {}
 mt.a = 1
 mt.b = 2
 mt.c = 3
 local <?obj?> = setmetatable({}, {__index = mt})
-]]
-[[
+]])([[
 local obj: {
     a: integer = 1,
     b: integer = 2,
     c: integer = 3,
 }
-]]
+]])
 
-TEST[[
+TEST([[
 local mt = {}
 mt.__index = {}
 
 function mt:test(a, b)
     self:<?test?>()
 end
-]]
-[[
+]])([[
 (method) mt:test(a: any, b: any)
-]]
+]])
 
-TEST[[
+TEST([[
 local mt = {}
 mt.__index = mt
 mt.__name = 'obj'
@@ -484,20 +446,18 @@ end
 local <?self?> = setmetatable({
     id = 1,
 }, mt)
-]]
-[[
+]])([[
 local self: {
     id: integer = 1,
     remove: function,
     __index: table,
     __name: string = 'obj',
 }
-]]
+]])
 
-TEST [[
+TEST([[
 print(<?utf8?>)
-]]
-[[
+]])([[
 (global) utf8: utf8lib {
     char: function,
     charpattern: string,
@@ -506,12 +466,11 @@ print(<?utf8?>)
     len: function,
     offset: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 print(io.<?stderr?>)
-]]
-[[
+]])([[
 (global) io.stderr: file* {
     close: function,
     flush: function,
@@ -521,12 +480,11 @@ print(io.<?stderr?>)
     setvbuf: function,
     write: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 print(<?io?>)
-]]
-[[
+]])([[
 (global) io: iolib {
     close: function,
     flush: function,
@@ -543,12 +501,11 @@ print(<?io?>)
     type: function,
     write: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?sssss?> = require 'utf8'
-]]
-[[
+]])([[
 local sssss: utf8lib {
     char: function,
     charpattern: string,
@@ -557,9 +514,9 @@ local sssss: utf8lib {
     len: function,
     offset: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 function F(a)
 end
 function F(b)
@@ -567,10 +524,9 @@ end
 function F(a)
 end
 <?F?>()
-]]
-[[
+]])([[
 function F(a: any)
-]]
+]])
 
 -- 不根据参数推断
 --TEST[[
@@ -603,39 +559,35 @@ function F(a: any)
 --local v: number = 1
 --]]
 
-TEST[[
+TEST([[
 function a(v)
     return 'a'
 end
 local <?r?> = a(1)
-]]
-[[
+]])([[
 local r: string = 'a'
-]]
+]])
 
-TEST[[
+TEST([[
 function a(v)
     return 'a'
 end
 local _, <?r?> = pcall(a, 1)
-]]
-[[
+]])([[
 local r: string = 'a'
-]]
+]])
 
-TEST[[
+TEST([[
 local <?n?> = rawlen()
-]]
-[[
+]])([[
 local n: integer
-]]
+]])
 
-TEST[[
+TEST([[
 local <?x?> = '\a'
-]]
-[[local x: string = '\007']]
+]])([[local x: string = '\007']])
 
-TEST [[
+TEST([[
 local <?t?> = {
     b = 1,
     c = 2,
@@ -649,8 +601,7 @@ local <?t?> = {
     p = 10,
     l = 11,
 }
-]]
-[[
+]])([[
 local t: {
     b: integer = 1,
     c: integer = 2,
@@ -664,73 +615,68 @@ local t: {
     p: integer = 10,
     l: integer = 11,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local function <?f?>()
     return nil, nil
 end
-]]
-[[
+]])([[
 function f()
   -> nil
   2. nil
-]]
+]])
 
-TEST [[
+TEST([[
 local function f()
     return nil
 end
 local <?x?> = f()
-]]
-[[
+]])([[
 local x: nil
-]]
+]])
 
-TEST [[
+TEST([[
 local function <?f?>()
     return 1
     return nil
 end
-]]
-[[
+]])([[
 function f()
   -> integer|nil
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     b = 1,
     c = 2,
     d = 3,
 }
 local e = t.b
-]]
-[[
+]])([[
 local t: {
     b: integer = 1,
     c: integer = 2,
     d: integer = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     b = 1,
     c = 2,
     d = 3,
 }
 g.e = t.b
-]]
-[[
+]])([[
 local t: {
     b: integer = 1,
     c: integer = 2,
     d: integer = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {
     v = {
         b = 1,
@@ -739,39 +685,35 @@ local t = {
     }
 }
 print(t.<?v?>)
-]]
-[[
+]])([[
 (field) t.v: {
     b: integer = 1,
     c: integer = 2,
     d: integer = 3,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     f = io.open(),
 }
-]]
-[[
+]])([[
 local t: {
     f?: file*,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 io.<?popen?>()
-]]
-[[
+]])([[
 function io.popen(prog: string, mode?: "r"|"w")
   -> file*?
   2. errmsg: string?
-]]
+]])
 
-TEST [[
+TEST([[
 <?_G?>
-]]
-[[
+]])([[
 (global) _G: _G {
     arg: string[],
     assert: function,
@@ -816,48 +758,44 @@ TEST [[
     _G: _G,
     _VERSION: string = "Lua 5.4",
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     'aaa',
     'bbb',
     'ccc',
 }
-]]
-[[
+]])([[
 local t: {
     [1]: string = 'aaa',
     [2]: string = 'bbb',
     [3]: string = 'ccc',
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 x = 1
 x = 1.0
 
 print(<?x?>)
-]]
-[[
+]])([[
 local x: number = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local <?x?> <close> = 1
-]]
-[[
+]])([[
 local x <close>: integer = 1
-]]
+]])
 
-TEST [[
+TEST([[
 local x <close> = 1
 print(<?x?>)
-]]
-[[
+]])([[
 local x <close>: integer = 1
-]]
+]])
 
 --TEST [[
 --local function <?a?>(b)
@@ -869,7 +807,7 @@ local x <close>: integer = 1
 --  -> table
 --]]
 
-TEST [[
+TEST([[
 local <?t?> = {
     a = true
 }
@@ -877,107 +815,97 @@ local <?t?> = {
 local t2 = {
     [t.a] = function () end,
 }
-]]
-[[
+]])([[
 local t: {
     a: boolean = true,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     [-1] = -1,
     [0]  = 0,
     [1]  = 1,
 }
-]]
-[[
+]])([[
 local t: {
     [-1]: integer = -1,
     [0]: integer = 0,
     [1]: integer = 1,
 }
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class Class
 local <?x?> = class()
-]]
-[[
+]])([[
 local x: Class
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class Class
 <?x?> = class()
-]]
-[[
+]])([[
 (global) x: Class
-]]
+]])
 
-TEST[[
+TEST([[
 local t = {
     ---@class Class
     <?x?> = class()
 }
-]]
-[[
+]])([[
 (field) x: Class
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class Class
 local <?x?> = class()
-]]
-[[
+]])([[
 local x: Class
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class Class
 <?x?> = class()
-]]
-[[
+]])([[
 (global) x: Class
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class A
 ---@class B
 ---@class C
 
 ---@type A|B|C
 local <?x?> = class()
-]]
-[[
+]])([[
 local x: A|B|C
-]]
+]])
 
-TEST[[
+TEST([[
 ---@class Class
 local <?x?> = {
     b = 1
 }
-]]
-[[
+]])([[
 local x: Class {
     b: integer = 1,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 local mt = {}
 
 ---@param t Class
 function f(<?t?>)
 end
-]]
-[[
+]])([[
 (parameter) t: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 local mt = {}
 
@@ -985,34 +913,31 @@ local mt = {}
 function f(t)
     print(<?t?>)
 end
-]]
-[[
+]])([[
 (parameter) t: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@param k Class
 for <?k?> in pairs(t) do
 end
-]]
-[[
+]])([[
 local k: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@param v Class
 for k, <?v?> in pairs(t) do
 end
-]]
-[[
+]])([[
 local v: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@class B
 ---@class C
@@ -1021,37 +946,34 @@ TEST [[
 ---@return C
 local function <?f?>()
 end
-]]
-[[
+]])([[
 function f()
   -> A|B
   2. C
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic T
 ---@param x T
 ---@return T
 local function <?f?>(x)
 end
-]]
-[[
+]])([[
 function f(x: <T>)
   -> <T>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number
 local function f()
 end
 
 local <?r?> = f()
-]]
-[[
+]])([[
 local r: number
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic T
 ---@param x T
 ---@return T
@@ -1059,22 +981,20 @@ local function f(x)
 end
 
 local <?r?> = f(1)
-]]
-[[
+]])([[
 local r: integer = 1
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param x number
 ---@param y boolean
 local function <?f?>(x, y)
 end
-]]
-[[
+]])([[
 function f(x: number, y: boolean)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@vararg Class
@@ -1082,24 +1002,22 @@ local function f(...)
     local _, <?x?> = ...
 end
 f(1, 2, 3)
-]]
-[[
+]])([[
 local x: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@vararg Class
 local function f(...)
     local <?t?> = {...}
 end
-]]
-[[
+]])([[
 local t: Class[]
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@vararg Class
@@ -1107,12 +1025,11 @@ local function f(...)
     local t = {...}
     local <?v?> = t[1]
 end
-]]
-[[
+]])([[
 local v: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@vararg Class
@@ -1120,12 +1037,11 @@ local function f(...)
     local <?t?> = {...}
 end
 f(1, 2, 3)
-]]
-[[
+]])([[
 local t: Class[]
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@param ... Class
@@ -1133,12 +1049,11 @@ local function f(...)
     local _, <?x?> = ...
 end
 f(1, 2, 3)
-]]
-[[
+]])([[
 local x: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@param ... Class
@@ -1146,12 +1061,11 @@ local function f(...)
     local t = {...}
     local <?v?> = t[1]
 end
-]]
-[[
+]])([[
 local v: Class
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 
 ---@param ... Class
@@ -1159,35 +1073,31 @@ local function f(...)
     local <?t?> = {...}
 end
 f(1, 2, 3)
-]]
-[[
+]])([[
 local t: Class[]
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string[]
 local <?x?>
-]]
-[[
+]])([[
 local x: string[]
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string[]|boolean
 local <?x?>
-]]
-[[
+]])([[
 local x: boolean|string[]
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string[]
 local t
 local <?x?> = t[1]
-]]
-[[
+]])([[
 local x: string
-]]
+]])
 
 -- TODO
 --TEST [[
@@ -1220,24 +1130,22 @@ local x: string
 --local k: integer
 --]]
 
-TEST [[
+TEST([[
 ---@type table<ClassA, ClassB>
 local <?x?>
-]]
-[[
+]])([[
 local x: table<ClassA, ClassB>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type [ClassA, ClassB]
 local <?x?>
-]]
-[[
+]])([[
 local x: [ClassA, ClassB] {
     [1]: ClassA,
     [2]: ClassB,
 }
-]]
+]])
 
 --TEST [[
 -----@class ClassA
@@ -1265,66 +1173,60 @@ local x: [ClassA, ClassB] {
 --local k: ClassA
 --]]
 
-TEST [[
+TEST([[
 ---@type fun(x: number, y: number):boolean
 local <?f?>
-]]
-[[
+]])([[
 local f: fun(x: number, y: number):boolean
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun(x: number, y: number):boolean
 local f
 local <?r?> = f()
-]]
-[[
+]])([[
 local r: boolean
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class void
 
 ---@param f fun():void
 function t(<?f?>) end
-]]
-[[
+]])([[
 (parameter) f: fun():void
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun(a:any, b:any)
 local f
 local t = {f = f}
 t:<?f?>()
-]]
-[[
+]])([[
 (field) t.f: fun(a: any, b: any)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param names string[]
 local function f(<?names?>)
 end
-]]
-[[
+]])([[
 (parameter) names: string[]
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return any
 function <?f?>()
     ---@type integer
     local a
     return a
 end
-]]
-[[
+]])([[
 function f()
   -> any
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return any
 function f()
     ---@type integer
@@ -1333,12 +1235,11 @@ function f()
 end
 
 local <?x?> = f()
-]]
-[[
+]])([[
 local x: any
-]]
+]])
 
-TEST [[
+TEST([[
 ---@overload fun(y: boolean)
 ---@param x number
 ---@param y boolean
@@ -1346,153 +1247,139 @@ TEST [[
 function f(x, y, z) end
 
 print(<?f?>)
-]]
-[[
+]])([[
 function f(x: number, y: boolean, z: string)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun(x?: boolean):boolean?
 local <?f?>
-]]
-[[
+]])([[
 local f: fun(x?: boolean):boolean?
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param x? number
 ---@param y? boolean
 ---@return table?, string?
 local function <?f?>(x, y)
 end
-]]
-[[
+]])([[
 function f(x?: number, y?: boolean)
   -> table?
   2. string?
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return table first, string? second
 local function <?f?>(x, y)
 end
-]]
-[[
+]])([[
 function f(x: any, y: any)
   -> first: table
   2. second: string?
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Class
 ---@field x number
 ---@field y number
 ---@field z string
 local <?t?>
-]]
-[[
+]])([[
 local t: Class {
     x: number,
     y: number,
     z: string,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 
 ---@type <?A?>
-]]
-[[
+]])([[
 (class) A
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string | "'enum1'" | "'enum2'"
 local <?t?>
-]]
-[[
+]])([[
 local t: string|'enum1'|'enum2'
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias A string | "'enum1'" | "'enum2'"
 
 ---@type <?A?>
-]]
-[[
+]])([[
 (alias) A 展开为 string|'enum1'|'enum2'
-]]
+]])
 
-TEST [[
+TEST([[
 ---@alias A string | "'enum1'" | "'enum2'"
 
 ---@type A
 local <?t?>
-]]
-[[
+]])([[
 local t: string|'enum1'|'enum2'
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type string
 ---| "'enum1'"
 ---| "'enum2'"
 local <?t?>
-]]
-[[
+]])([[
 local t: string|'enum1'|'enum2'
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class c
 t = {}
 
 ---@overload fun()
 function <?t?>.f() end
-]]
-[[
+]])([[
 (global) t: c {
     f: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class c
 local t = {}
 
 ---@overload fun()
 function t.<?f?>() end
-]]
-[[
+]])([[
 function c.f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class c
 t = {}
 
 ---@overload fun()
 function t.<?f?>() end
-]]
-[[
+]])([[
 function t.f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class C
 ---@field field any
 
 ---@type C
 local <?c?>
-]]
-[[
+]])([[
 local c: C {
     field: any,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class C
 ---@field field any
 
@@ -1500,37 +1387,33 @@ TEST [[
 local function f() end
 
 local <?c?> = f()
-]]
-[[
+]])([[
 local c: C {
     field: any,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param callback fun(x: integer, ...)
 local function f(<?callback?>) end
-]]
-[[
+]])([[
 (parameter) callback: fun(x: integer, ...any)
-]]
+]])
 
-TEST [[
+TEST([[
 local <?x?> --- @type boolean
-]]
-[[
+]])([[
 local x: boolean
-]]
+]])
 
-TEST [[
+TEST([[
 local x --- @type boolean
 local <?y?>
-]]
-[[
+]])([[
 local y: unknown
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Object
 ---@field a string
 
@@ -1540,14 +1423,13 @@ local t
 local <?v?> = t[1]
 
 print(v.a)
-]]
-[[
+]])([[
 local v: Object {
     a: string,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Object
 ---@field a string
 
@@ -1557,14 +1439,13 @@ local t
 local <?v?> = t[i]
 
 print(v.a)
-]]
-[[
+]])([[
 local v: Object {
     a: string,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class C
 ---@field x string
 local t
@@ -1576,44 +1457,40 @@ local t
 local function assert(v, message) end
 
 local <?v?> = assert(t)
-]]
-[[
+]])([[
 local v: C {
     x: string,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?x?>--测试
-]]
-[[
+]])([[
 local x: unknown
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type unknown
 local <?t?>
 t.a = 1
-]]
-[[
+]])([[
 local t: {
     a: integer = 1,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@return number
 local function f() end
 local <?u?> = f()
 print(u.x)
-]]
-[[
+]])([[
 local u: number {
     x: unknown,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@generic K, V
 ---@param t table<K, V>
 ---@return K
@@ -1623,12 +1500,11 @@ local function next(t) end
 ---@type table<string, boolean>
 local t
 local k, v = next(<?t?>)
-]]
-[[
+]])([[
 local t: table<string, boolean>
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@class B: A
 ---@class C: B
@@ -1639,23 +1515,21 @@ local m
 function m:f()
     return <?self?>
 end
-]]
-[[
+]])([[
 (self) self: E {
     f: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local f
 
 <?f?>()
-]]
-[[
+]])([[
 local f: unknown
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class Position
 ---@field x  number
 ---@field y  number
@@ -1664,54 +1538,49 @@ TEST [[
 local <?t?>
 
 t.z = any
-]]
-[[
+]])([[
 local t: Position {
     x: number,
     y: number,
     z?: number,
     [3]?: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type { x: string, y: number, z: boolean }
 local <?t?>
-]]
-[[
+]])([[
 local t: { x: string, y: number, z: boolean } {
     x: string,
     y: number,
     z: boolean,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 <?a?>.b = 10 * 60
-]]
-[[
+]])([[
 (global) a: {
     b: integer = 600,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 a.<?b?> = 10 * 60
-]]
-[[
+]])([[
 (global) a.b: integer = 600
-]]
+]])
 
-TEST [[
+TEST([[
 a.<?b?>.c = 1 * 1
-]]
-[[
+]])([[
 (global) a.b: {
     c: integer = 1,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?t?> = {
     'a', 'b', 'c',
     [10]  = 'd',
@@ -1720,8 +1589,7 @@ local <?t?> = {
     ['z'] = 'g',
     [3]   = 'h',
 }
-]]
-[[
+]])([[
 local t: {
     x: string = 'e',
     y: string = 'f',
@@ -1731,22 +1599,20 @@ local t: {
     [2]: string = 'b',
     [3]: string = 'c'|'h',
 }
-]]
+]])
 
-TEST [[
+TEST([[
 function f1.f2.<?f3?>() end
-]]
-[[
+]])([[
 function f1.f2.f3()
-]]
+]])
 
-TEST [[
+TEST([[
 local t = nil
 t.<?x?>()
-]]
-[[
+]])([[
 (field) t.x: unknown
-]]
+]])
 
 --TEST [[
 -----@class A
@@ -1761,90 +1627,81 @@ t.<?x?>()
 --(field) A.x: unknown
 --]]
 
-TEST [[
+TEST([[
 ---@return nil
 local function <?f?>() end
-]]
-[[
+]])([[
 function f()
   -> nil
-]]
+]])
 
-TEST [[
+TEST([[
 ---@async
 local function <?f?>() end
-]]
-[[
+]])([[
 (async) function f()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type function
 local <?f?>
-]]
-[[
+]])([[
 local f: function
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type async fun()
 local <?f?>
-]]
-[[
+]])([[
 local f: async fun()
-]]
+]])
 
 config.set(nil, 'Lua.runtime.nonstandardSymbol', { '//' })
-TEST [[
+TEST([[
 local <?x?> = 1 // 2
-]]
-[[
+]])([[
 local x: integer = 1
-]]
+]])
 config.set(nil, 'Lua.runtime.nonstandardSymbol', {})
 
 config.set(nil, 'Lua.hover.expandAlias', false)
-TEST [[
+TEST([[
 ---@alias uri string
 
 ---@type uri
 local <?uri?>
-]]
-[[
+]])([[
 local uri: uri
-]]
+]])
 
 config.set(nil, 'Lua.hover.expandAlias', true)
-TEST [[
+TEST([[
 ---@alias uri string
 
 ---@type uri
 local <?uri?>
-]]
-[[
+]])([[
 local uri: string
-]]
+]])
 
-TEST [[
+TEST([[
 local <?x?> = '1' .. '2'
-]]
-[[
+]])([[
 local x: string = "12"
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {
     x   = 1,
     [1] = 'x',
 }
 
 local <?x?> = t[#t]
-]]
-[[
+]])([[
 local x: string = 'x'
-]]
+]])
 
-TEST [[
+TEST([[
 local x = {
     a = 1,
     b = 2,
@@ -1856,33 +1713,31 @@ local y = {
     _   = x.b,
     [1] = <?x?>,
 }
-]]
-[[
+]])([[
 local x: {
     a: integer = 1,
     b: integer = 2,
     [1]: integer = 10,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?x?> = {
     _x = '',
     _y = '',
     x  = '',
     y  = '',
 }
-]]
-[[
+]])([[
 local x: {
     x: string = '',
     y: string = '',
     _x: string = '',
     _y: string = '',
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 
@@ -1891,15 +1746,14 @@ TEST [[
 
 ---@type B
 local <?t?>
-]]
-[[
+]])([[
 local t: B {
     x: string,
     y: string,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x string
 
@@ -1909,61 +1763,55 @@ TEST [[
 
 ---@type B
 local <?t?>
-]]
-[[
+]])([[
 local t: B {
     x: integer,
     y: string,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local <?x?>
 local function f()
     x
 end
-]]
-[[
+]])([[
 local x: unknown
-]]
+]])
 
-TEST [[
+TEST([[
 local x
 local function f()
     <?x?>
 end
-]]
-[[
+]])([[
 (upvalue) x: unknown
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type `123 ????` | ` x | y `
 local <?x?>
-]]
-[[
+]])([[
 local x: ` x | y `|`123 ????`
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type any
 local x
 
 print(x.<?y?>)
-]]
-[[
+]])([[
 (field) x.y: unknown
-]]
+]])
 
-TEST [[
+TEST([[
 ---@async
 x({}, <?function?> () end)
-]]
-[[
+]])([[
 (async) function ()
-]]
+]])
 
-TEST [[
+TEST([[
 ---@overload fun(x: number, y: number):string
 ---@overload fun(x: number):number
 ---@return boolean
@@ -1972,13 +1820,12 @@ local function f() end
 local n1 = <?f?>()
 local n2 = f(0)
 local n3 = f(0, 0)
-]]
-[[
+]])([[
 function f()
   -> boolean
-]]
+]])
 
-TEST [[
+TEST([[
 ---@overload fun(x: number, y: number):string
 ---@overload fun(x: number):number
 ---@return boolean
@@ -1987,12 +1834,11 @@ local function f() end
 local n1 = f()
 local n2 = <?f?>(0)
 local n3 = f(0, 0)
-]]
-[[
+]])([[
 local f: fun(x: number):number
-]]
+]])
 
-TEST [[
+TEST([[
 ---@overload fun(x: number, y: number):string
 ---@overload fun(x: number):number
 ---@return boolean
@@ -2001,12 +1847,11 @@ local function f() end
 local n1 = f()
 local n2 = f(0)
 local n3 = <?f?>(0, 0)
-]]
-[[
+]])([[
 local f: fun(x: number, y: number):string
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local mt
 
@@ -2017,59 +1862,53 @@ mt.y = true
 
 ---@type A
 local <?t?>
-]]
-[[
+]])([[
 local t: A {
     x: integer,
     y: boolean = true,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param ... boolean
 ---@return number ...
 local function <?f?>(...) end
-]]
-[[
+]])([[
 function f(...boolean)
   -> ...number
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param ... boolean
 ---@return ...
 local function <?f?>(...) end
-]]
-[[
+]])([[
 function f(...boolean)
   -> ...unknown
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun():x: number
 local <?f?>
-]]
-[[
+]])([[
 local f: fun():(x: number)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun(...: boolean):...: number
 local <?f?>
-]]
-[[
+]])([[
 local f: fun(...boolean):...number
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type fun():x: number, y: boolean
 local <?f?>
-]]
-[[
+]])([[
 local f: fun():(x: number, y: boolean)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class MyClass
 local MyClass = {
     a = 1
@@ -2078,15 +1917,14 @@ local MyClass = {
 function MyClass:Test()
     <?self?>
 end
-]]
-[[
+]])([[
 (self) self: MyClass {
     Test: function,
     a: integer = 1,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local y
 if X then
     y = true
@@ -2102,37 +1940,33 @@ if bool then
 end
 
 print(<?bool?>)
-]]
-[[
+]])([[
 local bool: boolean = true|false
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type 'a'
 local <?s?>
-]]
-[[
+]])([[
 local s: 'a'
-]]
+]])
 
-TEST [[
+TEST([[
 ---@enum <?A?>
 local m = {
     x = 1,
 }
-]]
-[[
+]])([[
 (enum) A
-]]
+]])
 
-TEST [[
+TEST([[
 local <?x?> = 1 << 2
-]]
-[[
+]])([[
 local x: integer = 4
-]]
+]])
 
-TEST [[
+TEST([[
 local function test1()
     return 1, 2, 3
 end
@@ -2140,92 +1974,86 @@ end
 local function <?test2?>()
     return test1()
 end
-]]
-[[
+]])([[
 function test2()
   -> integer
   2. integer
   3. integer
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param x number
 ---@return boolean
 local function <?f?>(
     x
 )
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field y number
 local <?t?>
-]]
-[[
+]])([[
 local t: A {
     x: number,
     y: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field y number
 
 ---@type A
 local <?t?>
-]]
-[[
+]])([[
 local t: A {
     y: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field y number
 <?t?> = {}
-]]
-[[
+]])([[
 (global) t: A {
     x: number,
     y: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field y number
 
 ---@type A
 <?t?> = {}
-]]
-[[
+]])([[
 (global) t: A {
     y: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field y number
 
 ---@type A
 v.<?t?> = {}
-]]
-[[
+]])([[
 (global) v.t: A {
     y: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -2233,14 +2061,13 @@ TEST [[
 
 ---@type A
 local <?t?>
-]]
-[[
+]])([[
 local t: A {
     z: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -2248,15 +2075,14 @@ TEST [[
 
 ---@class B: A
 local <?t?>
-]]
-[[
+]])([[
 local t: B {
     y: number,
     z: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -2265,16 +2091,15 @@ TEST [[
 ---@class B: A
 ---@field private a number
 local <?t?>
-]]
-[[
+]])([[
 local t: B {
     a: number,
     y: number,
     z: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field private x number
 ---@field protected y number
@@ -2285,14 +2110,13 @@ TEST [[
 
 ---@type B
 local <?t?>
-]]
-[[
+]])([[
 local t: B {
     z: number,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local mt = {}
 
@@ -2308,16 +2132,15 @@ function mt:get()
 end
 
 print(<?mt?>)
-]]
-[[
+]])([[
 local mt: A {
     get: function,
     init: function,
     update: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local mt = {}
 
@@ -2334,14 +2157,13 @@ end
 
 ---@type A
 local <?obj?>
-]]
-[[
+]])([[
 local obj: A {
     get: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local mt = {}
 
@@ -2358,15 +2180,14 @@ end
 
 ---@class B: A
 local <?obj?>
-]]
-[[
+]])([[
 local obj: B {
     get: function,
     update: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local mt = {}
 
@@ -2385,14 +2206,13 @@ end
 
 ---@type B
 local <?obj?>
-]]
-[[
+]])([[
 local obj: B {
     get: function,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 local M = {}
 
@@ -2406,12 +2226,11 @@ end
 
 ---@type A
 local <?a?>
-]]
-[[
+]])([[
 local a: A
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x fun(): string
 
@@ -2419,49 +2238,45 @@ TEST [[
 local obj
 
 local x = obj[''].<?x?>()
-]]
-[[
+]])([[
 (field) A.x: fun():string
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@field x number
 
 ---@see <?A.x?>
-]]
-[[
+]])([[
 (field) A.x: number
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type { [string]: string }[]
 local t
 
 print(<?t?>.foo)
-]]
-[[
+]])([[
 local t: { [string]: string }[] {
     foo: unknown,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local t = {
     ['x'] = 1,
     ['y'] = 2,
 }
 
 print(t.x, <?t?>.y)
-]]
-[[
+]])([[
 local t: {
     ['x']: integer = 1,
     ['y']: integer = 2,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 local enum = { a = 1, b = 2 }
 
 local <?t?> = {
@@ -2469,25 +2284,23 @@ local <?t?> = {
     [enum.b] = 2,
     [3] = {}
 }
-]]
-[[
+]])([[
 local t: {
     [1]: boolean = true,
     [2]: integer = 2,
     [3]: table,
 }
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class A
 ---@overload fun(x: number): boolean
 local <?x?>
-]]
-[[
+]])([[
 local x: A
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type A
 local <?f?>
 
@@ -2495,7 +2308,6 @@ local <?f?>
 local t = {
     x = f,
 }
-]]
-[[
+]])([[
 local f: A
-]]
+]])

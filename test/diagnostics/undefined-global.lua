@@ -1,4 +1,4 @@
-TEST [[
+TEST([[
 local print, _G
 print(<!x!>)
 print(<!log!>)
@@ -8,12 +8,12 @@ print(<!y!>)
 print(Z)
 print(_G)
 Z = 1
-]]
+]])
 
-TEST [[
+TEST([[
 X = table[<!x!>]
-]]
-TEST [[
+]])
+TEST([[
 T1 = 1
 _ENV.T2 = 1
 _G.T3 = 1
@@ -28,9 +28,9 @@ print(T4)
 print(T5)
 print(T6)
 print(T7)
-]]
+]])
 
-TEST [[
+TEST([[
 ---@class c
 c = {}
-]]
+]])

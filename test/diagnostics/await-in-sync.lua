@@ -1,26 +1,26 @@
-TEST [[
+TEST([[
 function F()
     <!coroutine.yield!>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@async
 function F()
     coroutine.yield()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type async fun()
 local f
 
 function F()
     <!f!>()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@type async fun()
 local f
 
@@ -28,9 +28,9 @@ local f
 function F()
     f()
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(cb)
     cb()
 end
@@ -40,9 +40,9 @@ return function()
         return nil
     end)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(cb)
     pcall(cb)
 end
@@ -52,9 +52,9 @@ return function()
         return nil
     end)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param c any
 local function f(c)
     return c
@@ -65,9 +65,9 @@ return function ()
         return nil
     end)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@param ... any
 local function f(...)
     return ...
@@ -78,9 +78,9 @@ return function ()
         return nil
     end)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 ---@vararg any
 local function f(...)
     return ...
@@ -91,9 +91,9 @@ return function ()
         return nil
     end)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(...)
     return ...
 end
@@ -103,9 +103,9 @@ return function ()
         return nil
     end)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(...)
     return ...
 end
@@ -115,9 +115,9 @@ return function ()
         return nil
     end)
 end
-]]
+]])
 
-TEST [[
+TEST([[
 local function f(cb)
     cb()
 end
@@ -129,4 +129,4 @@ local function af()
 end
 
 return af
-]]
+]])

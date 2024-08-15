@@ -1,16 +1,16 @@
-TEST [[
+TEST([[
 local _ = <!unpack!>
-]]
+]])
 
-TEST [[
+TEST([[
 T = {}
 ---@deprecated # comment
 T.x = 1
 
 print(<!T.x!>)
-]]
+]])
 
-TEST [[
+TEST([[
 T = {}
 
 ---@deprecated
@@ -18,4 +18,4 @@ function T:ff()
 end
 
 <!T:ff!>()
-]]
+]])

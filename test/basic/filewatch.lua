@@ -1,1 +1,1 @@
-require 'bee.filewatch'.create():add('中文文件夹')
+require('bee.filewatch').create():add('Chinese folder')

@@ -1,15 +1,15 @@
-TEST [[
+TEST([[
 return {
     <!print
     'string'!>
 }
-]]
+]])
 
-TEST [[
+TEST([[
 return {
     <!print
     {
         x = 1,
     }!>
 }
-]]
+]])
