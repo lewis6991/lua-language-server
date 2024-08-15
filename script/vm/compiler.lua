@@ -149,134 +149,166 @@ local function searchFieldByGlobalID(suri, source, key, pushResult)
         end
       end
     end
-  end
-  if node.cate == 'type' then
+  elseif node.cate == 'type' then
     vm.getClassFields(suri, node, key, pushResult)
   end
 end
 
-local searchFieldSwitch = util
-  .switch()
-  :case('table')
-  :call(function(_suri, source, key, pushResult)
-    local hasFiled = false
-    for _, field in ipairs(source) do
-      if field.type == 'tablefield' or field.type == 'tableindex' then
-        local fieldKey = guide.getKeyName(field)
-        if key == vm.ANY or key == fieldKey then
-          hasFiled = true
-          pushResult(field)
-        end
-      end
-      if field.type == 'tableexp' then
-        if key == vm.ANY or key == field.tindex then
-          hasFiled = true
-          pushResult(field)
-        end
-      end
-      if field.type == 'varargs' then
-        if not hasFiled and type(key) == 'number' and key >= 1 and math.tointeger(key) then
-          hasFiled = true
-          pushResult(field)
-        end
-        if key == vm.ANY then
-          pushResult(field)
-        end
+--- @param suri string
+--- @param source any
+--- @param key string|number|integer|boolean|vm.global|vm.ANY
+--- @param pushResult fun(field: vm.object, isMark?: boolean)
+local function searchFieldSwitchTable(suri, source, key, pushResult)
+  local hasFiled = false
+  for _, field in ipairs(source) do
+    if field.type == 'tablefield' or field.type == 'tableindex' then
+      local fieldKey = guide.getKeyName(field)
+      if key == vm.ANY or key == fieldKey then
+        hasFiled = true
+        pushResult(field)
       end
     end
-  end)
-  :case('string')
-  :case('doc.type.string')
-  :call(function(suri, _source, key, pushResult)
-    -- change to `string: stringlib` ?
-    local stringlib = vm.getGlobal('type', 'stringlib')
-    if stringlib then
-      vm.getClassFields(suri, stringlib, key, pushResult)
-    end
-  end)
-  :case('doc.type.array')
-  :call(function(suri, source, key, pushResult)
-    if type(key) == 'number' then
-      if key < 1 or not math.tointeger(key) then
-        return
-      end
-      pushResult(source.node, true)
-    end
-    if type(key) == 'table' then
-      if vm.isSubType(suri, key, 'integer') then
-        pushResult(source.node, true)
+    if field.type == 'tableexp' then
+      if key == vm.ANY or key == field.tindex then
+        hasFiled = true
+        pushResult(field)
       end
     end
-  end)
-  :case('doc.type.table')
-  :call(function(_suri, source, key, pushResult)
-    if type(key) == 'string' and key:find(vm.ID_SPLITE) then
+    if field.type == 'varargs' then
+      if not hasFiled and type(key) == 'number' and key >= 1 and math.tointeger(key) then
+        hasFiled = true
+        pushResult(field)
+      end
+      if key == vm.ANY then
+        pushResult(field)
+      end
+    end
+  end
+end
+
+--- @param suri string
+--- @param source any
+--- @param key string|number|integer|boolean|vm.global|vm.ANY
+--- @param pushResult fun(field: vm.object, isMark?: boolean)
+local function searchFieldSwitchString(suri, source, key, pushResult)
+  -- change to `string: stringlib` ?
+  local stringlib = vm.getGlobal('type', 'stringlib')
+  if stringlib then
+    vm.getClassFields(suri, stringlib, key, pushResult)
+  end
+end
+
+--- @param suri string
+--- @param source any
+--- @param key string|number|integer|boolean|vm.global|vm.ANY
+--- @param pushResult fun(field: vm.object, isMark?: boolean)
+local function searchFieldSwitchArray(suri, source, key, pushResult)
+  if type(key) == 'number' then
+    if key < 1 or not math.tointeger(key) then
       return
     end
-    for _, field in ipairs(source.fields) do
-      local fieldKey = field.name
-      if fieldKey.type == 'doc.type' then
-        local fieldNode = vm.compileNode(fieldKey)
-        for fn in fieldNode:eachObject() do
-          if fn.type == 'global' and fn.cate == 'type' then
-            if
-              key == vm.ANY
-              or fn.name == 'any'
-              or (fn.name == 'boolean' and type(key) == 'boolean')
-              or (fn.name == 'number' and type(key) == 'number')
-              or (fn.name == 'integer' and math.tointeger(key))
-              or (fn.name == 'string' and type(key) == 'string')
-            then
-              pushResult(field, true)
-            end
-          elseif
-            fn.type == 'doc.type.string'
-            or fn.type == 'doc.type.integer'
-            or fn.type == 'doc.type.boolean'
+    pushResult(source.node, true)
+  end
+  if type(key) == 'table' then
+    if vm.isSubType(suri, key, 'integer') then
+      pushResult(source.node, true)
+    end
+  end
+end
+
+--- @param suri string
+--- @param source any
+--- @param key string|number|integer|boolean|vm.global|vm.ANY
+--- @param pushResult fun(field: vm.object, isMark?: boolean)
+local function searchFieldSwitchDocTable(suri, source, key, pushResult)
+  if type(key) == 'string' and key:find(vm.ID_SPLITE) then
+    return
+  end
+  for _, field in ipairs(source.fields) do
+    local fieldKey = field.name
+    if fieldKey.type == 'doc.type' then
+      local fieldNode = vm.compileNode(fieldKey)
+      for fn in fieldNode:eachObject() do
+        if fn.type == 'global' and fn.cate == 'type' then
+          if
+            key == vm.ANY
+            or fn.name == 'any'
+            or (fn.name == 'boolean' and type(key) == 'boolean')
+            or (fn.name == 'number' and type(key) == 'number')
+            or (fn.name == 'integer' and math.tointeger(key))
+            or (fn.name == 'string' and type(key) == 'string')
           then
-            if key == vm.ANY or fn[1] == key then
-              pushResult(field, true)
-            end
+            pushResult(field, true)
+          end
+        elseif
+          fn.type == 'doc.type.string'
+          or fn.type == 'doc.type.integer'
+          or fn.type == 'doc.type.boolean'
+        then
+          if key == vm.ANY or fn[1] == key then
+            pushResult(field, true)
           end
         end
       end
-      if fieldKey.type == 'doc.field.name' then
-        if key == vm.ANY or fieldKey[1] == key then
-          pushResult(field, true)
+    elseif fieldKey.type == 'doc.field.name' then
+      if key == vm.ANY or fieldKey[1] == key then
+        pushResult(field, true)
+      end
+    end
+  end
+end
+
+--- @param suri string
+--- @param source any
+--- @param key string|number|integer|boolean|vm.global|vm.ANY
+--- @param pushResult fun(field: vm.object, isMark?: boolean)
+local function searchFieldSwitchGlobal(suri, source, key, pushResult)
+  if source.cate == 'variable' then
+    if key ~= vm.ANY then
+      if type(key) ~= 'string' then
+        return
+      end
+      local global = vm.getGlobal('variable', source.name, key)
+      if global then
+        for _, set in ipairs(global:getSets(suri)) do
+          pushResult(set)
+        end
+      end
+    else
+      local globals = vm.getGlobalFields('variable', source.name)
+      for _, global in ipairs(globals) do
+        for _, set in ipairs(global:getSets(suri)) do
+          pushResult(set)
         end
       end
     end
-  end)
-  :case('global')
-  :call(function(suri, node, key, pushResult)
-    if node.cate == 'variable' then
-      if key ~= vm.ANY then
-        if type(key) ~= 'string' then
-          return
-        end
-        local global = vm.getGlobal('variable', node.name, key)
-        if global then
-          for _, set in ipairs(global:getSets(suri)) do
-            pushResult(set)
-          end
-        end
-      else
-        local globals = vm.getGlobalFields('variable', node.name)
-        for _, global in ipairs(globals) do
-          for _, set in ipairs(global:getSets(suri)) do
-            pushResult(set)
-          end
-        end
-      end
-    end
-    if node.cate == 'type' then
-      vm.getClassFields(suri, node, key, pushResult)
-    end
-  end)
-  :default(function(suri, source, key, pushResult)
+  elseif source.cate == 'type' then
+    vm.getClassFields(suri, source, key, pushResult)
+  end
+end
+
+--- @param x string
+--- @param suri string
+--- @param source any
+--- @param key string|number|integer|boolean|vm.global|vm.ANY
+--- @param pushResult fun(field: vm.object, isMark?: boolean)
+local function searchFieldSwitch(x, suri, source, key, pushResult)
+  if x == 'table' then
+    searchFieldSwitchTable(suri, source, key, pushResult)
+  elseif x == 'string' or x == 'doc.type.string' then
+    searchFieldSwitchString(suri, source, key, pushResult)
+  elseif x == 'doc.type.array' then
+    searchFieldSwitchArray(suri, source, key, pushResult)
+  elseif x == 'doc.type.table' then
+    searchFieldSwitchDocTable(suri, source, key, pushResult)
+  elseif x == 'global' then
+    searchFieldSwitchGlobal(suri, source, key, pushResult)
+  else
+    -- 'generic' | 'global' | 'variable'
     searchFieldByLocalID(source, key, pushResult)
     searchFieldByGlobalID(suri, source, key, pushResult)
-  end)
+  end
+end
 
 --- @param suri string
 --- @param object vm.global

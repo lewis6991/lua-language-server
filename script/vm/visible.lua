@@ -152,7 +152,6 @@ function vm.getDefinedClass(suri, source)
       end
     end
   end
-  return nil
 end
 
 --- @param source parser.object

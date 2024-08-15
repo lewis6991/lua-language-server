@@ -1,4 +1,4 @@
-local vm = require('vm.vm')
+local M = require('vm.vm')
 
 --- @alias vm.object parser.object | vm.generic
 
@@ -22,4 +22,4 @@ require('vm.operator')
 require('vm.visible')
 require('vm.precompile')
 
-return vm
+return M

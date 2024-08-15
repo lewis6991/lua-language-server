@@ -1,6 +1,3 @@
-local error = error
-local type = type
-
 --- @class parser.object
 --- @field bindDocs              parser.object[]
 --- @field bindGroup             parser.object[]
@@ -83,13 +80,13 @@ local type = type
 
 --- @class guide
 --- @field debugMode boolean
-local m = {}
+local M = {}
 
-m.ANY = { '<ANY>' }
+M.ANY = { '<ANY>' }
 
-m.notNamePattern = '[^%w_\x80-\xff]'
-m.namePattern = '[%a_\x80-\xff][%w_\x80-\xff]*'
-m.namePatternFull = '^' .. m.namePattern .. '$'
+M.notNamePattern = '[^%w_\x80-\xff]'
+M.namePattern = '[%a_\x80-\xff][%w_\x80-\xff]*'
+M.namePatternFull = '^' .. M.namePattern .. '$'
 
 local blockTypes = {
   ['while'] = true,
@@ -105,7 +102,7 @@ local blockTypes = {
   ['main'] = true,
 }
 
-m.blockTypes = blockTypes
+M.blockTypes = blockTypes
 
 local topBlockTypes = {
   ['while'] = true,
@@ -269,7 +266,7 @@ end
   end,
 })
 
-m.actionMap = {
+M.actionMap = {
   ['main'] = { '#' },
   ['repeat'] = { '#' },
   ['while'] = { '#' },
@@ -284,10 +281,10 @@ m.actionMap = {
   ['funcargs'] = { '#' },
 }
 
---- 是否是字面量
+--- Whether it is a literal
 --- @param obj table
 --- @return boolean
-function m.isLiteral(obj)
+function M.isLiteral(obj)
   local tp = obj.type
   return tp == 'nil'
     or tp == 'boolean'
@@ -305,20 +302,19 @@ function m.isLiteral(obj)
     or tp == 'doc.type.array'
 end
 
---- 获取字面量
+--- Get the literal
 --- @param obj table
 --- @return any
-function m.getLiteral(obj)
-  if m.isLiteral(obj) then
+function M.getLiteral(obj)
+  if M.isLiteral(obj) then
     return obj[1]
   end
-  return nil
 end
 
---- 寻找父函数
+--- Find the parent function
 --- @param obj parser.object
 --- @return parser.object?
-function m.getParentFunction(obj)
+function M.getParentFunction(obj)
   for _ = 1, 10000 do
     obj = obj.parent
     if not obj then
@@ -329,16 +325,15 @@ function m.getParentFunction(obj)
       return obj
     end
   end
-  return nil
 end
 
---- 寻找所在区块
+--- Find the block
 --- @param obj parser.object
 --- @return parser.object?
-function m.getBlock(obj)
+function M.getBlock(obj)
   for _ = 1, 10000 do
     if not obj then
-      return nil
+      return
     end
     local tp = obj.type
     if blockTypes[tp] then
@@ -361,14 +356,14 @@ function m.getBlock(obj)
   error('guide.getBlock overstack:' .. table.concat(stack, ' -> '))
 end
 
---- 寻找所在父区块
+--- Find the parent block
 --- @param obj parser.object
 --- @return parser.object?
-function m.getParentBlock(obj)
+function M.getParentBlock(obj)
   for _ = 1, 10000 do
     obj = obj.parent
     if not obj then
-      return nil
+      return
     end
     local tp = obj.type
     if blockTypes[tp] then
@@ -378,30 +373,30 @@ function m.getParentBlock(obj)
   error('guide.getParentBlock overstack')
 end
 
---- 寻找所在可break的父区块
+--- Find the parent block that can be broken
 --- @param obj parser.object
 --- @return parser.object?
-function m.getBreakBlock(obj)
+function M.getBreakBlock(obj)
   for _ = 1, 10000 do
     obj = obj.parent
     if not obj then
-      return nil
+      return
     end
     local tp = obj.type
     if breakBlockTypes[tp] then
       return obj
     end
     if tp == 'function' then
-      return nil
+      return
     end
   end
   error('guide.getBreakBlock overstack')
 end
 
---- 寻找doc的主体
+--- Find the body of the doc
 --- @param obj parser.object
 --- @return parser.object
-function m.getDocState(obj)
+function M.getDocState(obj)
   for _ = 1, 10000 do
     local parent = obj.parent
     if not parent then
@@ -415,14 +410,14 @@ function m.getDocState(obj)
   error('guide.getDocState overstack')
 end
 
---- 寻找所在父类型
+--- Find the parent type
 --- @param obj parser.object
 --- @return parser.object?
-function m.getParentType(obj, want)
+function M.getParentType(obj, want)
   for _ = 1, 10000 do
     obj = obj.parent
     if not obj then
-      return nil
+      return
     end
     if want == obj.type then
       return obj
@@ -431,14 +426,14 @@ function m.getParentType(obj, want)
   error('guide.getParentType overstack')
 end
 
---- 寻找所在父类型
+--- Find the parent type
 --- @param obj parser.object
 --- @return parser.object?
-function m.getParentTypes(obj, wants)
+function M.getParentTypes(obj, wants)
   for _ = 1, 10000 do
     obj = obj.parent
     if not obj then
-      return nil
+      return
     end
     if wants[obj.type] then
       return obj
@@ -447,10 +442,10 @@ function m.getParentTypes(obj, wants)
   error('guide.getParentTypes overstack')
 end
 
---- 寻找根区块
+--- Find the root block
 --- @param obj parser.object
 --- @return parser.object
-function m.getRoot(obj)
+function M.getRoot(obj)
   local source = obj
   if source._root then
     return source._root
@@ -475,11 +470,11 @@ end
 
 --- @param obj parser.object | { uri: string }
 --- @return string
-function m.getUri(obj)
+function M.getUri(obj)
   if obj.uri then
     return obj.uri
   end
-  local root = m.getRoot(obj)
+  local root = M.getRoot(obj)
   if root then
     return root.uri or ''
   end
@@ -487,24 +482,24 @@ function m.getUri(obj)
 end
 
 --- @return parser.object?
-function m.getENV(source, start)
+function M.getENV(source, start)
   if not start then
     start = 1
   end
-  return m.getLocal(source, '_ENV', start) or m.getLocal(source, '@fenv', start)
+  return M.getLocal(source, '_ENV', start) or M.getLocal(source, '@fenv', start)
 end
 
---- 获取指定区块中可见的局部变量
+--- Get the local variables visible in the specified block
 --- @param source parser.object
---- @param name string # 变量名
---- @param pos integer # 可见位置
+--- @param name string # variable name
+--- @param pos integer # Visible position
 --- @return parser.object?
-function m.getLocal(source, name, pos)
+function M.getLocal(source, name, pos)
   local block = source
   -- find nearest source
   for _ = 1, 10000 do
     if not block then
-      return nil
+      return
     end
     if block.type == 'main' then
       break
@@ -515,7 +510,7 @@ function m.getLocal(source, name, pos)
     block = block.parent
   end
 
-  m.eachSourceContain(block, pos, function(src)
+  M.eachSourceContain(block, pos, function(src)
     if blockTypes[src.type] and (src.finish - src.start) < (block.finish - src.start) then
       block = src
     end
@@ -540,13 +535,12 @@ function m.getLocal(source, name, pos)
     end
     block = block.parent
   end
-  return nil
 end
 
---- 获取指定区块中所有的可见局部变量名称
-function m.getVisibleLocals(block, pos)
+--- Get all visible local variable names in the specified block
+function M.getVisibleLocals(block, pos)
   local result = {}
-  m.eachSourceContain(m.getRoot(block), pos, function(source)
+  M.eachSourceContain(M.getRoot(block), pos, function(source)
     local locals = source.locals
     if locals then
       for i = 1, #locals do
@@ -561,14 +555,14 @@ function m.getVisibleLocals(block, pos)
   return result
 end
 
---- 获取指定区块中可见的标签
+--- Get the visible tags in the specified block
 --- @param block parser.object
 --- @param name string
-function m.getLabel(block, name)
-  local current = m.getBlock(block)
+function M.getLabel(block, name)
+  local current = M.getBlock(block)
   for _ = 1, 10000 do
     if not current then
-      return nil
+      return
     end
     local labels = current.labels
     if labels then
@@ -578,20 +572,20 @@ function m.getLabel(block, name)
       end
     end
     if current.type == 'function' then
-      return nil
+      return
     end
-    current = m.getParentBlock(current)
+    current = M.getParentBlock(current)
   end
   error('guide.getLocal overstack')
 end
 
-function m.getStartFinish(source)
+function M.getStartFinish(source)
   local start = source.start
   local finish = source.finish
   if not start then
     local first = source[1]
     if not first then
-      return nil, nil
+      return
     end
     local last = source[#source]
     start = first.start
@@ -600,13 +594,13 @@ function m.getStartFinish(source)
   return start, finish
 end
 
-function m.getRange(source)
+function M.getRange(source)
   local start = source.vstart or source.start
   local finish = source.range or source.finish
   if not start then
     local first = source[1]
     if not first then
-      return nil, nil
+      return
     end
     local last = source[#source]
     start = first.vstart or first.start
@@ -615,43 +609,43 @@ function m.getRange(source)
   return start, finish
 end
 
---- 判断source是否包含position
-function m.isContain(source, position)
-  local start, finish = m.getStartFinish(source)
+--- Determine whether source contains position
+function M.isContain(source, position)
+  local start, finish = M.getStartFinish(source)
   if not start then
     return false
   end
   return start <= position and finish >= position
 end
 
---- 判断position在source的影响范围内
+--- Determine whether the position is within the scope of influence of the source
 ---
---- 主要针对赋值等语句时，key包含value
-function m.isInRange(source, position)
-  local start, finish = m.getRange(source)
+--- Mainly for assignment and other statements, key contains value
+function M.isInRange(source, position)
+  local start, finish = M.getRange(source)
   if not start then
     return false
   end
   return start <= position and finish >= position
 end
 
-function m.isBetween(source, tStart, tFinish)
-  local start, finish = m.getStartFinish(source)
+function M.isBetween(source, tStart, tFinish)
+  local start, finish = M.getStartFinish(source)
   if not start then
     return false
   end
   return start <= tFinish and finish >= tStart
 end
 
-function m.isBetweenRange(source, tStart, tFinish)
-  local start, finish = m.getRange(source)
+function M.isBetweenRange(source, tStart, tFinish)
+  local start, finish = M.getRange(source)
   if not start then
     return false
   end
   return start <= tFinish and finish >= tStart
 end
 
---- 添加child
+--- Add child
 local function addChilds(list, obj)
   local tp = obj.type
   if not tp then
@@ -664,11 +658,11 @@ local function addChilds(list, obj)
   f(obj, list)
 end
 
---- 遍历所有包含position的source
+--- Traverse all sources containing position
 --- @param ast parser.object
 --- @param position integer
 --- @param callback fun(src: parser.object): any
-function m.eachSourceContain(ast, position, callback)
+function M.eachSourceContain(ast, position, callback)
   local list = { ast }
   local mark = {}
   while true do
@@ -680,8 +674,8 @@ function m.eachSourceContain(ast, position, callback)
     list[len] = nil
     if not mark[obj] then
       mark[obj] = true
-      if m.isInRange(obj, position) then
-        if m.isContain(obj, position) then
+      if M.isInRange(obj, position) then
+        if M.isContain(obj, position) then
           local res = callback(obj)
           if res ~= nil then
             return res
@@ -693,8 +687,8 @@ function m.eachSourceContain(ast, position, callback)
   end
 end
 
---- 遍历所有在某个范围内的source
-function m.eachSourceBetween(ast, start, finish, callback)
+--- Traverse all sources within a certain range
+function M.eachSourceBetween(ast, start, finish, callback)
   local list = { ast }
   local mark = {}
   while true do
@@ -706,8 +700,8 @@ function m.eachSourceBetween(ast, start, finish, callback)
     list[len] = nil
     if not mark[obj] then
       mark[obj] = true
-      if m.isBetweenRange(obj, start, finish) then
-        if m.isBetween(obj, start, finish) then
+      if M.isBetweenRange(obj, start, finish) then
+        if M.isBetween(obj, start, finish) then
           local res = callback(obj)
           if res ~= nil then
             return res
@@ -724,7 +718,7 @@ local function getSourceTypeCache(ast)
   if not cache then
     cache = {}
     ast._typeCache = cache
-    m.eachSource(ast, function(source)
+    M.eachSource(ast, function(source)
       local tp = source.type
       if not tp then
         return
@@ -740,12 +734,12 @@ local function getSourceTypeCache(ast)
   return cache
 end
 
---- 遍历所有指定类型的source
+--- Traverse all sources of the specified type
 --- @param ast parser.object
 --- @param type string
 --- @param callback fun(src: parser.object): any
 --- @return any
-function m.eachSourceType(ast, type, callback)
+function M.eachSourceType(ast, type, callback)
   local cache = getSourceTypeCache(ast)
   local myCache = cache[type]
   if not myCache then
@@ -762,7 +756,7 @@ end
 --- @param ast parser.object
 --- @param tps string[]
 --- @param callback fun(src: parser.object)
-function m.eachSourceTypes(ast, tps, callback)
+function M.eachSourceTypes(ast, tps, callback)
   local cache = getSourceTypeCache(ast)
   for x = 1, #tps do
     local tpCache = cache[tps[x]]
@@ -774,10 +768,10 @@ function m.eachSourceTypes(ast, tps, callback)
   end
 end
 
---- 遍历所有的source
+--- Traverse all sources
 --- @param ast parser.object
 --- @param callback fun(src: parser.object): boolean?
-function m.eachSource(ast, callback)
+function M.eachSource(ast, callback)
   local cache = ast._eachCache
   if not cache then
     cache = { ast }
@@ -806,7 +800,7 @@ end
 
 --- @param source   parser.object
 --- @param callback fun(src: parser.object)
-function m.eachChild(source, callback)
+function M.eachChild(source, callback)
   local f = eachChildMap[source.type]
   if not f then
     return
@@ -814,12 +808,12 @@ function m.eachChild(source, callback)
   f(source, callback)
 end
 
---- 获取指定的 special
+--- Get the specified special
 --- @param ast parser.object
 --- @param name string
 --- @param callback fun(src: parser.object)
-function m.eachSpecialOf(ast, name, callback)
-  local root = m.getRoot(ast)
+function M.eachSpecialOf(ast, name, callback)
+  local root = M.getRoot(ast)
   local state = root.state
   if not state.specials then
     return
@@ -833,28 +827,28 @@ function m.eachSpecialOf(ast, name, callback)
   end
 end
 
---- 将 position 拆分成行号与列号
+--- Split position into row number and column number
 ---
---- 第一行是0
+---The first line is 0
 --- @param position integer
 --- @return integer row
 --- @return integer col
-function m.rowColOf(position)
+function M.rowColOf(position)
   return position // 10000, position % 10000
 end
 
---- 将行列合并为 position
+--- Combine rows and columns into position
 ---
---- 第一行是0
+--- The first line is 0
 --- @param row integer
 --- @param col integer
 --- @return integer
-function m.positionOf(row, col)
+function M.positionOf(row, col)
   return row * 10000 + math.min(col, 10000 - 1)
 end
 
-function m.positionToOffsetByLines(lines, position)
-  local row, col = m.rowColOf(position)
+function M.positionToOffsetByLines(lines, position)
+  local row, col = M.rowColOf(position)
   if row < 0 then
     return 0
   end
@@ -870,16 +864,16 @@ function m.positionToOffsetByLines(lines, position)
   return offset
 end
 
---- 返回全文光标位置
+--- Return to full text cursor position
 --- @param state any
 --- @param position integer
-function m.positionToOffset(state, position)
-  return m.positionToOffsetByLines(state.lines, position)
+function M.positionToOffset(state, position)
+  return M.positionToOffsetByLines(state.lines, position)
 end
 
 --- @param lines integer[]
 --- @param offset integer
-function m.offsetToPositionByLines(lines, offset)
+function M.offsetToPositionByLines(lines, offset)
   local left = 0
   local right = #lines
   local row = 0
@@ -901,14 +895,14 @@ function m.offsetToPositionByLines(lines, offset)
     end
   end
   local col = offset - lines[row] + 1
-  return m.positionOf(row, col)
+  return M.positionOf(row, col)
 end
 
-function m.offsetToPosition(state, offset)
-  return m.offsetToPositionByLines(state.lines, offset)
+function M.offsetToPosition(state, offset)
+  return M.offsetToPositionByLines(state.lines, offset)
 end
 
-function m.getLineRange(state, row)
+function M.getLineRange(state, row)
   if not state.lines[row] then
     return 0
   end
@@ -944,13 +938,13 @@ local assignTypeMap = {
   ['doc.type.field'] = true,
   ['doc.type.array'] = true,
 }
-function m.isAssign(source)
+function M.isAssign(source)
   local tp = source.type
   if assignTypeMap[tp] then
     return true
   end
   if tp == 'call' then
-    local special = m.getSpecial(source.node)
+    local special = M.getSpecial(source.node)
     if special == 'rawset' then
       return true
     end
@@ -965,13 +959,13 @@ local getTypeMap = {
   ['getmethod'] = true,
   ['getindex'] = true,
 }
-function m.isGet(source)
+function M.isGet(source)
   local tp = source.type
   if getTypeMap[tp] then
     return true
   end
   if tp == 'call' then
-    local special = m.getSpecial(source.node)
+    local special = M.getSpecial(source.node)
     if special == 'rawget' then
       return true
     end
@@ -979,16 +973,16 @@ function m.isGet(source)
   return false
 end
 
-function m.getSpecial(source)
+function M.getSpecial(source)
   if not source then
-    return nil
+    return
   end
   return source.special
 end
 
-function m.getKeyNameOfLiteral(obj)
+function M.getKeyNameOfLiteral(obj)
   if not obj then
-    return nil
+    return
   end
   local tp = obj.type
   if tp == 'field' or tp == 'method' then
@@ -1007,9 +1001,9 @@ function m.getKeyNameOfLiteral(obj)
 end
 
 --- @return string?
-function m.getKeyName(obj)
+function M.getKeyName(obj)
   if not obj then
-    return nil
+    return
   end
   local tp = obj.type
   if tp == 'getglobal' or tp == 'setglobal' then
@@ -1025,7 +1019,7 @@ function m.getKeyName(obj)
       return obj.method[1]
     end
   elseif tp == 'getindex' or tp == 'setindex' or tp == 'tableindex' then
-    return m.getKeyNameOfLiteral(obj.index)
+    return M.getKeyNameOfLiteral(obj.index)
   elseif tp == 'tableexp' then
     return obj.tindex
   elseif tp == 'field' or tp == 'method' then
@@ -1048,14 +1042,14 @@ function m.getKeyName(obj)
   then
     return obj[1]
   elseif tp == 'doc.type.field' then
-    return m.getKeyName(obj.name)
+    return M.getKeyName(obj.name)
   end
-  return m.getKeyNameOfLiteral(obj)
+  return M.getKeyNameOfLiteral(obj)
 end
 
-function m.getKeyTypeOfLiteral(obj)
+function M.getKeyTypeOfLiteral(obj)
   if not obj then
-    return nil
+    return
   end
   local tp = obj.type
   if tp == 'field' or tp == 'method' then
@@ -1071,9 +1065,9 @@ function m.getKeyTypeOfLiteral(obj)
   end
 end
 
-function m.getKeyType(obj)
+function M.getKeyType(obj)
   if not obj then
-    return nil
+    return
   end
   local tp = obj.type
   if tp == 'getglobal' or tp == 'setglobal' then
@@ -1085,7 +1079,7 @@ function m.getKeyType(obj)
   elseif tp == 'getmethod' or tp == 'setmethod' then
     return 'string'
   elseif tp == 'getindex' or tp == 'setindex' or tp == 'tableindex' then
-    return m.getKeyTypeOfLiteral(obj.index)
+    return M.getKeyTypeOfLiteral(obj.index)
   elseif tp == 'tableexp' then
     return 'integer'
   elseif tp == 'field' or tp == 'method' then
@@ -1104,13 +1098,13 @@ function m.getKeyType(obj)
   if tp == 'doc.field.name' then
     return type(obj[1])
   end
-  return m.getKeyTypeOfLiteral(obj)
+  return M.getKeyTypeOfLiteral(obj)
 end
 
----是否是全局变量（包括 _G.XXX 形式）
+--- Whether it is a global variable (including _G.XXX form)
 --- @param source parser.object
 --- @return boolean
-function m.isGlobal(source)
+function M.isGlobal(source)
   if source._isGlobal ~= nil then
     return source._isGlobal
   end
@@ -1144,7 +1138,7 @@ function m.isGlobal(source)
         source._isGlobal = true
         return true
       end
-      if m.getKeyName(node) ~= '_G' then
+      if M.getKeyName(node) ~= '_G' then
         break
       end
       current = node
@@ -1164,15 +1158,15 @@ function m.isGlobal(source)
   return false
 end
 
-function m.isInString(ast, position)
-  return m.eachSourceContain(ast, position, function(source)
+function M.isInString(ast, position)
+  return M.eachSourceContain(ast, position, function(source)
     if source.type == 'string' and source.start < position then
       return true
     end
   end)
 end
 
-function m.isInComment(ast, offset)
+function M.isInComment(ast, offset)
   for _, com in ipairs(ast.state.comms) do
     if offset >= com.start and offset <= com.finish then
       return true
@@ -1181,12 +1175,12 @@ function m.isInComment(ast, offset)
   return false
 end
 
-function m.isOOP(source)
+function M.isOOP(source)
   if source.type == 'setmethod' or source.type == 'getmethod' then
     return true
   end
   if source.type == 'method' or source.type == 'field' or source.type == 'function' then
-    return m.isOOP(source.parent)
+    return M.isOOP(source.parent)
   end
   return false
 end
@@ -1209,75 +1203,72 @@ local basicTypeMap = {
 
 --- @param str string
 --- @return boolean
-function m.isBasicType(str)
+function M.isBasicType(str)
   return basicTypeMap[str] == true
 end
 
 --- @param source parser.object
 --- @return boolean
-function m.isBlockType(source)
+function M.isBlockType(source)
   return blockTypes[source.type] == true
 end
 
 --- @param source parser.object
 --- @return parser.object?
-function m.getSelfNode(source)
+function M.getSelfNode(source)
   if source.type == 'getlocal' or source.type == 'setlocal' then
     source = source.node
   end
   if source.type ~= 'self' then
-    return nil
+    return
   end
   local args = source.parent
   if args.type == 'callargs' then
     local call = args.parent
     if call.type ~= 'call' then
-      return nil
+      return
     end
     local getmethod = call.node
     if getmethod.type ~= 'getmethod' then
-      return nil
+      return
     end
     return getmethod.node
   end
   if args.type == 'funcargs' then
-    return m.getFunctionSelfNode(args.parent)
+    return M.getFunctionSelfNode(args.parent)
   end
-  return nil
 end
 
 --- @param func parser.object
 --- @return parser.object?
-function m.getFunctionSelfNode(func)
+function M.getFunctionSelfNode(func)
   if func.type ~= 'function' then
-    return nil
+    return
   end
   local parent = func.parent
   if parent.type == 'setmethod' or parent.type == 'setfield' then
     return parent.node
   end
-  return nil
 end
 
 --- @param source parser.object
 --- @return parser.object?
-function m.getTopBlock(source)
+function M.getTopBlock(source)
   for _ = 1, 1000 do
     local block = source.parent
     if not block then
-      return nil
+      return
     end
     if topBlockTypes[block.type] then
       return block
     end
     source = block
   end
-  return nil
 end
 
 --- @param source parser.object
 --- @return boolean
-function m.isParam(source)
+function M.isParam(source)
   if source.type ~= 'local' and source.type ~= 'self' then
     return false
   end
@@ -1289,7 +1280,7 @@ end
 
 --- @param source parser.object
 --- @return parser.object[]?
-function m.getParams(source)
+function M.getParams(source)
   if source.type == 'call' then
     local args = source.args
     if not args then
@@ -1307,15 +1298,14 @@ function m.getParams(source)
     assert(args.type == 'funcargs', "function.args type is't callargs")
     return args
   end
-  return nil
 end
 
 --- @param source parser.object
 --- @param index integer
 --- @return parser.object?
-function m.getParam(source, index)
-  local args = m.getParams(source)
+function M.getParam(source, index)
+  local args = M.getParams(source)
   return args and args[index] or nil
 end
 
-return m
+return M
