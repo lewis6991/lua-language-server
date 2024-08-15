@@ -1,9 +1,7 @@
-local files = require("files")
-local guide = require("parser.guide")
-local converter = require("proto.converter")
-local subString = require 'core.substring'
-
-
+local files = require('files')
+local guide = require('parser.guide')
+local converter = require('proto.converter')
+local subString = require('core.substring')
 
 ---@class psi.view.node
 ---@field name string
@@ -21,76 +19,80 @@ local subString = require 'core.substring'
 ---@param state parser.state
 ---@return psi.view.node | nil
 local function toPsiNode(astNode, state)
-    if not astNode or not astNode.start then
-        return
-    end
+  if not astNode or not astNode.start then
+    return
+  end
 
-    local startOffset = guide.positionToOffset(state, astNode.start)
-    local finishOffset = guide.positionToOffset(state, astNode.finish)
-    local startPosition = converter.packPosition(state, astNode.start)
-    local finishPosition = converter.packPosition(state, astNode.finish)
-    return {
-        name = string.format("%s@[%d:%d .. %d:%d]",
-            astNode.type,
-            startPosition.line + 1, startPosition.character + 1,
-            finishPosition.line + 1, finishPosition.character + 1),
-        attr = {
-            range = {
-                start = startOffset,
-                ["end"] = finishOffset
-            }
-        }
-    }
+  local startOffset = guide.positionToOffset(state, astNode.start)
+  local finishOffset = guide.positionToOffset(state, astNode.finish)
+  local startPosition = converter.packPosition(state, astNode.start)
+  local finishPosition = converter.packPosition(state, astNode.finish)
+  return {
+    name = string.format(
+      '%s@[%d:%d .. %d:%d]',
+      astNode.type,
+      startPosition.line + 1,
+      startPosition.character + 1,
+      finishPosition.line + 1,
+      finishPosition.character + 1
+    ),
+    attr = {
+      range = {
+        start = startOffset,
+        ['end'] = finishOffset,
+      },
+    },
+  }
 end
 
 ---@param astNode parser.object
 ---@return psi.view.node | nil
 local function collectPsi(astNode, state)
-    local psiNode = toPsiNode(astNode, state)
+  local psiNode = toPsiNode(astNode, state)
 
-    if not psiNode then
-        return
+  if not psiNode then
+    return
+  end
+
+  guide.eachChild(astNode, function(child)
+    if psiNode.children == nil then
+      psiNode.children = {}
     end
 
-    guide.eachChild(astNode, function(child)
-        if psiNode.children == nil then
-            psiNode.children = {}
-        end
+    local psi = collectPsi(child, state)
+    if psi then
+      psiNode.children[#psiNode.children + 1] = psi
+    end
+  end)
 
-        local psi = collectPsi(child, state)
-        if psi then
-            psiNode.children[#psiNode.children+1] = psi
-        end
-    end)
+  if psiNode.children and #psiNode.children > 0 and psiNode.attr then
+    local range = psiNode.attr.range
+    if range.start > psiNode.children[1].attr.range.start then
+      range.start = psiNode.children[1].attr.range.start
+    end
+    if range['end'] < psiNode.children[#psiNode.children].attr.range['end'] then
+      range['end'] = psiNode.children[#psiNode.children].attr.range['end']
+    end
+  end
 
-    if psiNode.children and #psiNode.children > 0 and psiNode.attr then
-        local range = psiNode.attr.range
-        if range.start > psiNode.children[1].attr.range.start then
-            range.start = psiNode.children[1].attr.range.start
-        end
-        if range["end"] < psiNode.children[#psiNode.children].attr.range["end"] then
-            range["end"] = psiNode.children[#psiNode.children].attr.range["end"]
-        end
+  if not psiNode.children then
+    local subber = subString(state)
+    local showText = subber(astNode.start + 1, astNode.finish)
+    if string.len(showText) > 30 then
+      showText = showText:sub(0, 30) .. ' ... '
     end
 
-    if not psiNode.children then
-        local subber = subString(state)
-        local showText = subber(astNode.start + 1, astNode.finish)
-        if string.len(showText) > 30 then
-            showText = showText:sub(0, 30).. " ... "
-        end
+    psiNode.name = psiNode.name .. '   ' .. showText
+  end
 
-        psiNode.name = psiNode.name .. "   " .. showText
-    end
-
-    return psiNode
+  return psiNode
 end
 
 return function(uri)
-    local state = files.getState(uri)
-    if not state then
-        return
-    end
+  local state = files.getState(uri)
+  if not state then
+    return
+  end
 
-    return { data = collectPsi(state.ast, state) }
+  return { data = collectPsi(state.ast, state) }
 end

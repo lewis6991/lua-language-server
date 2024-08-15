@@ -1,4 +1,4 @@
-local util = require 'utility'
+local util = require('utility')
 
 ---@class gc
 ---@field package _list table
@@ -11,76 +11,76 @@ mt._removed = false
 mt._max = 10
 
 local function destroyGCObject(obj)
-    local tp = type(obj)
-    if tp == 'function' then
-        xpcall(obj, log.error)
-    elseif tp == 'table' then
-        local remove = obj.remove
-        if type(remove) == 'function' then
-            xpcall(remove, log.error, obj)
-        end
+  local tp = type(obj)
+  if tp == 'function' then
+    xpcall(obj, log.error)
+  elseif tp == 'table' then
+    local remove = obj.remove
+    if type(remove) == 'function' then
+      xpcall(remove, log.error, obj)
     end
+  end
 end
 
 local function isRemoved(obj)
-    local tp = type(obj)
-    if tp == 'function' then
-        for i = 1, 1000 do
-            local n, v = debug.getupvalue(obj, i)
-            if not n then
-                if i > 1 then
-                    log.warn('函数式析构器没有 removed 上值！', util.dump(debug.getinfo(obj)))
-                end
-                break
-            end
-            if n == 'removed' then
-                if v then
-                    return true
-                end
-                break
-            end
+  local tp = type(obj)
+  if tp == 'function' then
+    for i = 1, 1000 do
+      local n, v = debug.getupvalue(obj, i)
+      if not n then
+        if i > 1 then
+          log.warn('函数式析构器没有 removed 上值！', util.dump(debug.getinfo(obj)))
         end
-    elseif tp == 'table' then
-        if obj._removed then
-            return true
+        break
+      end
+      if n == 'removed' then
+        if v then
+          return true
         end
+        break
+      end
     end
-    return false
+  elseif tp == 'table' then
+    if obj._removed then
+      return true
+    end
+  end
+  return false
 end
 
 local function zip(self)
-    local list = self._list
-    local index = 1
-    for i = 1, #list do
-        local obj = list[index]
-        if not obj then
-            break
-        end
-        if isRemoved(obj) then
-            if index == #list then
-                list[#list] = nil
-                break
-            end
-            list[index] = list[#list]
-        else
-            index = index + 1
-        end
+  local list = self._list
+  local index = 1
+  for i = 1, #list do
+    local obj = list[index]
+    if not obj then
+      break
     end
-    self._max = #list * 1.5
-    if self._max < 10 then
-        self._max = 10
+    if isRemoved(obj) then
+      if index == #list then
+        list[#list] = nil
+        break
+      end
+      list[index] = list[#list]
+    else
+      index = index + 1
     end
+  end
+  self._max = #list * 1.5
+  if self._max < 10 then
+    self._max = 10
+  end
 end
 
 function mt:remove()
-    if self._removed then
-        return
-    end
-    self._removed = true
-    local list = self._list
-    for i = 1, #list do
-        destroyGCObject(list[i])
-    end
+  if self._removed then
+    return
+  end
+  self._removed = true
+  local list = self._list
+  for i = 1, #list do
+    destroyGCObject(list[i])
+  end
 end
 
 --- 标记`obj`在buff移除时自动移除。如果`obj`是个`function`,
@@ -89,15 +89,15 @@ end
 ---@param obj any
 ---@return any
 function mt:add(obj)
-    if self._removed then
-        destroyGCObject(obj)
-        return nil
-    end
-    self._list[#self._list+1] = obj
-    if #self._list > self._max then
-        zip(self)
-    end
-    return obj
+  if self._removed then
+    destroyGCObject(obj)
+    return nil
+  end
+  self._list[#self._list + 1] = obj
+  if #self._list > self._max then
+    zip(self)
+  end
+  return obj
 end
 
 --- 创建一个gc容器，使用 `gc:add(obj)` 将析构器放入gc容器。
@@ -114,8 +114,8 @@ end
 --- gc:add(obj2)       -- 将obj2放入gc容器
 --- gc:remove()        -- 移除gc容器，同时也会移除obj1与obj2
 --- ```
-return function ()
-    return setmetatable({
-        _list = {},
-    }, mt)
+return function()
+  return setmetatable({
+    _list = {},
+  }, mt)
 end

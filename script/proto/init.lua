@@ -1,3 +1,3 @@
-local proto   = require 'proto.proto'
+local proto = require('proto.proto')
 
 return proto

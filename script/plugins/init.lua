@@ -1,1 +1,1 @@
-require 'plugins.ffi'
+require('plugins.ffi')

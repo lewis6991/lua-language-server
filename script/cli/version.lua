@@ -1,2 +1,2 @@
-local version = require 'version'
+local version = require('version')
 print(version.getVersion())

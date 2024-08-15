@@ -1,2 +1,2 @@
-require 'provider.diagnostic'
-return require 'provider.provider'
+require('provider.diagnostic')
+return require('provider.provider')

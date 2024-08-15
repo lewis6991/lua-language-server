@@ -1,3 +1,3 @@
-local service = require 'service.service'
+local service = require('service.service')
 
 return service
