@@ -14,43 +14,36 @@ vm.ANY = debug.upvalueid(require, 1)
 --- @param object vm.node.object
 --- @return string?
 function vm.getNodeName(object)
-  if object.type == 'global' and object.cate == 'type' then
+  local ty = object.type
+  if ty == 'global' and object.cate == 'type' then
     ---@cast object vm.global
     return object.name
   end
   if
-    object.type == 'nil'
-    or object.type == 'boolean'
-    or object.type == 'number'
-    or object.type == 'string'
-    or object.type == 'table'
-    or object.type == 'function'
-    or object.type == 'integer'
+    ty == 'nil'
+    or ty == 'boolean'
+    or ty == 'number'
+    or ty == 'string'
+    or ty == 'table'
+    or ty == 'function'
+    or ty == 'integer'
   then
-    return object.type
-  end
-  if object.type == 'doc.type.boolean' then
+    return ty
+  elseif ty == 'doc.type.boolean' then
     return 'boolean'
-  end
-  if object.type == 'doc.type.integer' then
+  elseif ty == 'doc.type.integer' then
     return 'integer'
-  end
-  if object.type == 'doc.type.function' then
+  elseif ty == 'doc.type.function' then
     return 'function'
-  end
-  if object.type == 'doc.type.table' then
+  elseif ty == 'doc.type.table' then
     return 'table'
-  end
-  if object.type == 'doc.type.array' then
+  elseif ty == 'doc.type.array' then
     return 'table'
-  end
-  if object.type == 'doc.type.string' then
+  elseif ty == 'doc.type.string' then
+    return 'string'
+  elseif ty == 'doc.field.name' then
     return 'string'
   end
-  if object.type == 'doc.field.name' then
-    return 'string'
-  end
-  return nil
 end
 
 --- @param parentName string
@@ -62,23 +55,19 @@ end
 local function checkParentEnum(parentName, child, uri, mark, errs)
   local parentClass = vm.getGlobal('type', parentName)
   if not parentClass then
-    return nil
+    return
   end
   local enums
   for _, set in ipairs(parentClass:getSets(uri)) do
     if set.type == 'doc.enum' then
       local denums = vm.getEnums(set)
       if denums then
-        if enums then
-          enums = util.arrayMerge(enums, denums)
-        else
-          enums = util.arrayMerge({}, denums)
-        end
+        enums = util.arrayMerge(enums or {}, denums)
       end
     end
   end
   if not enums then
-    return nil
+    return
   end
   if child.type == 'global' then
     ---@cast child vm.global
@@ -157,7 +146,7 @@ local function checkChildEnum(childName, parent, uri, mark, errs)
   end
   local childClass = vm.getGlobal('type', childName)
   if not childClass then
-    return nil
+    return
   end
   local enums
   for _, set in ipairs(childClass:getSets(uri)) do
@@ -167,7 +156,7 @@ local function checkChildEnum(childName, parent, uri, mark, errs)
     end
   end
   if not enums then
-    return nil
+    return
   end
   mark[childName] = true
   for _, enum in ipairs(enums) do
@@ -297,7 +286,7 @@ function vm.isSubType(uri, child, parent, mark, errs)
   if type(child) == 'string' then
     local global = vm.getGlobal('type', child)
     if not global then
-      return nil
+      return
     end
     child = global
   elseif child.type == 'vm.node' then
@@ -380,7 +369,7 @@ function vm.isSubType(uri, child, parent, mark, errs)
   end
 
   if not childName or isAlias(childName, uri) then
-    return nil
+    return
   end
 
   if type(parent) == 'string' then
@@ -428,7 +417,7 @@ function vm.isSubType(uri, child, parent, mark, errs)
   end
 
   if not parentName or isAlias(parentName, uri) then
-    return nil
+    return
   end
 
   if childName == parentName then
@@ -659,7 +648,7 @@ function vm.getTableValue(uri, tnode, knode, inversion)
     end
   end
   if result:isEmpty() then
-    return nil
+    return
   end
   return result
 end
@@ -709,7 +698,7 @@ function vm.getTableKey(uri, tnode, vnode, reverse)
     end
   end
   if result:isEmpty() then
-    return nil
+    return
   end
   return result
 end
@@ -845,7 +834,7 @@ end
 function vm.getOverloadsByTypeName(name, uri)
   local global = vm.getGlobal('type', name)
   if not global then
-    return nil
+    return
   end
   local results
   for _, set in ipairs(global:getSets(uri)) do

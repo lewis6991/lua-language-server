@@ -7,27 +7,6 @@ local await = require('await')
 local progress = require('progress')
 local lang = require('language')
 
-local simpleSwitch
-
-simpleSwitch = util
-  .switch()
-  :case('goto')
-  :call(function(source, pushResult)
-    if source.node then
-      simpleSwitch('label', source.node, pushResult)
-      pushResult(source.node)
-    end
-  end)
-  :case('label')
-  :call(function(source, pushResult)
-    pushResult(source)
-    if source.ref then
-      for _, ref in ipairs(source.ref) do
-        pushResult(ref)
-      end
-    end
-  end)
-
 --- @async
 local function searchInAllFiles(suri, searcher, notify)
   await.delay()
@@ -42,7 +21,7 @@ local function searchInAllFiles(suri, searcher, notify)
     end
   end
 
-  local loading <close> = progress.create(suri, lang.script.WINDOW_SEARCHING_IN_FILES, 1)
+  local loading = progress.create(suri, lang.script.WINDOW_SEARCHING_IN_FILES, 1)
   local cancelled
   loading:onCancel(function()
     cancelled = true
@@ -65,6 +44,10 @@ local function searchInAllFiles(suri, searcher, notify)
 end
 
 --- @async
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
+--- @param defMap table
+--- @param fileNotify fun(uri: string): boolean
 local function searchWord(source, pushResult, defMap, fileNotify)
   local key = guide.getKeyName(source)
   if not key then
@@ -175,70 +158,23 @@ local function searchFunction(source, pushResult, defMap, fileNotify)
   searchInAllFiles(guide.getUri(source), findCall, fileNotify)
 end
 
-local searchByParentNode
-local nodeSwitch = util
-  .switch()
-  :case('field')
-  :case('method')
-  ---@async
-  :call(function(source, pushResult, defMap, fileNotify)
-    searchByParentNode(source.parent, pushResult, defMap, fileNotify)
-  end)
-  :case('getfield')
-  :case('setfield')
-  :case('getmethod')
-  :case('setmethod')
-  :case('getindex')
-  :case('setindex')
-  ---@async
-  :call(function(source, pushResult, defMap, fileNotify)
-    local key = guide.getKeyName(source)
-    if type(key) ~= 'string' then
-      return
-    end
-
-    searchWord(source, pushResult, defMap, fileNotify)
-  end)
-  :case('tablefield')
-  :case('tableindex')
-  :case('doc.field.name')
-  ---@async
-  :call(function(source, pushResult, defMap, fileNotify)
-    searchWord(source, pushResult, defMap, fileNotify)
-  end)
-  :case('setglobal')
-  :case('getglobal')
-  ---@async
-  :call(function(source, pushResult, defMap, fileNotify)
-    searchWord(source, pushResult, defMap, fileNotify)
-  end)
-  :case('doc.alias.name')
-  :case('doc.class.name')
-  :case('doc.enum.name')
-  ---@async
-  :call(function(source, pushResult, defMap, fileNotify)
-    searchWord(source.parent, pushResult, defMap, fileNotify)
-  end)
-  :case('doc.alias')
-  :case('doc.class')
-  :case('doc.enum')
-  :case('doc.type.name')
-  :case('doc.extends.name')
-  ---@async
-  :call(function(source, pushResult, defMap, fileNotify)
-    searchWord(source, pushResult, defMap, fileNotify)
-  end)
-  :case('function')
-  :case('doc.type.function')
-  ---@async
-  :call(function(source, pushResult, defMap, fileNotify)
-    searchFunction(source, pushResult, defMap, fileNotify)
-  end)
 
 --- @param source  parser.object
 --- @param pushResult fun(src: parser.object)
 local function searchBySimple(source, pushResult)
-  simpleSwitch(source.type, source, pushResult)
+  if source.type == 'goto' then
+    if source.node then
+      searchBySimple(source.node, pushResult)
+      pushResult(source.node)
+    end
+  elseif source.type == 'label' then
+    pushResult(source)
+    if source.ref then
+      for _, ref in ipairs(source.ref) do
+        pushResult(ref)
+      end
+    end
+  end
 end
 
 --- @param source  parser.object
@@ -258,12 +194,63 @@ local function searchByLocalID(source, pushResult)
   end
 end
 
+local searchByParentNode
+
+--- @type table<string|string[], async fun(source: parser.object, pushResult: fun(src: parser.object), defMap: table, fileNotify: fun(uri: string): boolean)>
+local nodeSwitch_table = {
+  [{ 'field', 'method' }] = function(source, pushResult, defMap, fileNotify) --- @async
+    searchByParentNode(source.parent, pushResult, defMap, fileNotify)
+  end,
+
+  [{
+    'getfield',
+    'setfield',
+    'getmethod',
+    'setmethod',
+    'getindex',
+    'setindex',
+  }] = function(source, pushResult, defMap, fileNotify) --- @async
+    local key = guide.getKeyName(source)
+    if type(key) ~= 'string' then
+      return
+    end
+
+    searchWord(source, pushResult, defMap, fileNotify)
+  end,
+
+  ['tablefield'] = searchWord,
+  ['tableindex'] = searchWord,
+  ['doc.field.name'] = searchWord,
+  ['setglobal'] = searchWord,
+  ['getglobal'] = searchWord,
+  ['doc.alias'] = searchWord,
+  ['doc.class'] = searchWord,
+  ['doc.enum'] = searchWord,
+  ['doc.type.name'] = searchWord,
+  ['doc.extends.name'] = searchWord,
+
+  --- @async
+  [{ 'doc.alias.name', 'doc.class.name', 'doc.enum.name' }] = function(
+    source,
+    pushResult,
+    defMap,
+    fileNotify
+  )
+    searchWord(source.parent, pushResult, defMap, fileNotify)
+  end,
+
+  ['function'] = searchFunction,
+  ['doc.type.function'] = searchFunction,
+}
+
+local nodeSwitch = util.switch2(nodeSwitch_table)
+
 --- @async
 --- @param source  parser.object
 --- @param pushResult fun(src: parser.object)
 --- @param fileNotify? fun(uri: string): boolean
 function searchByParentNode(source, pushResult, defMap, fileNotify)
-  nodeSwitch(source.type, source, pushResult, defMap, fileNotify)
+  nodeSwitch(source.type)(source, pushResult, defMap, fileNotify)
 end
 
 local function searchByGlobal(source, pushResult)
@@ -285,6 +272,8 @@ local function searchByGlobal(source, pushResult)
   end
 end
 
+--- @param source parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchByDef(source, pushResult)
   local defMap = {}
   if source.type == 'function' or source.type == 'doc.type.function' then

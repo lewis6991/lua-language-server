@@ -805,6 +805,28 @@ function m.switch()
   return obj
 end
 
+--- @param t table<string|string[],function>
+--- @return fun(ty: string): function
+function m.switch2(t)
+  return function(ty)
+    -- Defer table expansion until first miss
+    if not t[ty] then
+      local expanded = {}
+      for k, v in pairs(t) do
+        if type(k) == 'table' then
+          for _, k2 in pairs(k) do
+            expanded[k2] = v
+          end
+        else
+          expanded[k] = v
+        end
+      end
+      t = expanded
+    end
+    return t[ty] or function(...) end
+  end
+end
+
 --- @param f async fun()
 --- @param name string
 --- @return any, boolean

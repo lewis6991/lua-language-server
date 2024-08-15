@@ -17,14 +17,13 @@ mt.type = 'variable'
 --- @param id string
 --- @return vm.variable
 local function createVariable(root, id)
-  local variable = setmetatable({
+  return setmetatable({
     root = root,
     uri = root.uri,
     id = id,
     sets = {},
     gets = {},
   }, mt)
-  return variable
 end
 
 --- @class parser.object
@@ -55,117 +54,44 @@ local function insertVariableID(id, source, base)
   return variable
 end
 
-local compileSwitch = util
-  .switch()
-  :case('local')
-  :case('self')
-  :call(function(source, base)
-    local id = ('%d'):format(source.start)
-    local variable = insertVariableID(id, source, base)
-    source._variableNode = variable
-    if not source.ref then
-      return
-    end
-    for _, ref in ipairs(source.ref) do
-      compileVariables(ref, base)
-    end
-  end)
-  :case('setlocal')
-  :case('getlocal')
-  :call(function(source, base)
-    local id = ('%d'):format(source.node.start)
-    local variable = insertVariableID(id, source, base)
-    source._variableNode = variable
-    compileVariables(source.next, base)
-  end)
-  :case('getfield')
-  :case('setfield')
-  :call(function(source, base)
-    local parentNode = source.node._variableNode
-    if not parentNode then
-      return
-    end
-    local key = guide.getKeyName(source)
-    if type(key) ~= 'string' then
-      return
-    end
-    local id = parentNode.id .. vm.ID_SPLITE .. key
-    local variable = insertVariableID(id, source, base)
-    source._variableNode = variable
-    source.field._variableNode = variable
-    if source.type == 'getfield' then
-      compileVariables(source.next, base)
-    end
-  end)
-  :case('getmethod')
-  :case('setmethod')
-  :call(function(source, base)
-    local parentNode = source.node._variableNode
-    if not parentNode then
-      return
-    end
-    local key = guide.getKeyName(source)
-    if type(key) ~= 'string' then
-      return
-    end
-    local id = parentNode.id .. vm.ID_SPLITE .. key
-    local variable = insertVariableID(id, source, base)
-    source._variableNode = variable
-    source.method._variableNode = variable
-    if source.type == 'getmethod' then
-      compileVariables(source.next, base)
-    end
-  end)
-  :case('getindex')
-  :case('setindex')
-  :call(function(source, base)
-    local parentNode = source.node._variableNode
-    if not parentNode then
-      return
-    end
-    local key = guide.getKeyName(source)
-    if type(key) ~= 'string' then
-      return
-    end
-    local id = parentNode.id .. vm.ID_SPLITE .. key
-    local variable = insertVariableID(id, source, base)
-    source._variableNode = variable
-    source.index._variableNode = variable
-    if source.type == 'setindex' then
-      compileVariables(source.next, base)
-    end
-  end)
-
-local leftSwitch = util
-  .switch()
-  :case('field')
-  :case('method')
-  :call(function(source)
+local leftswitch = {
+  ['field'] = 'method',
+  ['method'] = function(source)
     return getLoc(source.parent)
-  end)
-  :case('getfield')
-  :case('setfield')
-  :case('getmethod')
-  :case('setmethod')
-  :case('getindex')
-  :case('setindex')
-  :call(function(source)
+  end,
+
+  ['getfield'] = '_getset',
+  ['setfield'] = '_getset',
+  ['getmethod'] = '_getset',
+  ['setmethod'] = '_getset',
+  ['getindex'] = '_getset',
+  ['setindex'] = '_getset',
+
+  ['_getset'] = function(source)
     return getLoc(source.node)
-  end)
-  :case('getlocal')
-  :call(function(source)
+  end,
+
+  ['getlocal'] = function(source)
     return source.node
-  end)
-  :case('local')
-  :case('self')
-  :call(function(source)
+  end,
+
+  ['self'] = 'local',
+  ['local'] = function(source)
     return source
-  end)
+  end,
+}
 
 --- @param source parser.object
 --- @return parser.object?
 function getLoc(source)
-  return leftSwitch(source.type, source)
+  local v = leftswitch[source.type]
+  if v then
+    while type(v) == 'string' do
+      v = leftswitch[v]
+      leftswitch[source.type] = v
+    end
+    return v(source)
+  end
 end
 
 --- @return parser.object
@@ -237,15 +163,113 @@ end
 
 --- @param source parser.object
 --- @param base parser.object
+local function compileGetSetLocal(source, base)
+  local id = ('%d'):format(source.node.start)
+  local variable = insertVariableID(id, source, base)
+  source._variableNode = variable
+  compileVariables(source.next, base)
+end
+
+--- @type table<string, string|fun(source: parser.object, base: parser.object)>
+local variableCompilers = {
+  ['local'] = function(source, base)
+    local id = ('%d'):format(source.start)
+    local variable = insertVariableID(id, source, base)
+    source._variableNode = variable
+    if not source.ref then
+      return
+    end
+    for _, ref in ipairs(source.ref) do
+      compileVariables(ref, base)
+    end
+  end,
+
+  ['self'] = 'local',
+
+  ['getlocal'] = 'setlocal',
+
+  ['setlocal'] = function(source, base)
+    local id = ('%d'):format(source.node.start)
+    local variable = insertVariableID(id, source, base)
+    source._variableNode = variable
+    compileVariables(source.next, base)
+  end,
+
+  ['getfield'] = 'setfield',
+  ['setfield'] = function(source, base)
+    local parentNode = source.node._variableNode
+    if not parentNode then
+      return
+    end
+    local key = guide.getKeyName(source)
+    if type(key) ~= 'string' then
+      return
+    end
+    local id = parentNode.id .. vm.ID_SPLITE .. key
+    local variable = insertVariableID(id, source, base)
+    source._variableNode = variable
+    source.field._variableNode = variable
+    if source.type == 'getfield' then
+      compileVariables(source.next, base)
+    end
+  end,
+
+  ['getmethod'] = 'setmethod',
+  ['setmethod'] = function(source, base)
+    local parentNode = source.node._variableNode
+    if not parentNode then
+      return
+    end
+    local key = guide.getKeyName(source)
+    if type(key) ~= 'string' then
+      return
+    end
+    local id = parentNode.id .. vm.ID_SPLITE .. key
+    local variable = insertVariableID(id, source, base)
+    source._variableNode = variable
+    source.method._variableNode = variable
+    if source.type == 'getmethod' then
+      compileVariables(source.next, base)
+    end
+  end,
+
+  ['getindex'] = 'setindex',
+  ['setindex'] = function(source, base)
+    local parentNode = source.node._variableNode
+    if not parentNode then
+      return
+    end
+    local key = guide.getKeyName(source)
+    if type(key) ~= 'string' then
+      return
+    end
+    local id = parentNode.id .. vm.ID_SPLITE .. key
+    local variable = insertVariableID(id, source, base)
+    source._variableNode = variable
+    source.index._variableNode = variable
+    if source.type == 'setindex' then
+      compileVariables(source.next, base)
+    end
+  end,
+}
+
+--- @param source parser.object
+--- @param base parser.object
 function compileVariables(source, base)
   if not source then
     return
   end
   source._variableNode = false
-  if not compileSwitch:has(source.type) then
-    return
+
+  if variableCompilers[source.type] then
+    local compiler = variableCompilers[source.type]
+    while type(compiler) == 'string' do
+      compiler = variableCompilers[compiler]
+    end
+
+    variableCompilers[source.type] = compiler
+    compiler(source, base)
   end
-  compileSwitch(source.type, source, base)
 end
 
 --- @param source parser.object

@@ -1335,8 +1335,8 @@ local function compileTableFieldOrIndex(source)
   end
 end
 
---- @type table<string,fun(source:parser.object)>
-local nodeCompilers = {
+--- @type table<string|string[],fun(source:vm.node.object)>
+local nodeCompilers_table = {
   ['nil'] = setNode,
   ['boolean'] = setNode,
   ['integer'] = setNode,
@@ -1354,6 +1354,7 @@ local nodeCompilers = {
   ['doc.type.code'] = setNode,
 
   ['table'] = function(source)
+    --- @cast source parser.object
     if vm.bindAs(source) then
       return
     end
@@ -1763,11 +1764,11 @@ local nodeCompilers = {
     end
   end,
 
-  ['field'] = function (source)
+  ['field'] = function(source)
     vm.setNode(source, vm.compileNode(source.parent))
   end,
 
-  ['method'] = function (source)
+  ['method'] = function(source)
     vm.setNode(source, vm.compileNode(source.parent))
   end,
 
@@ -1805,19 +1806,11 @@ local nodeCompilers = {
     end
   end,
 
-  ['doc.class.name'] = function (source)
+  [{ 'doc.class.name', 'doc.alias.name', 'doc.enum.name' }] = function(source)
     vm.setNode(source, vm.compileNode(source.parent))
   end,
 
-  ['doc.alias.name'] = function (source)
-    vm.setNode(source, vm.compileNode(source.parent))
-  end,
-
-  ['doc.enum.name'] = function (source)
-    vm.setNode(source, vm.compileNode(source.parent))
-  end,
-
-  ['doc.field'] = function (source)
+  ['doc.field'] = function(source)
     if not source.extends then
       return
     end
@@ -1828,7 +1821,7 @@ local nodeCompilers = {
     vm.setNode(source, fieldNode)
   end,
 
-  ['doc.type.field'] = function (source)
+  ['doc.type.field'] = function(source)
     if not source.extends then
       return
     end
@@ -1940,6 +1933,7 @@ local nodeCompilers = {
   end,
 
   ['variable'] = function(source)
+    --- @cast source vm.variable
     if source == vm.getVariable(source.base) then
       vm.setNode(source, vm.compileNode(source.base))
       return
@@ -1947,29 +1941,26 @@ local nodeCompilers = {
   end,
 }
 
---- @param source parser.object
+local nodeCompilers = util.switch2(nodeCompilers_table)
+
+--- @param source vm.node.object
 local function compileByNode(source)
-  local ty = source.type
-  if nodeCompilers[ty] then
-    nodeCompilers[ty](source)
-  end
+  nodeCompilers(source.type)(source)
 end
 
 local nodeSwitch
-nodeSwitch = util
-  .switch()
-  :case('field')
-  :case('method')
-  :call(function(source, lastKey, pushResult)
-    return nodeSwitch(source.parent.type, source.parent, lastKey, pushResult)
-  end)
-  :case('getfield')
-  :case('setfield')
-  :case('getmethod')
-  :case('setmethod')
-  :case('getindex')
-  :case('setindex')
-  :call(function(source, lastKey, pushResult)
+
+--- @type table<string|string[],fun(source:vm.node.object,lastKey:string,pushResult:function):string?,vm.node.object?>
+local nodeSwitch_table = {
+  [{ 'field', 'method' }] = function(source, lastKey, pushResult)
+    return nodeSwitch(source.parent.type)(source.parent, lastKey, pushResult)
+  end,
+
+  [{ 'getfield', 'setfield', 'getmethod', 'setmethod', 'getindex', 'setindex' }] = function(
+    source,
+    lastKey,
+    pushResult
+  )
     local parentNode = vm.compileNode(source.node)
     local uri = guide.getUri(source)
     local key = guide.getKeyName(source)
@@ -1983,10 +1974,9 @@ nodeSwitch = util
       searchFieldSwitch(pn.type, uri, pn, key, pushResult)
     end
     return key, source.node
-  end)
-  :case('tableindex')
-  :case('tablefield')
-  :call(function(source, lastKey, pushResult)
+  end,
+
+  [{ 'tableindex', 'tablefield' }] = function(source, lastKey, pushResult)
     if lastKey then
       return
     end
@@ -1999,13 +1989,16 @@ nodeSwitch = util
     for pn in parentNode:eachObject() do
       searchFieldSwitch(pn.type, uri, pn, key, pushResult)
     end
-  end)
+  end,
+}
+
+nodeSwitch = util.switch2(nodeSwitch_table)
 
 function vm.compileByNodeChain(source, pushResult)
   local lastKey
   local src = source
   while true do
-    local key, node = nodeSwitch(src.type, src, lastKey, pushResult)
+    local key, node = nodeSwitch(src.type)(src, lastKey, pushResult)
     if not key then
       break
     end
@@ -2024,7 +2017,7 @@ local function compileByParentNode(source)
   end)
 end
 
---- @param source vm.node.object | vm.variable
+--- @param source vm.node.object
 --- @return vm.node
 function vm.compileNode(source)
   if not source then
@@ -2040,8 +2033,8 @@ function vm.compileNode(source)
     return cache
   end
 
-  ---@cast source parser.object
   vm.setNode(source, vm.createNode(), true)
+  ---@cast source parser.object
   vm.compileByGlobal(source)
   vm.compileByVariable(source)
   compileByNode(source)
