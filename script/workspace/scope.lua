@@ -7,8 +7,8 @@ local m = {}
 
 ---@class scope
 ---@field type   scope.type
----@field uri?   uri
----@field _links table<uri, boolean>
+---@field uri?   string
+---@field _links table<string, boolean>
 ---@field _data  table<string, any>
 ---@field _gc    gc
 ---@field _removed? true
@@ -23,12 +23,12 @@ function mt:__tostring()
   end
 end
 
----@param uri uri
+---@param uri string
 function mt:addLink(uri)
   self._links[uri] = true
 end
 
----@param uri uri
+---@param uri string
 function mt:removeLink(uri)
   self._links[uri] = nil
 end
@@ -37,13 +37,13 @@ function mt:removeAllLinks()
   self._links = {}
 end
 
----@return fun(): uri
----@return table<uri, true>
+---@return fun(): string
+---@return table<string, true>
 function mt:eachLink()
   return next, self._links
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function mt:isChildUri(uri)
   if not uri then
@@ -64,7 +64,7 @@ function mt:isChildUri(uri)
   return false
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function mt:isLinkedUri(uri)
   if not uri then
@@ -85,14 +85,14 @@ function mt:isLinkedUri(uri)
   return false
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function mt:isVisible(uri)
   return self:isChildUri(uri) or self:isLinkedUri(uri) or self == m.getScope(uri)
 end
 
----@param uri uri
----@return uri?
+---@param uri string
+---@return string?
 function mt:getLinkedUri(uri)
   if not uri then
     return nil
@@ -105,8 +105,8 @@ function mt:getLinkedUri(uri)
   return nil
 end
 
----@param uri uri
----@return uri?
+---@param uri string
+---@return string?
 function mt:getRootUri(uri)
   if self:isChildUri(uri) then
     return self.uri
@@ -182,7 +182,7 @@ end
 
 m.reset()
 
----@param uri uri
+---@param uri string
 ---@return scope
 function m.createFolder(uri)
   local scope = createScope('folder')
@@ -203,7 +203,7 @@ function m.createFolder(uri)
   return scope
 end
 
----@param uri uri
+---@param uri string
 ---@return scope?
 function m.getFolder(uri)
   for _, scope in ipairs(m.folders) do
@@ -214,7 +214,7 @@ function m.getFolder(uri)
   return nil
 end
 
----@param uri uri
+---@param uri string
 ---@return scope?
 function m.getLinkedScope(uri)
   if m.override and m.override:isLinkedUri(uri) then
@@ -231,7 +231,7 @@ function m.getLinkedScope(uri)
   return nil
 end
 
----@param uri? uri
+---@param uri? string
 ---@return scope
 function m.getScope(uri)
   return uri and (m.getFolder(uri) or m.getLinkedScope(uri)) or m.fallback

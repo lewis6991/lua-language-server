@@ -13,7 +13,7 @@ local function trim(str)
   return str:match('^%s*(%S+)%s*$')
 end
 
----@param uri uri
+---@param uri string
 ---@param str string
 ---@return boolean
 local function isValidName(uri, str)
@@ -28,7 +28,7 @@ local function isValidName(uri, str)
   end
 end
 
----@param uri uri
+---@param uri string
 ---@param str string
 ---@return boolean
 local function isValidGlobal(uri, str)
@@ -43,7 +43,7 @@ local function isValidGlobal(uri, str)
   return true
 end
 
----@param uri uri
+---@param uri string
 ---@param str string
 ---@return boolean
 local function isValidFunctionName(uri, str)

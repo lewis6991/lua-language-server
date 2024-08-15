@@ -261,7 +261,7 @@ end
 ---@async
 ---@param source  parser.object
 ---@param pushResult fun(src: parser.object)
----@param fileNotify? fun(uri: uri): boolean
+---@param fileNotify? fun(uri: string): boolean
 function searchByParentNode(source, pushResult, defMap, fileNotify)
   nodeSwitch(source.type, source, pushResult, defMap, fileNotify)
 end
@@ -315,7 +315,7 @@ end
 
 ---@async
 ---@param source parser.object
----@param fileNotify? fun(uri: uri): boolean
+---@param fileNotify? fun(uri: string): boolean
 function vm.getRefs(source, fileNotify)
   local results = {}
   local mark = {}

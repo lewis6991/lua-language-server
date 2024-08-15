@@ -23,14 +23,14 @@ mt.__index = mt
 mt.type = 'codeLens'
 mt.id = 0
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function mt:init(uri)
   self.state = files.getState(uri)
   if not self.state then
     return false
   end
-  ---@type uri
+  ---@type string
   self.uri = uri
   ---@type codeLens.result[]
   self.results = {}
@@ -112,7 +112,7 @@ function mt:resolveReference(source)
 end
 
 ---@async
----@param uri uri
+---@param uri string
 ---@return codeLens.result[]?
 local function getCodeLens(uri)
   local state = files.getState(uri)

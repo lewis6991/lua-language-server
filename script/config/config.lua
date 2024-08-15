@@ -27,7 +27,7 @@ local function update(scp, key, nowValue, rawValue)
   raw[key] = rawValue
 end
 
----@param uri? uri
+---@param uri? string
 ---@param key? string
 ---@return scope
 local function getScope(uri, key)
@@ -69,7 +69,7 @@ function m.setByScope(scp, key, value)
   return true
 end
 
----@param uri?   uri
+---@param uri?   string
 ---@param key   string
 ---@param value any
 function m.set(uri, key, value)
@@ -153,7 +153,7 @@ function m.prop(uri, key, prop, value)
   return false
 end
 
----@param uri? uri
+---@param uri? string
 ---@param key string
 ---@return any
 function m.get(uri, key)
@@ -168,7 +168,7 @@ function m.get(uri, key)
   return value
 end
 
----@param uri uri
+---@param uri string
 ---@param key string
 ---@return any
 function m.getRaw(uri, key)
@@ -240,7 +240,7 @@ function m.update(scp, ...)
   m.event(scp.uri, '')
 end
 
----@param callback fun(uri: uri, key: string, value: any, oldValue: any)
+---@param callback fun(uri: string, key: string, value: any, oldValue: any)
 function m.watch(callback)
   m.watchList[#m.watchList + 1] = callback
 end

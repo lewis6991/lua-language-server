@@ -20,7 +20,7 @@ function mt:addDocGeneric(doc)
   self.docGenric[#self.docGenric + 1] = doc
 end
 
----@param uri uri
+---@param uri string
 ---@param args parser.object
 ---@return table<string, vm.node>?
 function mt:resolve(uri, args)

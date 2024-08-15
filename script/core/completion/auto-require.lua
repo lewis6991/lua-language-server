@@ -11,7 +11,7 @@ local matchKey = require('core.matchkey')
 ---@class auto-require
 local m = {}
 
----@type table<uri, true>
+---@type table<string, true>
 m.validUris = {}
 
 ---@param state parser.state

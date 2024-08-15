@@ -21,7 +21,7 @@ local util = require('utility')
 ---@field casts     parser.object[]
 ---@field nodes     table<parser.object, vm.node|false>
 ---@field main      parser.object
----@field uri       uri
+---@field uri       string
 ---@field castIndex integer?
 local mt = {}
 mt.__index = mt

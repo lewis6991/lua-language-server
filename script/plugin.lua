@@ -134,7 +134,7 @@ local function createMethodGroup(interfaces, key, methods)
   return #methodGroup > 0 and methodGroup or nil
 end
 
----@param uri uri
+---@param uri string
 local function initPlugin(uri)
   await.call(function() ---@async
     local scp = scope.getScope(uri)

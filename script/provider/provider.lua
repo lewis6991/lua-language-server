@@ -375,7 +375,7 @@ m.register('textDocument/hover')({
 local function convertDefinitionResult(state, result)
   local response = {}
   for i, info in ipairs(result) do
-    ---@type uri
+    ---@type string
     local targetUri = info.uri
     if targetUri then
       local targetState = files.getState(targetUri)
@@ -504,7 +504,7 @@ m.register('textDocument/references')({
     end
     local response = {}
     for i, info in ipairs(result) do
-      ---@type uri
+      ---@type string
       local targetUri = info.uri
       local targetState = files.getState(targetUri)
       if targetState then
@@ -573,7 +573,7 @@ m.register('textDocument/rename')({
       changes = {},
     }
     for _, info in ipairs(result) do
-      ---@type uri
+      ---@type string
       local ruri = info.uri
       local rstate = files.getState(ruri)
       if rstate then
@@ -883,7 +883,7 @@ m.register('textDocument/codeAction')({
 
     for _, res in ipairs(results) do
       if res.edit then
-        ---@param turi uri
+        ---@param turi string
         for turi, changes in pairs(res.edit.changes) do
           local tstate = files.getState(turi)
           if tstate then

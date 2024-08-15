@@ -55,7 +55,7 @@ local accept = {
 }
 
 ---@async
----@param uri uri
+---@param uri string
 ---@param position integer
 ---@param includeDeclaration boolean
 return function (uri, position, includeDeclaration)

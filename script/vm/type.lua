@@ -55,7 +55,7 @@ end
 
 ---@param parentName string
 ---@param child      vm.node.object
----@param uri        uri
+---@param uri        string
 ---@param mark       table
 ---@param errs?      typecheck.err[]
 ---@return boolean?
@@ -147,7 +147,7 @@ end
 
 ---@param childName  string
 ---@param parent     vm.node.object
----@param uri        uri
+---@param uri        string
 ---@param mark       table
 ---@param errs?      typecheck.err[]
 ---@return boolean?
@@ -270,7 +270,7 @@ local function checkValue(parent, child, mark, errs)
 end
 
 ---@param name string
----@param suri uri
+---@param suri string
 ---@return boolean
 local function isAlias(name, suri)
   local global = vm.getGlobal('type', name)
@@ -285,7 +285,7 @@ local function isAlias(name, suri)
   return false
 end
 
----@param uri uri
+---@param uri string
 ---@param child  vm.node|string|vm.node.object
 ---@param parent vm.node|string|vm.node.object
 ---@param mark?  table
@@ -597,7 +597,7 @@ function vm.isUnknown(node)
   return false
 end
 
----@param uri uri
+---@param uri string
 ---@param tnode vm.node
 ---@param knode vm.node|string
 ---@param inversion? boolean
@@ -666,7 +666,7 @@ function vm.getTableValue(uri, tnode, knode, inversion)
   return result
 end
 
----@param uri uri
+---@param uri string
 ---@param tnode vm.node
 ---@param vnode vm.node|string|vm.object
 ---@param reverse? boolean
@@ -718,7 +718,7 @@ function vm.getTableKey(uri, tnode, vnode, reverse)
   return result
 end
 
----@param uri uri
+---@param uri string
 ---@param defNode vm.node
 ---@param refNode vm.node
 ---@param errs typecheck.err[]?
@@ -787,7 +787,7 @@ local ErrorMessageMap = {
   DIAG_MISSING_FIELDS = { '1', '2' },
 }
 
----@param uri uri
+---@param uri string
 ---@param errs typecheck.err[]
 ---@return string
 function vm.viewTypeErrorMessage(uri, errs)
@@ -844,7 +844,7 @@ function vm.viewTypeErrorMessage(uri, errs)
 end
 
 ---@param name string
----@param uri uri
+---@param uri string
 ---@return parser.object[]?
 function vm.getOverloadsByTypeName(name, uri)
   local global = vm.getGlobal('type', name)

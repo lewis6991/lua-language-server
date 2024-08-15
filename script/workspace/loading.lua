@@ -12,8 +12,8 @@ local pub = require('pub')
 ---@field scp scope
 ---@field _bar progress
 ---@field _stash function[]
----@field _refs uri[]
----@field _cache table<uri, boolean>
+---@field _refs string[]
+---@field _cache table<string, boolean>
 ---@field _sets function[]
 ---@field _removed boolean
 local mt = {}
@@ -33,7 +33,7 @@ function mt:update()
   self._bar:setPercentage(self.read / self.max * 100.0)
 end
 
----@param uri uri
+---@param uri string
 function mt:checkMaxPreload(uri)
   local max = config.get(uri, 'Lua.workspace.maxPreload')
   if self.preload <= max then
@@ -60,8 +60,8 @@ function mt:checkMaxPreload(uri)
   return false
 end
 
----@param uri uri
----@param libraryUri? uri
+---@param uri string
+---@param libraryUri? string
 ---@async
 function mt:loadFile(uri, libraryUri)
   if files.isLua(uri) then

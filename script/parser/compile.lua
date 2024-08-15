@@ -4029,7 +4029,7 @@ local function initState(lua, version, options)
     Tokens              = tokens(lua)
     Index               = 1
     ---@class parser.state
-    ---@field uri uri
+    ---@field uri string
     ---@field lines integer[]
     local state = {
         version = version,

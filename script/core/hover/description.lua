@@ -85,7 +85,7 @@ local function asString(source)
 end
 
 ---@param comment string
----@param suri uri
+---@param suri string
 ---@return string?
 local function normalizeComment(comment, suri)
     if not comment then

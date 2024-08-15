@@ -123,7 +123,7 @@ function vm.getParentClass(source)
   return nil
 end
 
----@param suri uri
+---@param suri string
 ---@param source parser.object
 ---@return vm.global?
 function vm.getDefinedClass(suri, source)

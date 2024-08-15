@@ -20,7 +20,7 @@ m.type = 'workspace'
 m.watchList = {}
 
 --- 注册事件
----@param callback async fun(ev: string, uri: uri)
+---@param callback async fun(ev: string, uri: string)
 function m.watch(callback)
   m.watchList[#m.watchList + 1] = callback
 end
@@ -249,7 +249,7 @@ function m.getLibraryMatchers(scp)
 end
 
 --- 文件是否被忽略
----@param uri uri
+---@param uri string
 function m.isIgnored(uri)
   local scp = scope.getScope(uri)
   local path = m.getRelativePath(uri)
@@ -404,7 +404,7 @@ function m.findUrisByFilePath(path)
   return results
 end
 
----@param folderUri? uri
+---@param folderUri? string
 ---@param path string
 ---@return string?
 function m.getAbsolutePath(folderUri, path)
@@ -419,7 +419,7 @@ function m.getAbsolutePath(folderUri, path)
   return path
 end
 
----@param uriOrPath uri|string
+---@param uriOrPath string|string
 ---@return string
 ---@return boolean suc
 function m.getRelativePath(uriOrPath)
@@ -530,7 +530,7 @@ function m.awaitReady(uri)
   end)
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function m.isReady(uri)
   local scp = scope.getScope(uri)

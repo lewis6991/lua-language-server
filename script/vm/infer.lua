@@ -9,7 +9,7 @@ local vm       = require 'vm.vm'
 ---@field views table<string, boolean>
 ---@field _drop table
 ---@field _lastView? string
----@field _lastViewUri? uri
+---@field _lastViewUri? string
 ---@field _lastViewDefault? any
 ---@field _subViews? string[]
 local mt = {}
@@ -297,7 +297,7 @@ function mt:_trim()
     end
 end
 
----@param uri uri
+---@param uri string
 function mt:_eraseAlias(uri)
     local count = 0
     for _ in pairs(self.views) do
@@ -340,7 +340,7 @@ function mt:_eraseAlias(uri)
     end
 end
 
----@param uri uri
+---@param uri string
 ---@param tp string
 ---@return boolean
 function mt:hasType(uri, tp)
@@ -348,27 +348,27 @@ function mt:hasType(uri, tp)
     return self.views[tp] == true
 end
 
----@param uri uri
+---@param uri string
 function mt:hasUnknown(uri)
     self:_computeViews(uri)
     return not next(self.views)
         or self.views['unknown'] == true
 end
 
----@param uri uri
+---@param uri string
 function mt:hasAny(uri)
     self:_computeViews(uri)
     return self.views['any'] == true
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function mt:hasClass(uri)
     self:_computeViews(uri)
     return self._hasClass == true
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function mt:hasFunction(uri)
     self:_computeViews(uri)
@@ -376,7 +376,7 @@ function mt:hasFunction(uri)
         or self._hasDocFunction   == true
 end
 
----@param uri uri
+---@param uri string
 function mt:_computeViews(uri)
     if self.views then
         return
@@ -396,7 +396,7 @@ function mt:_computeViews(uri)
     self:_trim()
 end
 
----@param uri uri
+---@param uri string
 ---@param default? string
 ---@return string
 function mt:view(uri, default)
@@ -474,13 +474,13 @@ function mt:view(uri, default)
     return view
 end
 
----@param uri uri
+---@param uri string
 function mt:eachView(uri)
     self:_computeViews(uri)
     return next, self.views
 end
 
----@param uri uri
+---@param uri string
 ---@return string[]
 function mt:getSubViews(uri)
     self:view(uri)
@@ -549,7 +549,7 @@ function mt:viewClass()
 end
 
 ---@param source vm.node.object
----@param uri uri
+---@param uri string
 ---@return string?
 function vm.viewObject(source, uri)
     local infer = createInfer()
@@ -557,7 +557,7 @@ function vm.viewObject(source, uri)
 end
 
 ---@param source parser.object
----@param uri uri
+---@param uri string
 ---@return string?
 ---@return string|number|boolean|nil
 function vm.viewKey(source, uri)

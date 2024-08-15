@@ -16,7 +16,7 @@ local type = type
 ---@field breaks?               parser.object[]
 ---@field exps                  parser.object[]
 ---@field keys                  parser.object
----@field uri                   uri
+---@field uri                   string
 ---@field start                 integer
 ---@field finish                integer
 ---@field range                 integer
@@ -473,8 +473,8 @@ function m.getRoot(obj)
   error('guide.getRoot overstack')
 end
 
----@param obj parser.object | { uri: uri }
----@return uri
+---@param obj parser.object | { uri: string }
+---@return string
 function m.getUri(obj)
   if obj.uri then
     return obj.uri

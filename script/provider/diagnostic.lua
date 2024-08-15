@@ -183,7 +183,7 @@ function m.clearCacheExcept(uris)
     end
 end
 
----@param uri? uri
+---@param uri? string
 ---@param force? boolean
 function m.clearAll(uri, force)
     local scp
@@ -240,7 +240,7 @@ local function copyDiagsWithoutSyntax(diags)
 end
 
 ---@async
----@param uri uri
+---@param uri string
 ---@return boolean
 local function isValid(uri)
     if not config.get(uri, 'Lua.diagnostics.enable') then
@@ -357,7 +357,7 @@ function m.doDiagnostic(uri, isScopeDiag, ignoreFileState)
     pushResult()
 end
 
----@param uri uri
+---@param uri string
 function m.resendDiagnostic(uri)
     local full = m.cache[uri]
     if not full then
@@ -415,7 +415,7 @@ function m.pullDiagnostic(uri, isScopeDiag)
     return full
 end
 
----@param uri uri
+---@param uri string
 function m.stopScopeDiag(uri)
     local scp     = scope.getScope(uri)
     local scopeID = 'diagnosticsScope:' .. scp:getName()
@@ -423,7 +423,7 @@ function m.stopScopeDiag(uri)
 end
 
 ---@param event string
----@param uri uri
+---@param uri string
 function m.refreshScopeDiag(event, uri)
     if not ws.isReady(uri) then
         return
@@ -446,7 +446,7 @@ function m.refreshScopeDiag(event, uri)
     end)
 end
 
----@param uri uri
+---@param uri string
 function m.refresh(uri)
     if not ws.isReady(uri) then
         return

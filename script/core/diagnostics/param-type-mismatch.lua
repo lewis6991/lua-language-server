@@ -32,7 +32,7 @@ end
 
 ---@param funcNode vm.node
 ---@param i integer
----@param uri uri
+---@param uri string
 ---@return vm.node?
 local function getDefNode(funcNode, i, uri)
   local defNode = vm.createNode()

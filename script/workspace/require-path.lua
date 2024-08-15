@@ -163,8 +163,8 @@ end
 
 --- 查找符合指定require name的所有uri
 ---@param name string
----@return uri[]
----@return table<uri, string>?
+---@return string[]
+---@return table<string, string>?
 function mt:searchUrisByRequireName(name)
   local vm = require('vm')
   local searchers = config.get(self.scp.uri, 'Lua.runtime.path')
@@ -230,10 +230,10 @@ function mt:searchUrisByRequireName(name)
 end
 
 --- 查找符合指定require name的所有uri，并排除当前文件
----@param suri uri
+---@param suri string
 ---@param name string
----@return uri[]
----@return table<uri, string>?
+---@return string[]
+---@return table<string, string>?
 function mt:findUrisByRequireName(suri, name)
   if type(name) ~= 'string' then
     return {}
@@ -258,7 +258,7 @@ function mt:findUrisByRequireName(suri, name)
   return results, searcherMap
 end
 
----@param uri uri
+---@param uri string
 ---@param path string
 ---@return require-manager.visibleResult[]
 function m.getVisiblePath(uri, path)
@@ -268,10 +268,10 @@ function m.getVisiblePath(uri, path)
   return mgr:getVisiblePath(path)
 end
 
----@param uri uri
+---@param uri string
 ---@param name string
----@return uri[]
----@return table<uri, string>?
+---@return string[]
+---@return table<string, string>?
 function m.findUrisByRequireName(uri, name)
   local scp = scope.getScope(uri)
   ---@type require-manager
@@ -279,8 +279,8 @@ function m.findUrisByRequireName(uri, name)
   return mgr:findUrisByRequireName(uri, name)
 end
 
----@param suri uri
----@param uri uri
+---@param suri string
+---@param uri string
 ---@param name string
 ---@return boolean
 function m.isMatchedUri(suri, uri, name)

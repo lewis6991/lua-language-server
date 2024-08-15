@@ -3,7 +3,7 @@ local furi = require('file-uri')
 local ws = require('workspace')
 
 ---@param doc parser.object
----@return uri
+---@return string
 local function parseUri(doc)
   local uri
   local scheme = furi.split(doc.path)
@@ -18,7 +18,7 @@ local function parseUri(doc)
       uri = doc.path
     end
   end
-  ---@cast uri uri
+  ---@cast uri string
   return uri
 end
 

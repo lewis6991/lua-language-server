@@ -116,7 +116,7 @@ local function cloneObject(source, resolved)
   return source
 end
 
----@param uri uri
+---@param uri string
 ---@param args parser.object
 ---@return vm.node
 function mt:resolve(uri, args)

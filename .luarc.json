@@ -19,8 +19,13 @@
             "unbalanced": "Any",
             "unused": "Any"
         },
+        "groupSeverity": {
+          "strong": "Warning",
+          "strict": "Warning"
+        },
         "ignoredFiles": "Opened",
-        "libraryFiles": "Opened"
+        "libraryFiles": "Opened",
+        "unusedLocalExclude": [ "_*" ]
     },
     "runtime": {
         "version": "Lua 5.4",
@@ -40,7 +45,6 @@
             "/locale/",
             "/libs/",
             "/3rd",
-            "/.vscode",
             "/meta"
         ],
         "checkThirdParty": false

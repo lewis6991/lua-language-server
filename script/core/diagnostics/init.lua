@@ -31,7 +31,7 @@ local function checkSleep(uri, passed)
   sleepRest = sleepRest - sleeped
 end
 
----@param uri  uri
+---@param uri  string
 ---@param name string
 ---@return string
 local function getSeverity(uri, name)
@@ -60,7 +60,7 @@ local function getSeverity(uri, name)
   return severity
 end
 
----@param uri  uri
+---@param uri  string
 ---@param name string
 ---@return string
 local function getStatus(uri, name)
@@ -90,7 +90,7 @@ local function getStatus(uri, name)
 end
 
 ---@async
----@param uri uri
+---@param uri string
 ---@param name string
 ---@param isScopeDiag boolean
 ---@param response async fun(result: any)
@@ -164,7 +164,7 @@ local function buildDiagList()
 end
 
 ---@async
----@param uri uri
+---@param uri string
 ---@param isScopeDiag boolean
 ---@param response async fun(result: any)
 ---@param checked? async fun(name: string)

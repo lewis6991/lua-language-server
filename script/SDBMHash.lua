@@ -27,18 +27,17 @@ function mt:hash(str)
     self.cache[id] = str
     self.cache[str] = id
     return id
-  else
-    log.warn(('哈希碰撞：[%s] -> [%s]: [%d]'):format(str, other, id))
-    for i = 1, max do
-      local newId = (id + i) % max
-      if not self.cache[newId] then
-        self.cache[newId] = str
-        self.cache[str] = newId
-        return newId
-      end
-    end
-    error(('哈希碰撞解决失败：[%s] -> [%s]: [%d]'):format(str, other, id))
   end
+  log.warn(('哈希碰撞：[%s] -> [%s]: [%d]'):format(str, other, id))
+  for i = 1, max do
+    local newId = (id + i) % max
+    if not self.cache[newId] then
+      self.cache[newId] = str
+      self.cache[str] = newId
+      return newId
+    end
+  end
+  error(('哈希碰撞解决失败：[%s] -> [%s]: [%d]'):format(str, other, id))
 end
 
 function mt:setCache(t)

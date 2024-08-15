@@ -202,9 +202,9 @@ end
 ---@field value     any
 ---@field action    '"add"'|'"set"'|'"prop"'
 ---@field global?   boolean
----@field uri?      uri
+---@field uri?      string
 
----@param uri uri?
+---@param uri string?
 ---@param changes config.change[]
 ---@return config.change[]
 local function getValidChanges(uri, changes)
@@ -273,7 +273,7 @@ local function searchPatchInfo(cfg, rawKey)
     }
 end
 
----@param uri? uri
+---@param uri? string
 ---@param cfg table
 ---@param change config.change
 ---@return json.patch?
@@ -325,7 +325,7 @@ local function makeConfigPatch(uri, cfg, change)
   return nil
 end
 
----@param uri? uri
+---@param uri? string
 ---@param path string
 ---@param changes config.change[]
 ---@return string?
@@ -579,7 +579,7 @@ end
 
 ---@alias textEditor {start: integer, finish: integer, text: string}
 
----@param uri   uri
+---@param uri   string
 ---@param edits textEditor[]
 function m.editText(uri, edits)
   local files = require('files')
@@ -603,7 +603,7 @@ function m.editText(uri, edits)
   log.info('workspace/applyEdit', inspect(params))
 end
 
----@alias textMultiEditor {uri: uri, start: integer, finish: integer, text: string}
+---@alias textMultiEditor {uri: string, start: integer, finish: integer, text: string}
 
 ---@param editors textMultiEditor[]
 function m.editMultiText(editors)

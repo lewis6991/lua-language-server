@@ -12,7 +12,7 @@ local config = require('config')
 ---@field package _nodiscard? boolean
 
 ---获取class与alias
----@param suri uri
+---@param suri string
 ---@param name? string
 ---@return parser.object[]
 function vm.getDocSets(suri, name)
@@ -27,7 +27,7 @@ function vm.getDocSets(suri, name)
   end
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function vm.isMetaFile(uri)
   local status = files.getState(uri)
@@ -55,7 +55,7 @@ function vm.isMetaFile(uri)
   return false
 end
 
----@param uri uri
+---@param uri string
 ---@return string?
 function vm.getMetaName(uri)
   if not vm.isMetaFile(uri) then
@@ -71,7 +71,7 @@ function vm.getMetaName(uri)
   return cache.metaName[1]
 end
 
----@param uri uri
+---@param uri string
 ---@return boolean
 function vm.isMetaFileRequireable(uri)
   if not vm.isMetaFile(uri) then
@@ -346,7 +346,7 @@ function vm.isAsyncCall(call)
   return false
 end
 
----@param uri uri
+---@param uri string
 ---@param doc parser.object
 ---@param results table[]
 local function makeDiagRange(uri, doc, results)
@@ -402,7 +402,7 @@ local function makeDiagRange(uri, doc, results)
   end
 end
 
----@param uri uri
+---@param uri string
 ---@param position integer
 ---@param name string
 ---@param err? boolean

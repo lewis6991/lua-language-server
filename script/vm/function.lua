@@ -331,7 +331,7 @@ function vm.countList(list, mark)
   return min, max, def
 end
 
----@param uri uri
+---@param uri string
 ---@param args parser.object[]
 ---@return boolean
 local function isAllParamMatched(uri, args, params)

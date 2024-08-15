@@ -97,7 +97,7 @@ brave.on('removeCaches', function(path)
 end)
 
 ---@class brave.param.compile
----@field uri uri
+---@field uri string
 ---@field text string
 ---@field mode string
 ---@field version string

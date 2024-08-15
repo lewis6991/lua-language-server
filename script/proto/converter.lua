@@ -163,7 +163,7 @@ function m.unpackRange(state, range)
   return start, finish
 end
 
----@alias location {uri: uri, range: range}
+---@alias location {uri: string, range: range}
 
 ---@param uri string
 ---@param range range
@@ -175,7 +175,7 @@ function m.location(uri, range)
   }
 end
 
----@alias locationLink {targetUri:uri, targetRange: range, targetSelectionRange: range, originSelectionRange: range}
+---@alias locationLink {targetUri:string, targetRange: range, targetSelectionRange: range, originSelectionRange: range}
 
 ---@param uri string
 ---@param range range

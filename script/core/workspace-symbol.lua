@@ -53,7 +53,7 @@ local function searchFile(uri, key, results)
 end
 
 ---@param key string
----@param suri? uri
+---@param suri? string
 ---@param results table[]
 local function searchGlobalAndClass(key, suri, results)
   for _, global in pairs(vm.getAllGlobals()) do
@@ -89,7 +89,7 @@ local function searchGlobalAndClass(key, suri, results)
 end
 
 ---@param key string
----@param suri? uri
+---@param suri? string
 ---@param results table[]
 local function searchClassField(key, suri, results)
   local class, inField = key:match('^(.+)%.(.-)$')
@@ -132,7 +132,7 @@ local function searchClassField(key, suri, results)
 end
 
 ---@param key string
----@param suri? uri
+---@param suri? string
 ---@param results table[]
 local function searchWords(key, suri, results)
   for uri in files.eachFile(suri) do
@@ -144,7 +144,7 @@ local function searchWords(key, suri, results)
 end
 
 ---@param key string
----@param suri? uri
+---@param suri? string
 ---@param includeWords? boolean
 return function(key, suri, includeWords)
   local results = {}

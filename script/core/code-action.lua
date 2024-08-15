@@ -10,7 +10,7 @@ local furi = require('file-uri')
 local undefined = require('core.diagnostics.undefined-global')
 local vm = require('vm')
 
----@param uri  uri
+---@param uri  string
 ---@param row  integer
 ---@param mode string
 ---@param code string

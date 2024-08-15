@@ -131,7 +131,7 @@ end
 
 ---@async
 return function(data)
-  ---@type uri
+  ---@type string
   local uri = data.uri
   local target = data.target
   local name = data.name

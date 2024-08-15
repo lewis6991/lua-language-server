@@ -121,7 +121,7 @@ local function searchFieldByLocalID(source, key, pushResult)
     end
 end
 
----@param suri uri
+---@param suri string
 ---@param source parser.object
 ---@param key string|vm.global|vm.ANY
 ---@param pushResult fun(res: parser.object, markDoc?: boolean)
@@ -281,7 +281,7 @@ local searchFieldSwitch = util.switch()
         searchFieldByGlobalID(suri, source, key, pushResult)
     end)
 
----@param suri uri
+---@param suri string
 ---@param object vm.global
 ---@param key string|number|integer|boolean|vm.global|vm.ANY
 ---@param pushResult fun(field: vm.object, isMark?: boolean)

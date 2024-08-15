@@ -7,7 +7,7 @@ local vm = require('vm.vm')
 
 ---@type table<string, vm.global>
 local allGlobals = {}
----@type table<uri, table<string, boolean>>
+---@type table<string, table<string, boolean>>
 local globalSubs = util.multiTable(2)
 
 ---@class parser.object
@@ -20,15 +20,15 @@ local globalSubs = util.multiTable(2)
 ---@field gets parser.object[]
 
 ---@class vm.global
----@field links table<uri, vm.global.link>
----@field setsCache? table<uri, parser.object[]>
+---@field links table<string, vm.global.link>
+---@field setsCache? table<string, parser.object[]>
 ---@field cate vm.global.cate
 local mt = {}
 mt.__index = mt
 mt.type = 'global'
 mt.name = ''
 
----@param uri    uri
+---@param uri    string
 ---@param source parser.object
 function mt:addSet(uri, source)
   local link = self.links[uri]
@@ -36,14 +36,14 @@ function mt:addSet(uri, source)
   self.setsCache = nil
 end
 
----@param uri    uri
+---@param uri    string
 ---@param source parser.object
 function mt:addGet(uri, source)
   local link = self.links[uri]
   link.gets[#link.gets + 1] = source
 end
 
----@param suri uri
+---@param suri string
 ---@return parser.object[]
 function mt:getSets(suri)
   if not self.setsCache then
@@ -94,7 +94,7 @@ function mt:getAllSets()
   return cache
 end
 
----@param uri uri
+---@param uri string
 function mt:dropUri(uri)
   self.links[uri] = nil
   self.setsCache = nil
@@ -130,7 +130,7 @@ function mt:isAlive()
   return next(self.links) ~= nil
 end
 
----@param uri uri
+---@param uri string
 ---@return parser.object?
 function mt:getParentBase(uri)
   local parentID = self.name:match('^(.-)' .. vm.ID_SPLITE)
@@ -435,7 +435,7 @@ local compilerGlobalSwitch = util
 
 ---@param cate vm.global.cate
 ---@param name string
----@param uri? uri
+---@param uri? string
 ---@return vm.global
 function vm.declareGlobal(cate, name, uri)
   local key = cate .. '|' .. name
@@ -510,7 +510,7 @@ function vm.getAllGlobals()
   return allGlobals
 end
 
----@param suri uri
+---@param suri string
 ---@param cate   vm.global.cate
 ---@return parser.object[]
 function vm.getGlobalSets(suri, cate)
@@ -525,7 +525,7 @@ function vm.getGlobalSets(suri, cate)
   return result
 end
 
----@param suri uri
+---@param suri string
 ---@param cate vm.global.cate
 ---@param name string
 ---@return boolean
@@ -541,7 +541,7 @@ function vm.hasGlobalSets(suri, cate, name)
   return true
 end
 
----@param uri uri
+---@param uri string
 ---@param key string
 ---@return boolean
 local function checkIsGlobalRegex(uri, key)
@@ -719,7 +719,7 @@ local function compileAst(source)
   end)
 end
 
----@param uri uri
+---@param uri string
 local function dropUri(uri)
   local globalSub = globalSubs[uri]
   globalSubs[uri] = nil

@@ -1,7 +1,5 @@
 local platform = require('bee.platform')
 
----@alias uri string
-
 local escPatt = '[^%w%-%.%_%~%/]'
 
 local function esc(c)
@@ -14,7 +12,7 @@ local function normalize(str)
   end)
 end
 
-local m = {}
+local M = {}
 
 -- c:\my\files               --> file:///c%3A/my/files
 -- /usr/home                 --> file:///usr/home
@@ -22,8 +20,8 @@ local m = {}
 
 --- path -> uri
 ---@param path string
----@return uri uri
-function m.encode(path)
+---@return string uri
+function M.encode(path)
   local authority = ''
   if platform.os == 'windows' then
     path = path:gsub('\\', '/')
@@ -62,9 +60,9 @@ end
 -- file://server/share/some/path  --> \\server\share\some\path
 
 --- uri -> path
----@param uri uri
+---@param uri string
 ---@return string path
-function m.decode(uri)
+function M.decode(uri)
   local scheme, authority, path = uri:match('([^:]*):?/?/?([^/]*)(.*)')
   if not scheme then
     return ''
@@ -86,14 +84,14 @@ function m.decode(uri)
   return value
 end
 
-function m.split(uri)
+function M.split(uri)
   return uri:match('([^:]*):/?/?([^/]*)(.*)')
 end
 
 ---@param uri string
 ---@return boolean
-function m.isValid(uri)
-  local scheme, authority, path = m.split(uri)
+function M.isValid(uri)
+  local scheme, _, path = M.split(uri)
   if not scheme or scheme == '' then
     return false
   end
@@ -106,11 +104,11 @@ function m.isValid(uri)
   return true
 end
 
-function m.normalize(uri)
-  if not m.isValid(uri) then
+function M.normalize(uri)
+  if not M.isValid(uri) then
     return uri
   end
-  return m.encode(m.decode(uri))
+  return M.encode(M.decode(uri))
 end
 
-return m
+return M

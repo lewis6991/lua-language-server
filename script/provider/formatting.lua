@@ -37,7 +37,7 @@ local m = {}
 
 m.loadedDefaultConfig = false
 
----@param uri uri
+---@param uri string
 function m.updateConfig(uri)
   if not m.loadedDefaultConfig then
     m.loadedDefaultConfig = true

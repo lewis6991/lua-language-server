@@ -4,7 +4,7 @@ local config = require('config')
 local await = require('await')
 local guide = require('parser.guide')
 
----@param uri uri
+---@param uri string
 ---@param keys string[]
 ---@param nodeMap table<string, vm.node>
 ---@param reachMax integer
@@ -39,7 +39,7 @@ local function buildAsHash(uri, keys, nodeMap, reachMax)
   return table.concat(lines, '\n')
 end
 
----@param uri uri
+---@param uri string
 ---@param keys string[]
 ---@param nodeMap table<string, vm.node>
 ---@param reachMax integer

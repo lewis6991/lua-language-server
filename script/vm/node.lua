@@ -260,7 +260,7 @@ function mt:remove(name)
     return self
 end
 
----@param uri uri
+---@param uri string
 ---@param name string
 function mt:narrow(uri, name)
     if self.optional == true then
