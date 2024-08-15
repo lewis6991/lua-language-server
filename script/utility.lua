@@ -81,7 +81,7 @@ local RESERVED = {
 
 local m = {}
 
---- 打印表的结构
+---Print table structure
 --- @param tbl any
 --- @param option? table
 --- @return string
@@ -190,7 +190,7 @@ function m.dump(tbl, option)
   return tableConcat(lines, '\r\n')
 end
 
---- 递归判断A与B是否相等
+--- Recursively determine whether A and B are equal
 --- @param valueA any
 --- @param valueB any
 --- @return boolean
@@ -288,14 +288,14 @@ local function sortTable(tbl)
   return setmetatable(tbl, mt)
 end
 
---- 创建一个有序表
+--- Create an ordered list
 --- @param tbl? table
 --- @return table
 function m.container(tbl)
   return sortTable(tbl)
 end
 
---- 读取文件
+--- Read files
 --- @param path string
 --- @param keepBom? boolean
 --- @return string? text
@@ -321,7 +321,7 @@ function m.loadFile(path, keepBom)
   return text
 end
 
---- 写入文件
+--- Write to file
 --- @param path string
 --- @param content string
 --- @return boolean ok
@@ -338,7 +338,7 @@ function m.saveFile(path, content)
   end
 end
 
---- 计数器
+--- Counter
 --- @param init? integer
 --- @param step? integer
 --- @return fun():integer
@@ -353,7 +353,7 @@ function m.counter(init, step)
   end
 end
 
---- 排序后遍历
+--- Traverse after sorting
 --- @generic K, V
 --- @param t table<K, V>
 --- @param sorter? fun(a: K, b: K): boolean
@@ -372,7 +372,7 @@ function m.sortPairs(t, sorter)
   end
 end
 
---- 深拷贝（不处理元表）
+--- Deep copy (does not process metatable)
 --- @param source  table
 --- @param target? table
 --- @return table

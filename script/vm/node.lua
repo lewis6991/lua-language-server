@@ -7,7 +7,7 @@ local timer = require('timer')
 local util = require('utility')
 
 --- @type table<vm.object, vm.node>
-vm.nodeCache = setmetatable({}, util.MODE_K)
+local nodeCache = setmetatable({}, { __mode = 'k' })
 
 --- @alias vm.node.object vm.object | vm.global | vm.variable
 
@@ -17,14 +17,15 @@ vm.nodeCache = setmetatable({}, util.MODE_K)
 --- @field fields? table<vm.node|string, vm.node>
 --- @field undefinedGlobal boolean?
 --- @field lastInfer? vm.infer
-local mt = {}
+local mt = {
+  id = 0,
+  type = 'vm.node',
+  optional = nil,
+  data = nil,
+  hasDefined = nil,
+  originNode = nil,
+}
 mt.__index = mt
-mt.id = 0
-mt.type = 'vm.node'
-mt.optional = nil
-mt.data = nil
-mt.hasDefined = nil
-mt.originNode = nil
 
 --- @param node vm.node | vm.node.object
 --- @return vm.node
@@ -399,11 +400,12 @@ function vm.setNode(source, node, cover)
     end
   end
   if cover then
+    assert(node.type == 'vm.node')
     ---@cast node vm.node
-    vm.nodeCache[source] = node
+    nodeCache[source] = node
     return node
   end
-  local me = vm.nodeCache[source]
+  local me = nodeCache[source]
   if me then
     me:merge(node)
   else
@@ -412,7 +414,7 @@ function vm.setNode(source, node, cover)
     else
       me = vm.createNode(node)
     end
-    vm.nodeCache[source] = me
+    nodeCache[source] = me
   end
   return me
 end
@@ -420,12 +422,12 @@ end
 --- @param source vm.node.object
 --- @return vm.node?
 function vm.getNode(source)
-  return vm.nodeCache[source]
+  return nodeCache[source]
 end
 
 --- @param source vm.object
 function vm.removeNode(source)
-  vm.nodeCache[source] = nil
+  nodeCache[source] = nil
 end
 
 local lockCount = 0
@@ -448,7 +450,7 @@ function vm.clearNodeCache()
     return
   end
   log.debug('clearNodeCache')
-  vm.nodeCache = {}
+  nodeCache = {}
 end
 
 local ID = 0
@@ -458,9 +460,7 @@ local ID = 0
 --- @return vm.node
 function vm.createNode(a, b)
   ID = ID + 1
-  local node = setmetatable({
-    id = ID,
-  }, mt)
+  local node = setmetatable({ id = ID }, mt)
   if a then
     node:merge(a)
   end

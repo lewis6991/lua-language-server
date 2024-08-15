@@ -54,20 +54,13 @@ local function insertVariableID(id, source, base)
   return variable
 end
 
-local leftswitch = {
-  ['field'] = 'method',
-  ['method'] = function(source)
+--- @type table<string|string[], fun(source: parser.object): parser.object?>
+local leftswitch_table = {
+  [{ 'field', 'method' }] = function(source)
     return getLoc(source.parent)
   end,
 
-  ['getfield'] = '_getset',
-  ['setfield'] = '_getset',
-  ['getmethod'] = '_getset',
-  ['setmethod'] = '_getset',
-  ['getindex'] = '_getset',
-  ['setindex'] = '_getset',
-
-  ['_getset'] = function(source)
+  [{ 'getfield', 'setfield', 'getmethod', 'setmethod', 'getindex', 'setindex' }] = function(source)
     return getLoc(source.node)
   end,
 
@@ -75,23 +68,17 @@ local leftswitch = {
     return source.node
   end,
 
-  ['self'] = 'local',
-  ['local'] = function(source)
+  [{ 'self', 'local' }] = function(source)
     return source
   end,
 }
 
+local leftswitch = util.switch2(leftswitch_table)
+
 --- @param source parser.object
 --- @return parser.object?
 function getLoc(source)
-  local v = leftswitch[source.type]
-  if v then
-    while type(v) == 'string' do
-      v = leftswitch[v]
-      leftswitch[source.type] = v
-    end
-    return v(source)
-  end
+  return leftswitch(source.type)(source)
 end
 
 --- @return parser.object
@@ -170,9 +157,9 @@ local function compileGetSetLocal(source, base)
   compileVariables(source.next, base)
 end
 
---- @type table<string, string|fun(source: parser.object, base: parser.object)>
-local variableCompilers = {
-  ['local'] = function(source, base)
+--- @type table<string|string[], fun(source: parser.object, base: parser.object)>
+local variableCompilers_table = {
+  [{'self', 'local'}] = function(source, base)
     local id = ('%d'):format(source.start)
     local variable = insertVariableID(id, source, base)
     source._variableNode = variable
@@ -184,19 +171,14 @@ local variableCompilers = {
     end
   end,
 
-  ['self'] = 'local',
-
-  ['getlocal'] = 'setlocal',
-
-  ['setlocal'] = function(source, base)
+  [{'getlocal', 'setlocal'}] = function(source, base)
     local id = ('%d'):format(source.node.start)
     local variable = insertVariableID(id, source, base)
     source._variableNode = variable
     compileVariables(source.next, base)
   end,
 
-  ['getfield'] = 'setfield',
-  ['setfield'] = function(source, base)
+  [{'getfield', 'setfield'}] = function(source, base)
     local parentNode = source.node._variableNode
     if not parentNode then
       return
@@ -214,8 +196,7 @@ local variableCompilers = {
     end
   end,
 
-  ['getmethod'] = 'setmethod',
-  ['setmethod'] = function(source, base)
+  [{'getmethod', 'setmethod'}] = function(source, base)
     local parentNode = source.node._variableNode
     if not parentNode then
       return
@@ -233,8 +214,7 @@ local variableCompilers = {
     end
   end,
 
-  ['getindex'] = 'setindex',
-  ['setindex'] = function(source, base)
+  [{'getindex', 'setindex'}] = function(source, base)
     local parentNode = source.node._variableNode
     if not parentNode then
       return
@@ -253,6 +233,8 @@ local variableCompilers = {
   end,
 }
 
+local variableCompilers = util.switch2(variableCompilers_table)
+
 --- @param source parser.object
 --- @param base parser.object
 function compileVariables(source, base)
@@ -261,49 +243,12 @@ function compileVariables(source, base)
   end
   source._variableNode = false
 
-  if variableCompilers[source.type] then
-    local compiler = variableCompilers[source.type]
-    while type(compiler) == 'string' do
-      compiler = variableCompilers[compiler]
-    end
-
-    variableCompilers[source.type] = compiler
-    compiler(source, base)
-  end
-end
-
---- @param source parser.object
---- @return string?
-function vm.getVariableID(source)
-  local variable = vm.getVariableNode(source)
-  if not variable then
-    return nil
-  end
-  return variable.id
-end
-
---- @param source parser.object
---- @param key?   string
---- @return vm.variable?
-function vm.getVariable(source, key)
-  local variable = vm.getVariableNode(source)
-  if not variable then
-    return nil
-  end
-  if not key then
-    return variable
-  end
-  local root = guide.getRoot(source)
-  if not root._variableNodes then
-    return nil
-  end
-  local id = variable.id .. vm.ID_SPLITE .. key
-  return root._variableNodes[id]
+  variableCompilers(source.type)(source, base)
 end
 
 --- @param source parser.object
 --- @return vm.variable?
-function vm.getVariableNode(source)
+local function getVariableNode(source)
   local variable = source._variableNode
   if variable ~= nil then
     return variable or nil
@@ -316,6 +261,35 @@ function vm.getVariableNode(source)
   end
   compileVariables(loc, loc)
   return source._variableNode or nil
+end
+
+--- @param source parser.object
+--- @return string?
+function vm.getVariableID(source)
+  local variable = getVariableNode(source)
+  if not variable then
+    return nil
+  end
+  return variable.id
+end
+
+--- @param source parser.object
+--- @param key?   string
+--- @return vm.variable?
+function vm.getVariable(source, key)
+  local variable = getVariableNode(source)
+  if not variable then
+    return nil
+  end
+  if not key then
+    return variable
+  end
+  local root = guide.getRoot(source)
+  if not root._variableNodes then
+    return nil
+  end
+  local id = variable.id .. vm.ID_SPLITE .. key
+  return root._variableNodes[id]
 end
 
 --- @param source parser.object
@@ -374,7 +348,7 @@ end
 --- @param source parser.object
 --- @return boolean
 function vm.compileByVariable(source)
-  local variable = vm.getVariableNode(source)
+  local variable = getVariableNode(source)
   if not variable then
     return false
   end
@@ -398,7 +372,7 @@ local function compileSelf(source)
   if not fields then
     return
   end
-  local variableNode = vm.getVariableNode(node)
+  local variableNode = getVariableNode(node)
   local globalNode = vm.getGlobalNode(node)
   if not variableNode and not globalNode then
     return
