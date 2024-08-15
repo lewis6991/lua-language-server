@@ -1,21 +1,19 @@
 local nonil = require('without-check-nil')
 local client = require('client')
-local platform = require('bee.platform')
 local completion = require('provider.completion')
-local define = require('proto.define')
 
 require('provider.semantic-tokens')
 require('provider.formatting')
 require('provider.inlay-hint')
 require('provider.code-lens')
 
-local m = {}
+local M = {}
 
-m.fillings = {}
-m.resolvedMap = {}
+M.fillings = {}
+M.resolvedMap = {}
 
 local function mergeFillings(provider)
-  for _, filling in ipairs(m.fillings) do
+  for _, filling in ipairs(M.fillings) do
     for k, v in pairs(filling) do
       if type(v) == 'table' then
         if not provider[k] then
@@ -38,7 +36,7 @@ local function resolve(t)
     end
     if type(v) == 'string' then
       t[k] = v:gsub('%{(.-)%}', function(key)
-        return m.resolvedMap[key] or ''
+        return M.resolvedMap[key] or ''
       end)
     end
     if type(v) == 'function' then
@@ -47,7 +45,7 @@ local function resolve(t)
   end
 end
 
-function m.getProvider()
+function M.getProvider()
   local provider = {
     offsetEncoding = client.getOffsetEncoding(),
     -- 文本同步方式
@@ -77,12 +75,12 @@ function m.getProvider()
   return provider
 end
 
-function m.filling(t)
-  m.fillings[#m.fillings + 1] = t
+function M.filling(t)
+  M.fillings[#M.fillings + 1] = t
 end
 
-function m.resolve(key, value)
-  m.resolvedMap[key] = value
+function M.resolve(key, value)
+  M.resolvedMap[key] = value
 end
 
-return m
+return M

@@ -77,7 +77,7 @@ local NLMap = {
 
 local LineMulti = 10000
 
--- goto 单独处理
+-- goto is processed separately
 local KeyWord = {
   ['and'] = true,
   ['break'] = true,

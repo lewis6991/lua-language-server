@@ -29,7 +29,7 @@ local function allWords()
   return list
 end
 
-local function enable(uri)
+local function enable()
   if isEnable then
     return
   end
@@ -55,7 +55,7 @@ local function enable(uri)
   })
 end
 
-local function disable(uri)
+local function disable()
   if not isEnable then
     return
   end
@@ -84,15 +84,15 @@ config.watch(function(uri, key, value)
   end
   if key == 'Lua.completion.enable' then
     if value == true then
-      enable(uri)
+      enable()
     else
-      disable(uri)
+      disable()
     end
   end
   if key == 'Lua.completion.postfix' then
     if config.get(uri, 'Lua.completion.enable') then
-      disable(uri)
-      enable(uri)
+      disable()
+      enable()
     end
   end
 end)

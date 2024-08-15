@@ -88,7 +88,7 @@ end)
 
 register('Nil', nil, function(_self, v)
   return type(v) == 'nil'
-end, function(_self, v)
+end, function(_self, _v)
   return nil
 end)
 

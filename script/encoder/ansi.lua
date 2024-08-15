@@ -5,20 +5,20 @@ if platform.os == 'windows' then
   windows = require('bee.windows')
 end
 
-local m = {}
+local M = {}
 
-function m.toutf8(text)
+function M.toutf8(text)
   if not windows then
     return text
   end
   return windows.a2u(text)
 end
 
-function m.fromutf8(text)
+function M.fromutf8(text)
   if not windows then
     return text
   end
   return windows.u2a(text)
 end
 
-return m
+return M

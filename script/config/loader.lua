@@ -15,10 +15,10 @@ local function errorMessage(msg)
 end
 
 --- @class config.loader
-local m = {}
+local M = {}
 
 --- @return table?
-function m.loadRCConfig(uri, filename)
+function M.loadRCConfig(uri, filename)
   local scp = scope.getScope(uri)
   local path = workspace.getAbsolutePath(uri, filename)
   if not path then
@@ -41,7 +41,7 @@ function m.loadRCConfig(uri, filename)
 end
 
 --- @return table?
-function m.loadLocalConfig(uri, filename)
+function M.loadLocalConfig(uri, filename)
   if not filename then
     return nil
   end
@@ -87,7 +87,7 @@ end
 --- @async
 --- @param uri? string
 --- @return table?
-function m.loadClientConfig(uri)
+function M.loadClientConfig(uri)
   local configs = proto.awaitRequest('workspace/configuration', {
     items = {
       {
@@ -128,4 +128,4 @@ function m.loadClientConfig(uri)
   return newConfig
 end
 
-return m
+return M

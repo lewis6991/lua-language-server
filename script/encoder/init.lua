@@ -7,13 +7,13 @@ local utf16be = utf16('be', utf8.codepoint('�'))
 
 --- @alias encoder.bom '"no"'|'"yes"'|'"auto"'
 
-local m = {}
+local M = {}
 
 --- @param encoding encoder.encoding
 --- @param s        string
 --- @param i?       integer
 --- @param j?       integer
-function m.len(encoding, s, i, j)
+function M.len(encoding, s, i, j)
   i = i or 1
   j = j or #s
   if encoding == 'utf16' or encoding == 'utf16' then
@@ -35,7 +35,7 @@ end
 --- @param s        string
 --- @param n        integer
 --- @param i?       integer
-function m.offset(encoding, s, n, i)
+function M.offset(encoding, s, n, i)
   i = i or 1
   if encoding == 'utf16' or encoding == 'utf16le' then
     local line = s:match('[^\r\n]*', i)
@@ -66,7 +66,7 @@ end
 --- @param text string
 --- @param bom encoder.bom
 --- @return string
-function m.encode(encoding, text, bom)
+function M.encode(encoding, text, bom)
   if encoding == 'utf8' then
     if bom == 'yes' then
       text = '\xEF\xBB\xBF' .. text
@@ -97,7 +97,7 @@ end
 --- @param encoding encoder.encoding
 --- @param text string
 --- @return string
-function m.decode(encoding, text)
+function M.decode(encoding, text)
   if encoding == 'utf8' then
     return text
   end
@@ -114,4 +114,4 @@ function m.decode(encoding, text)
   return text
 end
 
-return m
+return M
