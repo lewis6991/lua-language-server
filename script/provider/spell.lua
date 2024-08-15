@@ -5,28 +5,26 @@ end
 
 local fs = require('bee.filesystem')
 local config = require('config')
-local diagnostics = require('provider.diagnostic')
 local pformatting = require('provider.formatting')
-local util = require('utility')
 
-local m = {}
+local M = {}
 
-function m.loadDictionaryFromFile(filePath)
+function M.loadDictionaryFromFile(filePath)
   return codeFormat.spell_load_dictionary_from_path(filePath)
 end
 
-function m.loadDictionaryFromBuffer(buffer)
+function M.loadDictionaryFromBuffer(buffer)
   return codeFormat.spell_load_dictionary_from_buffer(buffer)
 end
 
-function m.addWord(word)
+function M.addWord(word)
   return codeFormat.spell_load_dictionary_from_buffer(word)
 end
 
-function m.spellCheck(uri, text)
-  if not m._dictionaryLoaded then
-    m.initDictionary()
-    m._dictionaryLoaded = true
+function M.spellCheck(uri, text)
+  if not M._dictionaryLoaded then
+    M.initDictionary()
+    M._dictionaryLoaded = true
   end
 
   local tempDict = config.get(uri, 'Lua.spell.dict')
@@ -34,20 +32,20 @@ function m.spellCheck(uri, text)
   return codeFormat.spell_analysis(uri, text, tempDict)
 end
 
-function m.getSpellSuggest(word)
+function M.getSpellSuggest(word)
   local status, result = codeFormat.spell_suggest(word)
   if status then
     return result
   end
 end
 
-function m.initDictionary()
+function M.initDictionary()
   local basicDictionary = fs.path(METAPATH) / 'spell/dictionary.txt'
   local luaDictionary = fs.path(METAPATH) / 'spell/lua_dict.txt'
 
-  m.loadDictionaryFromFile(basicDictionary:string())
-  m.loadDictionaryFromFile(luaDictionary:string())
+  M.loadDictionaryFromFile(basicDictionary:string())
+  M.loadDictionaryFromFile(luaDictionary:string())
   pformatting.updateNonStandardSymbols(config.get(nil, 'Lua.runtime.nonstandardSymbol'))
 end
 
-return m
+return M

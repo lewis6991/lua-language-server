@@ -8,7 +8,6 @@ local furi = require('file-uri')
 local fs = require('bee.filesystem')
 local fw = require('filewatch')
 local util = require('utility')
-local diagnostics = require('provider.diagnostic')
 local config = require('config')
 
 local loadedUris = {}
@@ -19,7 +18,7 @@ local updateType = {
   Deleted = 3,
 }
 
-fw.event(function(ev, path)
+fw.event(function(_ev, path)
   if util.stringEndWith(path, '.editorconfig') then
     for uri, fsPath in pairs(loadedUris) do
       loadedUris[uri] = nil
@@ -33,16 +32,16 @@ fw.event(function(ev, path)
   end
 end)
 
-local m = {}
+local M = {}
 
-m.loadedDefaultConfig = false
+M.loadedDefaultConfig = false
 
 --- @param uri string
-function m.updateConfig(uri)
-  if not m.loadedDefaultConfig then
-    m.loadedDefaultConfig = true
+function M.updateConfig(uri)
+  if not M.loadedDefaultConfig then
+    M.loadedDefaultConfig = true
     codeFormat.set_default_config(config.get(uri, 'Lua.format.defaultConfig'))
-    m.updateNonStandardSymbols(config.get(nil, 'Lua.runtime.nonstandardSymbol'))
+    M.updateNonStandardSymbols(config.get(nil, 'Lua.runtime.nonstandardSymbol'))
   end
 
   local currentUri = uri
@@ -77,7 +76,7 @@ function m.updateConfig(uri)
 end
 
 --- @param symbols? string[]
-function m.updateNonStandardSymbols(symbols)
+function M.updateNonStandardSymbols(symbols)
   if symbols == nil then
     return
   end
@@ -91,12 +90,12 @@ function m.updateNonStandardSymbols(symbols)
   codeFormat.set_nonstandard_symbol()
 end
 
-config.watch(function(uri, key, value)
+config.watch(function(_uri, key, value)
   if key == 'Lua.format.defaultConfig' then
     codeFormat.set_default_config(value)
   elseif key == 'Lua.runtime.nonstandardSymbol' then
-    m.updateNonStandardSymbols(value)
+    M.updateNonStandardSymbols(value)
   end
 end)
 
-return m
+return M

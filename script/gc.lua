@@ -29,7 +29,10 @@ local function isRemoved(obj)
       local n, v = debug.getupvalue(obj, i)
       if not n then
         if i > 1 then
-          log.warn('Functional destructor has no removed upper value!', util.dump(debug.getinfo(obj)))
+          log.warn(
+            'Functional destructor has no removed upper value!',
+            util.dump(debug.getinfo(obj))
+          )
         end
         break
       end

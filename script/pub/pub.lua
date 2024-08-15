@@ -28,27 +28,28 @@ brave.register(%d, %q)
 ]]
 
 --- @class pub
-local m = {}
-m.type = 'pub'
-m.braves = {}
-m.ability = {}
-m.taskQueue = {}
-m.taskMap = {}
-m.prvtPad = {}
+local M = {
+  type = 'pub',
+  braves = {},
+  ability = {},
+  taskQueue = {},
+  taskMap = {},
+  prvtPad = {},
+}
 
---- 注册酒馆的功能
-function m.on(name, callback)
-  m.ability[name] = callback
+--- Function of registering a tavern
+function M.on(name, callback)
+  M.ability[name] = callback
 end
 
---- 招募勇者，勇者会从公告板上领取任务，完成任务后到看板娘处交付任务
+--- Recruit brave men. The brave men will receive tasks from the bulletin board. After completing the tasks, they will deliver the tasks to the poster girl.
 --- @param num integer
 --- @param privatePad string?
-function m.recruitBraves(num, privatePad)
+function M.recruitBraves(num, privatePad)
   for _ = 1, num do
-    local id = #m.braves + 1
+    local id = #M.braves + 1
     log.debug('Create brave:', id)
-    m.braves[id] = {
+    M.braves[id] = {
       id = id,
       thread = thread.thread(
         braveTemplate:format(
@@ -67,38 +68,38 @@ function m.recruitBraves(num, privatePad)
       memory = 0,
     }
   end
-  if privatePad and not m.prvtPad[privatePad] then
+  if privatePad and not M.prvtPad[privatePad] then
     thread.newchannel('req:' .. privatePad)
     thread.newchannel('res:' .. privatePad)
-    m.prvtPad[privatePad] = {
+    M.prvtPad[privatePad] = {
       req = thread.channel('req:' .. privatePad),
       res = thread.channel('res:' .. privatePad),
     }
   end
 end
 
---- 给勇者推送任务
-function m.pushTask(info)
+--- Push tasks to brave men
+function M.pushTask(info)
   if info.removed then
     return false
   end
-  if m.prvtPad[info.name] then
-    m.prvtPad[info.name].req:push(info.name, info.id, info.params)
+  if M.prvtPad[info.name] then
+    M.prvtPad[info.name].req:push(info.name, info.id, info.params)
   else
     taskPad:push(info.name, info.id, info.params)
   end
-  m.taskMap[info.id] = info
+  M.taskMap[info.id] = info
   return true
 end
 
---- 从勇者处接收任务反馈
-function m.popTask(brave, id, result)
-  local info = m.taskMap[id]
+--- Receive mission feedback from the brave
+function M.popTask(brave, id, result)
+  local info = M.taskMap[id]
   if not info then
     log.warn(('Brave pushed unknown task result: # %d => [%d]'):format(brave.id, id))
     return
   end
-  m.taskMap[id] = nil
+  M.taskMap[id] = nil
   if not info.removed then
     info.removed = true
     if info.callback then
@@ -107,9 +108,9 @@ function m.popTask(brave, id, result)
   end
 end
 
---- 从勇者处接收报告
-function m.popReport(brave, name, params)
-  local abil = m.ability[name]
+--- Receive reports from heroes
+function M.popReport(brave, name, params)
+  local abil = M.ability[name]
   if not abil then
     log.warn(('Brave pushed unknown report: # %d => %q'):format(brave.id, name))
     return
@@ -117,18 +118,18 @@ function m.popReport(brave, name, params)
   xpcall(abil, log.error, params, brave)
 end
 
---- 发布任务
+--- Release tasks
 --- @param name string
 --- @param params any
 --- @return any
 --- @async
-function m.awaitTask(name, params)
+function M.awaitTask(name, params)
   local info = {
     id = counter(),
     name = name,
     params = params,
   }
-  if m.pushTask(info) then
+  if M.pushTask(info) then
     return await.wait(function(waker)
       info.callback = waker
     end)
@@ -137,51 +138,51 @@ function m.awaitTask(name, params)
   end
 end
 
---- 发布同步任务，如果任务进入了队列，会返回执行器
---- 通过 jumpQueue 可以插队
+--- Publish a synchronization task. If the task enters the queue, it will return to the executor.
+--- Queue can be jumped through jumpQueue
 --- @param name string
 --- @param params any
 --- @param callback? function
-function m.task(name, params, callback)
+function M.task(name, params, callback)
   local info = {
     id = counter(),
     name = name,
     params = params,
     callback = callback,
   }
-  return m.pushTask(info)
+  return M.pushTask(info)
 end
 
-function m.reciveFromPad(pad)
+function M.reciveFromPad(pad)
   local suc, id, name, result = pad:pop()
   if not suc then
     return false
   end
   if type(name) == 'string' then
-    m.popReport(m.braves[id], name, result)
+    M.popReport(M.braves[id], name, result)
   else
-    m.popTask(m.braves[id], name, result)
+    M.popTask(M.braves[id], name, result)
   end
   return true
 end
 
---- 接收反馈
-function m.recieve(block)
+---Receive feedback
+function M.recieve(block)
   if block then
     local id, name, result = waiter:bpop()
     if type(name) == 'string' then
-      m.popReport(m.braves[id], name, result)
+      M.popReport(M.braves[id], name, result)
     else
-      m.popTask(m.braves[id], name, result)
+      M.popTask(M.braves[id], name, result)
     end
   else
     while true do
       local ok
-      if m.reciveFromPad(waiter) then
+      if M.reciveFromPad(waiter) then
         ok = true
       end
-      for _, pad in pairs(m.prvtPad) do
-        if m.reciveFromPad(pad.res) then
+      for _, pad in pairs(M.prvtPad) do
+        if M.reciveFromPad(pad.res) then
           ok = true
         end
       end
@@ -193,8 +194,8 @@ function m.recieve(block)
   end
 end
 
---- 检查伤亡情况
-function m.checkDead()
+--- Check the casualties
+function M.checkDead()
   while true do
     local suc, err = errLog:pop()
     if not suc then
@@ -204,9 +205,9 @@ function m.checkDead()
   end
 end
 
-function m.step(block)
-  m.checkDead()
-  m.recieve(block)
+function M.step(block)
+  M.checkDead()
+  M.recieve(block)
 end
 
-return m
+return M

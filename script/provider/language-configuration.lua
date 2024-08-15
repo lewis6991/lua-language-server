@@ -14,7 +14,7 @@ local IndentAction = {
   Outdent = 3, -- Insert new line and outdent once (relative to the previous line's indentation).
 }
 
-local languageConfiguration = {
+local M = {
   id = 'lua',
   configuration = {
     autoClosingPairs = {
@@ -83,4 +83,4 @@ local languageConfiguration = {
   },
 }
 
-return languageConfiguration
+return M

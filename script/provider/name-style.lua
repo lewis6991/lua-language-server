@@ -5,24 +5,24 @@ end
 
 local config = require('config')
 
-local m = {}
+local M = {}
 
-m.loaded = false
+M.loaded = false
 
-function m.nameStyleCheck(uri, text)
-  if not m.loaded then
+function M.nameStyleCheck(uri, text)
+  if not M.loaded then
     local value = config.get(nil, 'Lua.nameStyle.config')
     codeFormat.update_name_style_config(value)
-    m.loaded = true
+    M.loaded = true
   end
 
   return codeFormat.name_style_analysis(uri, text)
 end
 
-config.watch(function(uri, key, value)
+config.watch(function(_uri, key, value)
   if key == 'Lua.nameStyle.config' then
     codeFormat.update_name_style_config(value)
   end
 end)
 
-return m
+return M
