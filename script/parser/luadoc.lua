@@ -5,13 +5,13 @@ local compile    = require 'parser.compile'
 local util       = require 'utility'
 
 local TokenTypes, TokenStarts, TokenFinishs, TokenContents, TokenMarks
----@type integer
+--- @type integer
 local Ci
----@type integer
+--- @type integer
 local Offset
 local pushWarning, NextComment, Lines
 local parseType, parseTypeUnit
----@type any
+--- @type any
 local Parser = re.compile([[
 Main                <-  (Token / Sp)*
 Sp                  <-  %s+
@@ -137,27 +137,27 @@ Symbol              <-  ({} {
     end,
 })
 
----@alias parser.visibleType 'public' | 'protected' | 'private' | 'package'
+--- @alias parser.visibleType 'public' | 'protected' | 'private' | 'package'
 
----@class parser.object
----@field literal           boolean
----@field signs             parser.object[]
----@field originalComment   parser.object
----@field as?               parser.object
----@field touch?            integer
----@field module?           string
----@field async?            boolean
----@field versions?         table[]
----@field names?            parser.object[]
----@field path?             string
----@field bindComments?     parser.object[]
----@field visible?          parser.visibleType
----@field operators?        parser.object[]
----@field calls?            parser.object[]
----@field generics?         parser.object[]
----@field generic?          parser.object
----@field docAttr?          parser.object
----@field pattern?          string
+--- @class parser.object
+--- @field literal           boolean
+--- @field signs             parser.object[]
+--- @field originalComment   parser.object
+--- @field as?               parser.object
+--- @field touch?            integer
+--- @field module?           string
+--- @field async?            boolean
+--- @field versions?         table[]
+--- @field names?            parser.object[]
+--- @field path?             string
+--- @field bindComments?     parser.object[]
+--- @field visible?          parser.visibleType
+--- @field operators?        parser.object[]
+--- @field calls?            parser.object[]
+--- @field generics?         parser.object[]
+--- @field generic?          parser.object
+--- @field docAttr?          parser.object
+--- @field pattern?          string
 
 local function parseTokens(text, offset)
     Ci = 0
@@ -176,8 +176,8 @@ local function peekToken(offset)
     return TokenTypes[Ci + offset], TokenContents[Ci + offset]
 end
 
----@return string? tokenType
----@return string? tokenContent
+--- @return string? tokenType
+--- @return string? tokenContent
 local function nextToken()
     Ci = Ci + 1
     if not TokenTypes[Ci] then
@@ -200,7 +200,7 @@ local function getStart()
     return TokenStarts[Ci] + Offset
 end
 
----@return integer
+--- @return integer
 local function getFinish()
     if Ci == 0 then
         return Offset

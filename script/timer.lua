@@ -14,7 +14,7 @@ local curIndex = 0
 local tarFrame = 0
 local fwFrame = 0
 local freeQueue = {}
----@type (timer|false)[][]
+--- @type (timer|false)[][]
 local timer = {}
 
 local function allocQueue()
@@ -98,14 +98,14 @@ local function onTick()
   freeQueue[#freeQueue + 1] = q
 end
 
----@class timer.manager
+--- @class timer.manager
 local m = {}
 
----@class timer
----@field package _onTimer? fun(self: timer)
----@field package _timeoutFrame integer
----@field package _timeout integer
----@field package _timerCount integer
+--- @class timer
+--- @field package _onTimer? fun(self: timer)
+--- @field package _timeoutFrame integer
+--- @field package _timeout integer
+--- @field package _timerCount integer
 local mt = {}
 mt.__index = mt
 mt.type = 'timer'

@@ -3,16 +3,16 @@ local utf16 = require('encoder.utf16')
 local utf16le = utf16('le', utf8.codepoint('�'))
 local utf16be = utf16('be', utf8.codepoint('�'))
 
----@alias encoder.encoding '"utf8"'|'"utf16"'|'"utf16le"'|'"utf16be"'
+--- @alias encoder.encoding '"utf8"'|'"utf16"'|'"utf16le"'|'"utf16be"'
 
----@alias encoder.bom '"no"'|'"yes"'|'"auto"'
+--- @alias encoder.bom '"no"'|'"yes"'|'"auto"'
 
 local m = {}
 
----@param encoding encoder.encoding
----@param s        string
----@param i?       integer
----@param j?       integer
+--- @param encoding encoder.encoding
+--- @param s        string
+--- @param i?       integer
+--- @param j?       integer
 function m.len(encoding, s, i, j)
   i = i or 1
   j = j or #s
@@ -31,10 +31,10 @@ function m.len(encoding, s, i, j)
   return j - i + 1
 end
 
----@param encoding encoder.encoding
----@param s        string
----@param n        integer
----@param i?       integer
+--- @param encoding encoder.encoding
+--- @param s        string
+--- @param n        integer
+--- @param i?       integer
 function m.offset(encoding, s, n, i)
   i = i or 1
   if encoding == 'utf16' or encoding == 'utf16le' then
@@ -62,10 +62,10 @@ function m.offset(encoding, s, n, i)
   return n + i - 1
 end
 
----@param encoding encoder.encoding
----@param text string
----@param bom encoder.bom
----@return string
+--- @param encoding encoder.encoding
+--- @param text string
+--- @param bom encoder.bom
+--- @return string
 function m.encode(encoding, text, bom)
   if encoding == 'utf8' then
     if bom == 'yes' then
@@ -94,9 +94,9 @@ function m.encode(encoding, text, bom)
   return text
 end
 
----@param encoding encoder.encoding
----@param text string
----@return string
+--- @param encoding encoder.encoding
+--- @param text string
+--- @return string
 function m.decode(encoding, text)
   if encoding == 'utf8' then
     return text

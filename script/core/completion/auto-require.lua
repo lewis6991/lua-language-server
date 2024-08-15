@@ -8,14 +8,14 @@ local rpath = require('workspace.require-path')
 local vm = require('vm')
 local matchKey = require('core.matchkey')
 
----@class auto-require
+--- @class auto-require
 local m = {}
 
----@type table<string, true>
+--- @type table<string, true>
 m.validUris = {}
 
----@param state parser.state
----@return parser.object?
+--- @param state parser.state
+--- @return parser.object?
 function m.getTargetSource(state)
   local targetReturns = state.ast.returns
   if not targetReturns then

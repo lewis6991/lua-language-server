@@ -5,8 +5,8 @@ local vm = require('vm')
 local await = require('await')
 local util = require('utility')
 
----@param func parser.object
----@return vm.node[]?
+--- @param func parser.object
+--- @return vm.node[]?
 local function getDocReturns(func)
   ---@type table<integer, vm.node>
   local returns = util.defaultTable(function()
@@ -40,7 +40,7 @@ local function getDocReturns(func)
   end
   return returns
 end
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

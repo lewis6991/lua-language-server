@@ -8,7 +8,7 @@ local markdown = require('provider.markdown')
 local guide = require('parser.guide')
 local wssymbol = require('core.workspace-symbol')
 
----@async
+--- @async
 local function getHover(source)
   local md = markdown()
   local defMark = {}
@@ -122,7 +122,7 @@ local accept = {
   ['doc.see.name'] = true,
 }
 
----@async
+--- @async
 local function getHoverByUri(uri, position)
   local ast = files.getState(uri)
   if not ast then

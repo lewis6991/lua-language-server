@@ -2,14 +2,14 @@ local util = require('utility')
 local define = require('proto.define')
 local diag = require('proto.diagnostic')
 
----@class config.unit
----@field caller function
----@field _checker fun(self: config.unit, value: any): boolean
----@field name     string
----@field [string] config.unit
----@operator shl:  config.unit
----@operator shr:  config.unit
----@operator call: config.unit
+--- @class config.unit
+--- @field caller function
+--- @field _checker fun(self: config.unit, value: any): boolean
+--- @field name     string
+--- @field [string] config.unit
+--- @operator shl:  config.unit
+--- @operator shr:  config.unit
+--- @operator call: config.unit
 local mt = {}
 mt.__index = mt
 
@@ -57,7 +57,7 @@ local function register(name, default, checker, loader, caller)
   }
 end
 
----@type config.unit
+--- @type config.unit
 local Type = setmetatable({}, {
   __index = function(_, name)
     local unit = {}
@@ -181,7 +181,7 @@ end, function(self, ...)
   self.subs = { ... }
 end)
 
----@format disable-next
+--- @format disable-next
 local template = {
   ['Lua.runtime.version'] = Type.String >> 'Lua 5.4' << {
     'Lua 5.1',

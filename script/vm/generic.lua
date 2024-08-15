@@ -1,20 +1,20 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 
----@class parser.object
----@field package _generic vm.generic
----@field package _resolved vm.node
+--- @class parser.object
+--- @field package _generic vm.generic
+--- @field package _resolved vm.node
 
----@class vm.generic
----@field sign  vm.sign
----@field proto vm.object
+--- @class vm.generic
+--- @field sign  vm.sign
+--- @field proto vm.object
 local mt = {}
 mt.__index = mt
 mt.type = 'generic'
 
----@param source    vm.object?
----@param resolved? table<string, vm.node>
----@return vm.object?
+--- @param source    vm.object?
+--- @param resolved? table<string, vm.node>
+--- @return vm.object?
 local function cloneObject(source, resolved)
   if not resolved or not source then
     return source
@@ -116,9 +116,9 @@ local function cloneObject(source, resolved)
   return source
 end
 
----@param uri string
----@param args parser.object
----@return vm.node
+--- @param uri string
+--- @param args parser.object
+--- @return vm.node
 function mt:resolve(uri, args)
   local resolved = self.sign:resolve(uri, args)
   local protoNode = vm.compileNode(self.proto)
@@ -139,8 +139,8 @@ function mt:resolve(uri, args)
   return result
 end
 
----@param source parser.object
----@return vm.node?
+--- @param source parser.object
+--- @return vm.node?
 function vm.getGenericResolved(source)
   if source.type ~= 'doc.generic.name' then
     return nil
@@ -148,21 +148,21 @@ function vm.getGenericResolved(source)
   return source._resolved
 end
 
----@param source parser.object
----@param generic vm.generic
+--- @param source parser.object
+--- @param generic vm.generic
 function vm.setGeneric(source, generic)
   source._generic = generic
 end
 
----@param source parser.object
----@return vm.generic?
+--- @param source parser.object
+--- @return vm.generic?
 function vm.getGeneric(source)
   return source._generic
 end
 
----@param proto vm.object
----@param sign  vm.sign
----@return vm.generic
+--- @param proto vm.object
+--- @param sign  vm.sign
+--- @return vm.generic
 function vm.createGeneric(proto, sign)
   local generic = setmetatable({
     sign = sign,

@@ -11,8 +11,8 @@ local sourceTypes = {
   'setindex',
 }
 
----@param source parser.object
----@return parser.object?
+--- @param source parser.object
+--- @return parser.object?
 local function getTopFunctionOfIf(source)
   while true do
     if
@@ -29,7 +29,7 @@ local function getTopFunctionOfIf(source)
   return nil
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

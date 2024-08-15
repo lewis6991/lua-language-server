@@ -3,23 +3,23 @@ local util       = require 'utility'
 local config     = require 'config'
 local rpath      = require 'workspace.require-path'
 local files      = require 'files'
----@class vm
+--- @class vm
 local vm         = require 'vm.vm'
 local plugin     = require 'plugin'
 
----@class parser.object
----@field _compiledNodes        boolean
----@field _node                 vm.node
----@field cindex                integer
----@field func                  parser.object
----@field hideView              boolean
----@field package _returns?     parser.object[]
----@field package _callReturns? parser.object[]
----@field package _asCache?     parser.object[]
+--- @class parser.object
+--- @field _compiledNodes        boolean
+--- @field _node                 vm.node
+--- @field cindex                integer
+--- @field func                  parser.object
+--- @field hideView              boolean
+--- @field package _returns?     parser.object[]
+--- @field package _callReturns? parser.object[]
+--- @field package _asCache?     parser.object[]
 
 -- 该函数有副作用，会给source绑定node！
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 function vm.bindDocs(source)
     local docs = source.bindDocs
     if not docs then
@@ -73,9 +73,9 @@ function vm.bindDocs(source)
     return false
 end
 
----@param source parser.object | vm.variable
----@param key string|vm.global|vm.ANY
----@param pushResult fun(res: parser.object, markDoc?: boolean)
+--- @param source parser.object | vm.variable
+--- @param key string|vm.global|vm.ANY
+--- @param pushResult fun(res: parser.object, markDoc?: boolean)
 local function searchFieldByLocalID(source, key, pushResult)
     local fields
     if key ~= vm.ANY then
@@ -121,10 +121,10 @@ local function searchFieldByLocalID(source, key, pushResult)
     end
 end
 
----@param suri string
----@param source parser.object
----@param key string|vm.global|vm.ANY
----@param pushResult fun(res: parser.object, markDoc?: boolean)
+--- @param suri string
+--- @param source parser.object
+--- @param key string|vm.global|vm.ANY
+--- @param pushResult fun(res: parser.object, markDoc?: boolean)
 local function searchFieldByGlobalID(suri, source, key, pushResult)
     local node = vm.getGlobalNode(source)
     if not node then
@@ -281,10 +281,10 @@ local searchFieldSwitch = util.switch()
         searchFieldByGlobalID(suri, source, key, pushResult)
     end)
 
----@param suri string
----@param object vm.global
----@param key string|number|integer|boolean|vm.global|vm.ANY
----@param pushResult fun(field: vm.object, isMark?: boolean)
+--- @param suri string
+--- @param object vm.global
+--- @param key string|number|integer|boolean|vm.global|vm.ANY
+--- @param pushResult fun(field: vm.object, isMark?: boolean)
 function vm.getClassFields(suri, object, key, pushResult)
     local mark = {}
 
@@ -478,9 +478,9 @@ function vm.getClassFields(suri, object, key, pushResult)
     searchGlobal(object)
 end
 
----@param func  parser.object
----@param index integer
----@return (parser.object|vm.generic)?
+--- @param func  parser.object
+--- @param index integer
+--- @return (parser.object|vm.generic)?
 function vm.getReturnOfFunction(func, index)
     if func.type == 'function' then
         if not func._returns then
@@ -516,8 +516,8 @@ function vm.getReturnOfFunction(func, index)
     return nil
 end
 
----@param args parser.object[]
----@return vm.node
+--- @param args parser.object[]
+--- @return vm.node
 local function getReturnOfSetMetaTable(args)
     local tbl  = args[1]
     local mt   = args[2]
@@ -542,7 +542,7 @@ local function getReturnOfSetMetaTable(args)
     return node
 end
 
----@param source parser.object
+--- @param source parser.object
 local function matchCall(source)
     local call = source.parent
     if not call
@@ -594,10 +594,10 @@ local function matchCall(source)
     end
 end
 
----@param func  parser.object
----@param index integer
----@param args  parser.object[]
----@return vm.node
+--- @param func  parser.object
+--- @param index integer
+--- @param args  parser.object[]
+--- @return vm.node
 local function getReturn(func, index, args)
     if not func._callReturns then
         func._callReturns = {}
@@ -618,8 +618,8 @@ local function getReturn(func, index, args)
     return vm.compileNode(func._callReturns[index])
 end
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 function vm.bindAs(source)
     local root = guide.getRoot(source)
     local docs = root.docs
@@ -672,10 +672,10 @@ function vm.bindAs(source)
     return false
 end
 
----@param source parser.object | vm.variable
----@param key string|vm.global|vm.ANY
----@return parser.object[] docedResults
----@return parser.object[] commonResults
+--- @param source parser.object | vm.variable
+--- @param key string|vm.global|vm.ANY
+--- @return parser.object[] docedResults
+--- @return parser.object[] commonResults
 function vm.getNodesOfParentNode(source, key)
     local parentNode = vm.compileNode(source)
     local docedResults = {}
@@ -733,9 +733,9 @@ function vm.getNodesOfParentNode(source, key)
 end
 
 -- 遍历所有字段（按照优先级）
----@param source parser.object | vm.variable
----@param key string|vm.global|vm.ANY
----@param pushResult fun(source: parser.object)
+--- @param source parser.object | vm.variable
+--- @param key string|vm.global|vm.ANY
+--- @param pushResult fun(source: parser.object)
 function vm.compileByParentNode(source, key, pushResult)
     local docedResults, commonResults = vm.getNodesOfParentNode(source, key)
 
@@ -752,9 +752,9 @@ function vm.compileByParentNode(source, key, pushResult)
 end
 
 -- 遍历所有字段（无视优先级）
----@param source parser.object | vm.variable
----@param key string|vm.global|vm.ANY
----@param pushResult fun(source: parser.object)
+--- @param source parser.object | vm.variable
+--- @param key string|vm.global|vm.ANY
+--- @param pushResult fun(source: parser.object)
 function vm.compileByParentNodeAll(source, key, pushResult)
     local docedResults, commonResults = vm.getNodesOfParentNode(source, key)
 
@@ -766,10 +766,10 @@ function vm.compileByParentNodeAll(source, key, pushResult)
     end
 end
 
----@param list  parser.object[]
----@param index integer
----@return vm.node
----@return parser.object?
+--- @param list  parser.object[]
+--- @param index integer
+--- @return vm.node
+--- @return parser.object?
 function vm.selectNode(list, index)
     local exp
     if list[index] then
@@ -813,10 +813,10 @@ function vm.selectNode(list, index)
     return result, exp
 end
 
----@param source parser.object
----@param list   parser.object[]
----@param index  integer
----@return vm.node
+--- @param source parser.object
+--- @param list   parser.object[]
+--- @param index  integer
+--- @return vm.node
 local function selectNode(source, list, index)
     local result = vm.selectNode(list, index)
     if source.type == 'function.return' then
@@ -841,9 +841,9 @@ local function selectNode(source, list, index)
     return result
 end
 
----@param source parser.object
----@param node   vm.node.object
----@return boolean
+--- @param source parser.object
+--- @param node   vm.node.object
+--- @return boolean
 local function isValidCallArgNode(source, node)
     if source.type == 'function' then
         return node.type == 'doc.type.function'
@@ -862,9 +862,9 @@ local function isValidCallArgNode(source, node)
     return false
 end
 
----@param func parser.object
----@param index integer
----@return parser.object?
+--- @param func parser.object
+--- @param index integer
+--- @return parser.object?
 local function getFuncArg(func, index)
     local args = func.args
     if not args then
@@ -880,11 +880,11 @@ local function getFuncArg(func, index)
     return nil
 end
 
----@param arg      parser.object
----@param call     parser.object
----@param callNode vm.node
----@param fixIndex integer
----@param myIndex  integer
+--- @param arg      parser.object
+--- @param call     parser.object
+--- @param callNode vm.node
+--- @param fixIndex integer
+--- @param myIndex  integer
 local function compileCallArgNode(arg, call, callNode, fixIndex, myIndex)
     ---@type integer?, table<any, boolean>?
     local eventIndex, eventMap
@@ -971,10 +971,10 @@ local function compileCallArgNode(arg, call, callNode, fixIndex, myIndex)
     end
 end
 
----@param arg parser.object
----@param call parser.object
----@param index? integer
----@return vm.node?
+--- @param arg parser.object
+--- @param call parser.object
+--- @param index? integer
+--- @return vm.node?
 function vm.compileCallArg(arg, call, index)
     if not index then
         for i, carg in ipairs(call.args) do
@@ -1002,14 +1002,14 @@ function vm.compileCallArg(arg, call, index)
     return vm.getNode(arg)
 end
 
----@class parser.object
----@field package _iterator? table
----@field package _iterArgs? table
----@field package _iterVars? table<parser.object, vm.node>
+--- @class parser.object
+--- @field package _iterator? table
+--- @field package _iterArgs? table
+--- @field package _iterVars? table<parser.object, vm.node>
 
----@param source parser.object
----@param target parser.object
----@return boolean
+--- @param source parser.object
+--- @param target parser.object
+--- @return boolean
 local function compileForVars(source, target)
     if not source.exps then
         return false
@@ -1050,8 +1050,8 @@ local function compileForVars(source, target)
     return false
 end
 
----@param func parser.object
----@param source parser.object
+--- @param func parser.object
+--- @param source parser.object
 local function compileFunctionParam(func, source)
     -- local call ---@type fun(f: fun(x: number));call(function (x) end) --> x -> number
     local funcNode = vm.compileNode(func)
@@ -1098,7 +1098,7 @@ local function compileFunctionParam(func, source)
     end
 end
 
----@param source parser.object
+--- @param source parser.object
 local function compileLocal(source)
     local myNode = vm.setNode(source, source)
 
@@ -1195,10 +1195,10 @@ local function compileLocal(source)
     myNode.hasDefined = hasMarkDoc or hasMarkParam or hasMarkValue
 end
 
----@param source parser.object
----@param mfunc  parser.object
----@param index  integer
----@param args   parser.object[]
+--- @param source parser.object
+--- @param mfunc  parser.object
+--- @param index  integer
+--- @param args   parser.object[]
 local function bindReturnOfFunction(source, mfunc, index, args)
     local returnObject = vm.getReturnOfFunction(mfunc, index)
     if not returnObject then
@@ -1966,7 +1966,7 @@ local compilerSwitch = util.switch()
         vm.setNode(source, source)
     end)
 
----@param source parser.object
+--- @param source parser.object
 local function compileByNode(source)
     compilerSwitch(source.type, source)
 end
@@ -2028,7 +2028,7 @@ function vm.compileByNodeChain(source, pushResult)
     end
 end
 
----@param source vm.object
+--- @param source vm.object
 local function compileByParentNode(source)
     if vm.getNode(source):isTyped() then
         return
@@ -2038,8 +2038,8 @@ local function compileByParentNode(source)
     end)
 end
 
----@param source vm.node.object | vm.variable
----@return vm.node
+--- @param source vm.node.object | vm.variable
+--- @return vm.node
 function vm.compileNode(source)
     if not source then
         if TEST then

@@ -37,7 +37,7 @@ local function findNearCall(uri, ast, pos)
   return nearCall
 end
 
----@async
+--- @async
 local function makeOneSignature(source, oop, index)
   local label = hoverLabel(source, oop)
   if not label then
@@ -114,7 +114,7 @@ local function isEventNotMatch(call, src)
   return eventLiteral ~= literal
 end
 
----@async
+--- @async
 local function makeSignatures(text, call, pos)
   local func = call.node
   local oop = func.type == 'method' or func.type == 'getmethod' or func.type == 'setmethod'
@@ -185,7 +185,7 @@ local function makeSignatures(text, call, pos)
   return signs
 end
 
----@async
+--- @async
 return function(uri, pos)
   local state = files.getState(uri)
   local text = files.getText(uri)

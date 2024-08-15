@@ -1,10 +1,10 @@
----@class lookForward
-local m = {}
+--- @class lookForward
+local M = {}
 
---- 是否是空白符
----@param char    string
----@param inline? boolean # 必须在同一行中（排除换行符）
-function m.isSpace(char, inline)
+--- Is it a whitespace character?
+--- @param char    string
+--- @param inline? boolean # Must be on the same line (excluding newlines)
+function M.isSpace(char, inline)
   if inline then
     if char == ' ' or char == '\t' then
       return true
@@ -17,21 +17,21 @@ function m.isSpace(char, inline)
   return false
 end
 
---- 跳过空白符
----@param text    string
----@param offset  integer
----@param inline? boolean # 必须在同一行中（排除换行符）
-function m.skipSpace(text, offset, inline)
+--- Skip whitespace characters
+--- @param text    string
+--- @param offset  integer
+--- @param inline? boolean # Must be on the same line (excluding newlines)
+function M.skipSpace(text, offset, inline)
   for i = offset, 1, -1 do
     local char = text:sub(i, i)
-    if not m.isSpace(char, inline) then
+    if not M.isSpace(char, inline) then
       return i
     end
   end
   return 0
 end
 
-function m.findWord(text, offset)
+function M.findWord(text, offset)
   for i = offset, 1, -1 do
     if not text:sub(i, i):match('[%w_\x80-\xff]') then
       if i == offset then
@@ -43,47 +43,41 @@ function m.findWord(text, offset)
   return text:sub(1, offset), 1
 end
 
-function m.findSymbol(text, offset)
+function M.findSymbol(text, offset)
   for i = offset, 1, -1 do
     local char = text:sub(i, i)
-    if m.isSpace(char) then
-      goto CONTINUE
-    end
-    if
-      char == '.'
-      or char == ':'
-      or char == '('
-      or char == ','
-      or char == '['
-      or char == '='
-      or char == '{'
-    then
-      return char, i
-    else
+    if not M.isSpace(char) then
+      if
+        char == '.'
+        or char == ':'
+        or char == '('
+        or char == ','
+        or char == '['
+        or char == '='
+        or char == '{'
+      then
+        return char, i
+      end
       return nil
     end
-    ::CONTINUE::
   end
-  return nil
 end
 
-function m.findTargetSymbol(text, offset, symbol)
-  offset = m.skipSpace(text, offset)
+function M.findTargetSymbol(text, offset, symbol)
+  offset = M.skipSpace(text, offset)
   for i = offset, 1, -1 do
     local char = text:sub(i - #symbol + 1, i)
     if char == symbol then
       return i - #symbol + 1
-    else
-      return nil
     end
+    return
   end
-  return nil
 end
 
----@param text string
----@param offset integer
----@param inline? boolean # 必须在同一行中（排除换行符）
-function m.findAnyOffset(text, offset, inline)
+--- @param text string
+--- @param offset integer
+--- @param inline? boolean # Must be on the same line (excluding newlines)
+function M.findAnyOffset(text, offset, inline)
   for i = offset, 1, -1 do
     local c = text:sub(i, i)
     if inline then
@@ -91,11 +85,10 @@ function m.findAnyOffset(text, offset, inline)
         return nil
       end
     end
-    if not m.isSpace(c) then
+    if not M.isSpace(c) then
       return i
     end
   end
-  return nil
 end
 
-return m
+return M

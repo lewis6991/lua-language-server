@@ -17,7 +17,7 @@ local function createDir(uri)
   return fileDir
 end
 
----@async
+--- @async
 return function(uri)
   if config.get(uri, 'Lua.runtime.version') ~= 'LuaJIT' then
     return

@@ -5,8 +5,8 @@ local define = require('proto.define')
 local util = require('utility')
 local subber = require('core.substring')
 
----@param text string
----@return string
+--- @param text string
+--- @return string
 local function clipLastLine(text)
   if text:find('[\r\n]') then
     return '... ' .. util.trim(text:match('[^\r\n]*$'))
@@ -327,7 +327,7 @@ local function buildSource(source, sub, used, symbols)
   end
 end
 
----@async
+--- @async
 local function makeSymbol(uri)
   local state = files.getState(uri)
   if not state then
@@ -378,7 +378,7 @@ local function packChild(symbols)
   return root
 end
 
----@async
+--- @async
 local function packSymbols(symbols)
   await.delay()
   table.sort(symbols, function(a, b)
@@ -391,7 +391,7 @@ local function packSymbols(symbols)
   return packChild(symbols)
 end
 
----@async
+--- @async
 return function(uri)
   local symbols = makeSymbol(uri)
   if not symbols then

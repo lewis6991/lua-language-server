@@ -7,11 +7,11 @@ local util = require('utility')
 local client = require('client')
 local lang = require('language')
 
----@alias rename { oldUri: string, newUri: string }
+--- @alias rename { oldUri: string, newUri: string }
 
----@param changes table[]
----@param uri string
----@param renames rename[]
+--- @param changes table[]
+--- @param uri string
+--- @param renames rename[]
 local function checkConvert(changes, uri, renames)
   local state = files.getState(uri)
   if not state then
@@ -49,8 +49,8 @@ local function checkConvert(changes, uri, renames)
   end)
 end
 
----@async
----@param renames rename[]
+--- @async
+--- @param renames rename[]
 return function(renames)
   if #renames == 0 then
     return

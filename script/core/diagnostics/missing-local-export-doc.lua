@@ -3,7 +3,7 @@ local guide = require('parser.guide')
 local await = require('await')
 local helper = require('core.diagnostics.helper.missing-doc-helper')
 
----@async
+--- @async
 local function findSetField(ast, name, callback)
   ---@async
   guide.eachSourceType(ast, 'setfield', function(source)
@@ -30,7 +30,7 @@ local function findSetField(ast, name, callback)
   end)
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
 

@@ -16,8 +16,8 @@ local checkTypes = {
   'tableexp',
 }
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 local function hasMarkType(source)
   if not source.bindDocs then
     return false
@@ -30,8 +30,8 @@ local function hasMarkType(source)
   return false
 end
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 local function hasMarkClass(source)
   if not source.bindDocs then
     return false
@@ -44,7 +44,7 @@ local function hasMarkClass(source)
   return false
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

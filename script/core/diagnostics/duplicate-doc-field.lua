@@ -31,7 +31,7 @@ local function getFieldEventName(doc)
   return nil
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

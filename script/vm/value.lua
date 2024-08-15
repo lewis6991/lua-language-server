@@ -1,9 +1,9 @@
 local guide = require('parser.guide')
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 
----@param source parser.object?
----@return boolean|nil
+--- @param source parser.object?
+--- @return boolean|nil
 function vm.testCondition(source)
   if not source then
     return nil
@@ -46,8 +46,8 @@ function vm.testCondition(source)
   end
 end
 
----@param v vm.node.object
----@return string|false
+--- @param v vm.node.object
+--- @return string|false
 local function getUnique(v)
   if v.type == 'boolean' then
     if v[1] == nil then
@@ -78,9 +78,9 @@ local function getUnique(v)
   return false
 end
 
----@param a parser.object?
----@param b parser.object?
----@return boolean|nil
+--- @param a parser.object?
+--- @param b parser.object?
+--- @return boolean|nil
 function vm.equal(a, b)
   if not a or not b then
     return false
@@ -107,8 +107,8 @@ function vm.equal(a, b)
   return true
 end
 
----@param v vm.object?
----@return integer?
+--- @param v vm.object?
+--- @return integer?
 function vm.getInteger(v)
   if not v then
     return nil
@@ -137,8 +137,8 @@ function vm.getInteger(v)
   return result
 end
 
----@param v vm.object?
----@return string?
+--- @param v vm.object?
+--- @return string?
 function vm.getString(v)
   if not v then
     return nil
@@ -159,8 +159,8 @@ function vm.getString(v)
   return result
 end
 
----@param v vm.object?
----@return number?
+--- @param v vm.object?
+--- @return number?
 function vm.getNumber(v)
   if not v then
     return nil
@@ -181,8 +181,8 @@ function vm.getNumber(v)
   return result
 end
 
----@param v vm.object
----@return boolean|nil
+--- @param v vm.object
+--- @return boolean|nil
 function vm.getBoolean(v)
   if not v then
     return nil
@@ -203,8 +203,8 @@ function vm.getBoolean(v)
   return result
 end
 
----@param v vm.object
----@return table<any, boolean>?
+--- @param v vm.object
+--- @return table<any, boolean>?
 function vm.getLiterals(v)
   if not v then
     return nil

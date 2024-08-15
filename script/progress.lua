@@ -10,9 +10,9 @@ local m = {}
 
 m.map = {}
 
----@class progress
----@field _uri   string
----@field _token integer
+--- @class progress
+--- @field _uri   string
+--- @field _token integer
 local mt = {}
 mt.__index = mt
 mt._title = nil
@@ -51,7 +51,7 @@ function mt:isRemoved()
 end
 
 ---设置描述
----@param message string # 描述
+--- @param message string # 描述
 function mt:setMessage(message)
   if self._message == message then
     return
@@ -62,7 +62,7 @@ function mt:setMessage(message)
 end
 
 ---设置百分比
----@param per number # 百分比（1-100）
+--- @param per number # 百分比（1-100）
 function mt:setPercentage(per)
   if self._percentage == per then
     return
@@ -148,9 +148,9 @@ function m.update()
 end
 
 ---创建一个进度条
----@param uri?  string
----@param title string # 标题
----@param delay number # 至少经过这么久之后才会显示出来
+--- @param uri?  string
+--- @param title string # 标题
+--- @param delay number # 至少经过这么久之后才会显示出来
 function m.create(uri, title, delay)
   local token = nextToken()
   local prog = setmetatable({

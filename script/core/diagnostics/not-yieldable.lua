@@ -36,7 +36,7 @@ local function isYieldAble(defs, i)
   return not hasFuncDef
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

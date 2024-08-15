@@ -1,5 +1,4 @@
 local files = require('files')
-local define = require('proto.define')
 local lang = require('language')
 local guide = require('parser.guide')
 local await = require('await')
@@ -12,8 +11,8 @@ local types = {
   'setindex',
 }
 
----@async
-return function(uri, callback, code)
+--- @async
+return function(uri, callback, _code)
   local ast = files.getState(uri)
   if not ast then
     return

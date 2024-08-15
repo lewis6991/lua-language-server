@@ -7,15 +7,15 @@ local config = require('config')
 
 local Forcing
 
----@param str string
----@return string
+--- @param str string
+--- @return string
 local function trim(str)
   return str:match('^%s*(%S+)%s*$')
 end
 
----@param uri string
----@param str string
----@return boolean
+--- @param uri string
+--- @param str string
+--- @return boolean
 local function isValidName(uri, str)
   if not str then
     return false
@@ -28,9 +28,9 @@ local function isValidName(uri, str)
   end
 end
 
----@param uri string
----@param str string
----@return boolean
+--- @param uri string
+--- @param str string
+--- @return boolean
 local function isValidGlobal(uri, str)
   if not str then
     return false
@@ -43,9 +43,9 @@ local function isValidGlobal(uri, str)
   return true
 end
 
----@param uri string
----@param str string
----@return boolean
+--- @param uri string
+--- @param str string
+--- @return boolean
 local function isValidFunctionName(uri, str)
   if isValidGlobal(uri, str) then
     return true
@@ -56,18 +56,6 @@ local function isValidFunctionName(uri, str)
   end
   return isValidGlobal(uri, trim(str:sub(1, offset - 1)))
     and isValidName(uri, trim(str:sub(offset + 1)))
-end
-
-local function isFunctionGlobalName(source)
-  local parent = source.parent
-  if parent.type ~= 'setglobal' then
-    return false
-  end
-  local value = parent.value
-  if not value.type ~= 'function' then
-    return false
-  end
-  return value.start <= parent.start
 end
 
 local function renameLocal(source, newname, callback)
@@ -110,8 +98,8 @@ local function renameField(source, newname, callback)
       util.viewString(newname)
     )
     callback(source, func.start, parent.finish, newstr)
-    local finishOffset = guide.positionToOffset(state, parent.finish)
-    local pl = text:find('(', finishOffset, true)
+    local finishOffset1 = guide.positionToOffset(state, parent.finish)
+    local pl = text:find('(', finishOffset1, true)
     if pl then
       local insertPos = guide.offsetToPosition(state, pl)
       if text:find('^%s*%)', pl + 1) then
@@ -193,7 +181,7 @@ local function ofFieldThen(key, src, newname, callback)
   end
 end
 
----@async
+--- @async
 local function ofField(source, newname, callback)
   local key = guide.getKeyName(source)
   local refs = vm.getRefs(source)
@@ -202,7 +190,7 @@ local function ofField(source, newname, callback)
   end
 end
 
----@async
+--- @async
 local function ofGlobal(source, newname, callback)
   local key = guide.getKeyName(source)
   if not key then
@@ -218,14 +206,14 @@ local function ofGlobal(source, newname, callback)
   end
 end
 
----@async
+--- @async
 local function ofLabel(source, newname, callback)
   for _, src in ipairs(vm.getRefs(source)) do
     callback(src, src.start, src.finish, newname)
   end
 end
 
----@async
+--- @async
 local function ofDocTypeName(source, newname, callback)
   local oldname = source[1]
   local global = vm.getGlobal('type', oldname)
@@ -268,7 +256,7 @@ local function ofDocParamName(source, newname, callback)
   end
 end
 
----@async
+--- @async
 local function rename(source, newname, callback)
   if source.type == 'label' or source.type == 'goto' then
     return ofLabel(source, newname, callback)
@@ -374,7 +362,7 @@ local accept = {
 
 local m = {}
 
----@async
+--- @async
 function m.rename(uri, pos, newname)
   if not newname then
     return nil

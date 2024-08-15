@@ -8,7 +8,7 @@ local guide = require('parser.guide')
 local json = require('json')
 local jsonc = require('jsonc')
 
----@async
+--- @async
 return function(data)
   local state = files.getState(data.uri)
   local text = files.getText(data.uri)

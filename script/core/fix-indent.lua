@@ -5,8 +5,8 @@ local lookBackward = require('core.look-backward')
 local util = require('utility')
 local client = require('client')
 
----@param state parser.state
----@param change table
+--- @param state parser.state
+--- @param change table
 local function removeSpacesAfterEnter(state, change)
   if not change.text:match('^\r?\n[\t ]+\r?\n$') then
     return false
@@ -151,7 +151,7 @@ local function fixWrongIndent(state, change)
   return edits
 end
 
----@param state parser.state
+--- @param state parser.state
 local function applyEdits(state, edits)
   if #edits == 0 then
     return

@@ -1,19 +1,19 @@
----@class string.merger.diff
----@field start  integer # 替换开始的字节
----@field finish integer # 替换结束的字节
----@field text   string  # 替换的文本
+--- @class string.merger.diff
+--- @field start  integer # 替换开始的字节
+--- @field finish integer # 替换结束的字节
+--- @field text   string  # 替换的文本
 
----@class string.merger.info: string.merger.diff
----@field cstart  integer # 转换后的开始字节
----@field cfinish integer # 转换后的结束字节
+--- @class string.merger.info: string.merger.diff
+--- @field cstart  integer # 转换后的开始字节
+--- @field cfinish integer # 转换后的结束字节
 
----@alias string.merger.diffs string.merger.diff[]
----@alias string.merger.infos string.merger.info[]
+--- @alias string.merger.diffs string.merger.diff[]
+--- @alias string.merger.infos string.merger.info[]
 
 -- 根据二分法找到最近的开始位置
----@param diffs  table
----@param offset any
----@return string.merger.info
+--- @param diffs  table
+--- @param offset any
+--- @return string.merger.info
 local function getNearDiff(diffs, offset, key)
   local min = 1
   local max = #diffs
@@ -44,10 +44,10 @@ end
 local m = {}
 
 ---把文本与差异进行合并
----@param text  string
----@param diffs string.merger.diffs
----@return string
----@return string.merger.infos
+--- @param text  string
+--- @param diffs string.merger.diffs
+--- @return string
+--- @return string.merger.infos
 function m.mergeDiff(text, diffs)
   local info = {}
   for i, diff in ipairs(diffs) do
@@ -76,10 +76,10 @@ function m.mergeDiff(text, diffs)
 end
 
 ---根据转换前的位置获取转换后的位置
----@param info   string.merger.infos
----@param offset integer
----@return integer start
----@return integer finish
+--- @param info   string.merger.infos
+--- @param offset integer
+--- @return integer start
+--- @return integer finish
 function m.getOffset(info, offset)
   local diff = getNearDiff(info, offset, 'start')
   if not diff then
@@ -109,10 +109,10 @@ function m.getOffset(info, offset)
 end
 
 ---根据转换后的位置获取转换前的位置
----@param info   string.merger.infos
----@param offset integer
----@return integer start
----@return integer finish
+--- @param info   string.merger.infos
+--- @param offset integer
+--- @return integer start
+--- @return integer finish
 function m.getOffsetBack(info, offset)
   local diff = getNearDiff(info, offset, 'cstart')
   if not diff then

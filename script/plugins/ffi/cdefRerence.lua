@@ -16,7 +16,7 @@ local function getCdefSourcePosition(ffi_state)
   end
 end
 
----@async
+--- @async
 return function()
   local ffi_state
   for uri in files.eachFile() do

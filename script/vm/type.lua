@@ -1,18 +1,18 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 local guide = require('parser.guide')
 local config = require('config.config')
 local util = require('utility')
 local lang = require('language')
 
----@class vm.ANY
----@diagnostic disable-next-line: assign-type-mismatch
+--- @class vm.ANY
+--- @diagnostic disable-next-line: assign-type-mismatch
 vm.ANY = debug.upvalueid(require, 1)
 
----@alias typecheck.err vm.node.object|string|vm.node
+--- @alias typecheck.err vm.node.object|string|vm.node
 
----@param object vm.node.object
----@return string?
+--- @param object vm.node.object
+--- @return string?
 function vm.getNodeName(object)
   if object.type == 'global' and object.cate == 'type' then
     ---@cast object vm.global
@@ -53,12 +53,12 @@ function vm.getNodeName(object)
   return nil
 end
 
----@param parentName string
----@param child      vm.node.object
----@param uri        string
----@param mark       table
----@param errs?      typecheck.err[]
----@return boolean?
+--- @param parentName string
+--- @param child      vm.node.object
+--- @param uri        string
+--- @param mark       table
+--- @param errs?      typecheck.err[]
+--- @return boolean?
 local function checkParentEnum(parentName, child, uri, mark, errs)
   local parentClass = vm.getGlobal('type', parentName)
   if not parentClass then
@@ -145,12 +145,12 @@ local function checkParentEnum(parentName, child, uri, mark, errs)
   end
 end
 
----@param childName  string
----@param parent     vm.node.object
----@param uri        string
----@param mark       table
----@param errs?      typecheck.err[]
----@return boolean?
+--- @param childName  string
+--- @param parent     vm.node.object
+--- @param uri        string
+--- @param mark       table
+--- @param errs?      typecheck.err[]
+--- @return boolean?
 local function checkChildEnum(childName, parent, uri, mark, errs)
   if mark[childName] then
     return
@@ -180,11 +180,11 @@ local function checkChildEnum(childName, parent, uri, mark, errs)
   return true
 end
 
----@param parent vm.node.object
----@param child  vm.node.object
----@param mark   table
----@param errs?  typecheck.err[]
----@return boolean
+--- @param parent vm.node.object
+--- @param child  vm.node.object
+--- @param mark   table
+--- @param errs?  typecheck.err[]
+--- @return boolean
 local function checkValue(parent, child, mark, errs)
   if parent.type == 'doc.type.integer' then
     if child.type == 'integer' or child.type == 'doc.type.integer' or child.type == 'number' then
@@ -269,9 +269,9 @@ local function checkValue(parent, child, mark, errs)
   return true
 end
 
----@param name string
----@param suri string
----@return boolean
+--- @param name string
+--- @param suri string
+--- @return boolean
 local function isAlias(name, suri)
   local global = vm.getGlobal('type', name)
   if not global then
@@ -285,12 +285,12 @@ local function isAlias(name, suri)
   return false
 end
 
----@param uri string
----@param child  vm.node|string|vm.node.object
----@param parent vm.node|string|vm.node.object
----@param mark?  table
----@param errs? typecheck.err[]
----@return boolean|nil
+--- @param uri string
+--- @param child  vm.node|string|vm.node.object
+--- @param parent vm.node|string|vm.node.object
+--- @param mark?  table
+--- @param errs? typecheck.err[]
+--- @return boolean|nil
 function vm.isSubType(uri, child, parent, mark, errs)
   mark = mark or {}
 
@@ -586,7 +586,7 @@ function vm.isSubType(uri, child, parent, mark, errs)
   return false
 end
 
----@param node string|vm.node|vm.object
+--- @param node string|vm.node|vm.object
 function vm.isUnknown(node)
   if type(node) == 'string' then
     return node == 'unknown'
@@ -597,11 +597,11 @@ function vm.isUnknown(node)
   return false
 end
 
----@param uri string
----@param tnode vm.node
----@param knode vm.node|string
----@param inversion? boolean
----@return vm.node?
+--- @param uri string
+--- @param tnode vm.node
+--- @param knode vm.node|string
+--- @param inversion? boolean
+--- @return vm.node?
 function vm.getTableValue(uri, tnode, knode, inversion)
   local result = vm.createNode()
   for tn in tnode:eachObject() do
@@ -666,11 +666,11 @@ function vm.getTableValue(uri, tnode, knode, inversion)
   return result
 end
 
----@param uri string
----@param tnode vm.node
----@param vnode vm.node|string|vm.object
----@param reverse? boolean
----@return vm.node?
+--- @param uri string
+--- @param tnode vm.node
+--- @param vnode vm.node|string|vm.object
+--- @param reverse? boolean
+--- @return vm.node?
 function vm.getTableKey(uri, tnode, vnode, reverse)
   local result = vm.createNode()
   for tn in tnode:eachObject() do
@@ -718,11 +718,11 @@ function vm.getTableKey(uri, tnode, vnode, reverse)
   return result
 end
 
----@param uri string
----@param defNode vm.node
----@param refNode vm.node
----@param errs typecheck.err[]?
----@return boolean
+--- @param uri string
+--- @param defNode vm.node
+--- @param refNode vm.node
+--- @param errs typecheck.err[]?
+--- @return boolean
 function vm.canCastType(uri, defNode, refNode, errs)
   local defInfer = vm.getInfer(defNode)
   local refInfer = vm.getInfer(refNode)
@@ -787,9 +787,9 @@ local ErrorMessageMap = {
   DIAG_MISSING_FIELDS = { '1', '2' },
 }
 
----@param uri string
----@param errs typecheck.err[]
----@return string
+--- @param uri string
+--- @param errs typecheck.err[]
+--- @return string
 function vm.viewTypeErrorMessage(uri, errs)
   local lines = {}
   local mark = {}
@@ -843,9 +843,9 @@ function vm.viewTypeErrorMessage(uri, errs)
   end
 end
 
----@param name string
----@param uri string
----@return parser.object[]?
+--- @param name string
+--- @param uri string
+--- @return parser.object[]?
 function vm.getOverloadsByTypeName(name, uri)
   local global = vm.getGlobal('type', name)
   if not global then

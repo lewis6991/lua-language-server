@@ -4,7 +4,7 @@ local proto     = require 'proto'
 local lang      = require 'language'
 local converter = require 'proto.converter'
 
----@async
+--- @async
 return function (data)
     local uri   = data.uri
     local text  = files.getText(uri)

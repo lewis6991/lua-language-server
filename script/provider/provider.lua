@@ -23,12 +23,12 @@ local fs = require('bee.filesystem')
 
 require('library')
 
----@class provider
+--- @class provider
 local m = {}
 
 m.attributes = {}
 
----@async
+--- @async
 function m.updateConfig(uri)
   config.addNullSymbol(json.null)
   local specified = cfgLoader.loadLocalConfig(uri, CONFIGPATH)

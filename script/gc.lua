@@ -1,13 +1,13 @@
 local util = require('utility')
 
----@class gc
----@field package _list table
+--- @class gc
+--- @field package _list table
 local mt = {}
 mt.__index = mt
 mt.type = 'gc'
 mt._removed = false
 
----@package
+--- @package
 mt._max = 10
 
 local function destroyGCObject(obj)
@@ -86,8 +86,8 @@ end
 --- 标记`obj`在buff移除时自动移除。如果`obj`是个`function`,
 --- 则直接调用；如果`obj`是个`table`，则调用内部的`remove`方法。
 --- 其他情况不做处理
----@param obj any
----@return any
+--- @param obj any
+--- @return any
 function mt:add(obj)
   if self._removed then
     destroyGCObject(obj)

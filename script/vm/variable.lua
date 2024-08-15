@@ -1,21 +1,21 @@
 local util = require('utility')
 local guide = require('parser.guide')
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 
----@class vm.variable
----@field uri string
----@field root parser.object
----@field id string
----@field base parser.object
----@field sets parser.object[]
----@field gets parser.object[]
+--- @class vm.variable
+--- @field uri string
+--- @field root parser.object
+--- @field id string
+--- @field base parser.object
+--- @field sets parser.object[]
+--- @field gets parser.object[]
 local mt = {}
 mt.__index = mt
 mt.type = 'variable'
 
----@param id string
----@return vm.variable
+--- @param id string
+--- @return vm.variable
 local function createVariable(root, id)
   local variable = setmetatable({
     root = root,
@@ -27,16 +27,16 @@ local function createVariable(root, id)
   return variable
 end
 
----@class parser.object
----@field package _variableNode vm.variable|false
----@field package _variableNodes table<string, vm.variable>
+--- @class parser.object
+--- @field package _variableNode vm.variable|false
+--- @field package _variableNodes table<string, vm.variable>
 
 local compileVariables, getLoc
 
----@param id string
----@param source parser.object
----@param base parser.object
----@return vm.variable
+--- @param id string
+--- @param source parser.object
+--- @param base parser.object
+--- @return vm.variable
 local function insertVariableID(id, source, base)
   local root = guide.getRoot(source)
   if not root._variableNodes then
@@ -162,24 +162,24 @@ local leftSwitch = util
     return source
   end)
 
----@param source parser.object
----@return parser.object?
+--- @param source parser.object
+--- @return parser.object?
 function getLoc(source)
   return leftSwitch(source.type, source)
 end
 
----@return parser.object
+--- @return parser.object
 function mt:getBase()
   return self.base
 end
 
----@return string
+--- @return string
 function mt:getCodeName()
   local name = self.id:gsub(vm.ID_SPLITE, '.'):gsub('^%d+', self.base[1])
   return name
 end
 
----@return vm.variable?
+--- @return vm.variable?
 function mt:getParent()
   local parentID = self.id:match('^(.+)' .. vm.ID_SPLITE)
   if not parentID then
@@ -188,12 +188,12 @@ function mt:getParent()
   return self.root._variableNodes[parentID]
 end
 
----@return string?
+--- @return string?
 function mt:getFieldName()
   return self.id:match(vm.ID_SPLITE .. '(.-)$')
 end
 
----@param key?   string
+--- @param key?   string
 function mt:getSets(key)
   if not key then
     return self.sets
@@ -203,7 +203,7 @@ function mt:getSets(key)
   return variable.sets
 end
 
----@param includeGets boolean?
+--- @param includeGets boolean?
 function mt:getFields(includeGets)
   local id = self.id
   local root = self.root
@@ -235,8 +235,8 @@ function mt:getFields(includeGets)
   return fields
 end
 
----@param source parser.object
----@param base parser.object
+--- @param source parser.object
+--- @param base parser.object
 function compileVariables(source, base)
   if not source then
     return
@@ -248,8 +248,8 @@ function compileVariables(source, base)
   compileSwitch(source.type, source, base)
 end
 
----@param source parser.object
----@return string?
+--- @param source parser.object
+--- @return string?
 function vm.getVariableID(source)
   local variable = vm.getVariableNode(source)
   if not variable then
@@ -258,9 +258,9 @@ function vm.getVariableID(source)
   return variable.id
 end
 
----@param source parser.object
----@param key?   string
----@return vm.variable?
+--- @param source parser.object
+--- @param key?   string
+--- @return vm.variable?
 function vm.getVariable(source, key)
   local variable = vm.getVariableNode(source)
   if not variable then
@@ -277,8 +277,8 @@ function vm.getVariable(source, key)
   return root._variableNodes[id]
 end
 
----@param source parser.object
----@return vm.variable?
+--- @param source parser.object
+--- @return vm.variable?
 function vm.getVariableNode(source)
   local variable = source._variableNode
   if variable ~= nil then
@@ -294,9 +294,9 @@ function vm.getVariableNode(source)
   return source._variableNode or nil
 end
 
----@param source parser.object
----@param name   string
----@return vm.variable?
+--- @param source parser.object
+--- @param name   string
+--- @return vm.variable?
 function vm.getVariableInfoByCodeName(source, name)
   local id = vm.getVariableID(source)
   if not id then
@@ -314,9 +314,9 @@ function vm.getVariableInfoByCodeName(source, name)
   return root._variableNodes[vid]
 end
 
----@param source parser.object
----@param key?   string
----@return parser.object[]?
+--- @param source parser.object
+--- @param key?   string
+--- @return parser.object[]?
 function vm.getVariableSets(source, key)
   local variable = vm.getVariable(source, key)
   if not variable then
@@ -325,9 +325,9 @@ function vm.getVariableSets(source, key)
   return variable.sets
 end
 
----@param source parser.object
----@param key?   string
----@return parser.object[]?
+--- @param source parser.object
+--- @param key?   string
+--- @return parser.object[]?
 function vm.getVariableGets(source, key)
   local variable = vm.getVariable(source, key)
   if not variable then
@@ -336,9 +336,9 @@ function vm.getVariableGets(source, key)
   return variable.gets
 end
 
----@param source parser.object
----@param includeGets boolean
----@return parser.object[]?
+--- @param source parser.object
+--- @param includeGets boolean
+--- @return parser.object[]?
 function vm.getVariableFields(source, includeGets)
   local variable = vm.getVariable(source)
   if not variable then
@@ -347,8 +347,8 @@ function vm.getVariableFields(source, includeGets)
   return variable:getFields(includeGets)
 end
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 function vm.compileByVariable(source)
   local variable = vm.getVariableNode(source)
   if not variable then
@@ -358,7 +358,7 @@ function vm.compileByVariable(source)
   return true
 end
 
----@param source parser.object
+--- @param source parser.object
 local function compileSelf(source)
   if source.parent.type ~= 'funcargs' then
     return
@@ -397,7 +397,7 @@ local function compileSelf(source)
   end
 end
 
----@param source parser.object
+--- @param source parser.object
 local function compileAst(source)
   --[[
     local mt

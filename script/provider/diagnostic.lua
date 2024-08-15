@@ -19,7 +19,7 @@ local json      = require 'json'
 local fw        = require 'filewatch'
 local vm        = require 'vm.vm'
 
----@class diagnosticProvider
+--- @class diagnosticProvider
 local m = {}
 m.cache = {}
 m.sleepRest = 0.0
@@ -183,8 +183,8 @@ function m.clearCacheExcept(uris)
     end
 end
 
----@param uri? string
----@param force? boolean
+--- @param uri? string
+--- @param force? boolean
 function m.clearAll(uri, force)
     local scp
     if uri then
@@ -239,9 +239,9 @@ local function copyDiagsWithoutSyntax(diags)
     return copyed
 end
 
----@async
----@param uri string
----@return boolean
+--- @async
+--- @param uri string
+--- @return boolean
 local function isValid(uri)
     if not config.get(uri, 'Lua.diagnostics.enable') then
         return false
@@ -277,7 +277,7 @@ local function isValid(uri)
     return true
 end
 
----@async
+--- @async
 function m.doDiagnostic(uri, isScopeDiag, ignoreFileState)
     if not isValid(uri) then
         return
@@ -357,7 +357,7 @@ function m.doDiagnostic(uri, isScopeDiag, ignoreFileState)
     pushResult()
 end
 
----@param uri string
+--- @param uri string
 function m.resendDiagnostic(uri)
     local full = m.cache[uri]
     if not full then
@@ -379,9 +379,9 @@ function m.resendDiagnostic(uri)
     log.debug('publishDiagnostics', uri, #full)
 end
 
----@async
----@return table|nil result
----@return boolean? unchanged
+--- @async
+--- @return table|nil result
+--- @return boolean? unchanged
 function m.pullDiagnostic(uri, isScopeDiag)
     if not isValid(uri) then
         return nil, util.equal(m.cache[uri], nil)
@@ -415,15 +415,15 @@ function m.pullDiagnostic(uri, isScopeDiag)
     return full
 end
 
----@param uri string
+--- @param uri string
 function m.stopScopeDiag(uri)
     local scp     = scope.getScope(uri)
     local scopeID = 'diagnosticsScope:' .. scp:getName()
     await.close(scopeID)
 end
 
----@param event string
----@param uri string
+--- @param event string
+--- @param uri string
 function m.refreshScopeDiag(event, uri)
     if not ws.isReady(uri) then
         return
@@ -446,7 +446,7 @@ function m.refreshScopeDiag(event, uri)
     end)
 end
 
----@param uri string
+--- @param uri string
 function m.refresh(uri)
     if not ws.isReady(uri) then
         return
@@ -463,7 +463,7 @@ function m.refresh(uri)
     end)
 end
 
----@async
+--- @async
 local function askForDisable(uri)
     if m.dontAskedForDisable then
         return
@@ -522,7 +522,7 @@ local function clearMemory(finished)
     end
 end
 
----@async
+--- @async
 function m.awaitDiagnosticsScope(suri, callback)
     local scp = scope.getScope(suri)
     if scp.type == 'fallback' then
@@ -600,7 +600,7 @@ function m.diagnosticsScope(uri, force, ignoreFileOpenState)
     end, id)
 end
 
----@async
+--- @async
 function m.pullDiagnosticScope(callback)
     local processing = 0
 
@@ -655,7 +655,7 @@ function m.refreshClient()
     proto.request('workspace/diagnostic/refresh', json.null)
 end
 
----@return boolean
+--- @return boolean
 function m.isPaused()
     return m.pauseCount > 0
 end

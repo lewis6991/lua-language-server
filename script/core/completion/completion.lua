@@ -34,7 +34,7 @@ local diagnosticModes = {
 local stackID = 0
 local stacks = {}
 
----@param callback async fun(newSource: parser.object): table
+--- @param callback async fun(newSource: parser.object): table
 local function stack(oldSource, callback)
     stackID = stackID + 1
     local uri = guide.getUri(oldSource)
@@ -59,7 +59,7 @@ local function clearStack()
     stacks = {}
 end
 
----@async
+--- @async
 local function resolveStack(id)
     local callback = stacks[id]
     if not callback then
@@ -272,7 +272,7 @@ local function getSnip(source)
     end
 end
 
----@async
+--- @async
 local function buildDesc(source)
     local desc = markdown()
     local hover = getHover.get(source)
@@ -569,7 +569,7 @@ local function checkFieldThen(state, name, src, word, startPos, position, parent
     }
 end
 
----@async
+--- @async
 local function checkFieldOfRefs(refs, state, word, startPos, position, parent, oop, results, locals, isGlobal)
     local fields = {}
     local funcs  = {}
@@ -676,15 +676,15 @@ local function checkFieldOfRefs(refs, state, word, startPos, position, parent, o
     end
 end
 
----@async
+--- @async
 local function checkGlobal(state, word, startPos, position, parent, oop, results)
     local locals = guide.getVisibleLocals(state.ast, position)
     local globals = vm.getGlobalSets(state.uri, 'variable')
     checkFieldOfRefs(globals, state, word, startPos, position, parent, oop, results, locals, 'global')
 end
 
----@async
----@param parent parser.object
+--- @async
+--- @param parent parser.object
 local function checkField(state, word, start, position, parent, oop, results)
     if parent.tag == '_ENV' or parent.special == '_G' then
         local globals = vm.getGlobalSets(state.uri, 'variable')
@@ -1193,11 +1193,11 @@ local function cleanEnums(enums, source)
     return enums
 end
 
----@param state     parser.state
----@param pos       integer
----@param doc       vm.node.object
----@param enums     table[]
----@return table[]?
+--- @param state     parser.state
+--- @param pos       integer
+--- @param doc       vm.node.object
+--- @param enums     table[]
+--- @return table[]?
 local function insertDocEnum(state, pos, doc, enums)
     local tbl = doc.bindSource
     if not tbl then
@@ -1265,11 +1265,11 @@ local function insertDocEnum(state, pos, doc, enums)
     return enums
 end
 
----@param state     parser.state
----@param pos       integer
----@param doc       vm.node.object
----@param enums     table[]
----@return table[]?
+--- @param state     parser.state
+--- @param pos       integer
+--- @param doc       vm.node.object
+--- @param enums     table[]
+--- @return table[]?
 local function insertDocEnumKey(state, pos, doc, enums)
     local tbl = doc.bindSource
     if not tbl then
@@ -1316,12 +1316,12 @@ function (%s)\
 end"):format(table.concat(args, ', '))
 end
 
----@param state     parser.state
----@param pos       integer
----@param src       vm.node.object
----@param enums     table[]
----@param isInArray boolean?
----@param mark      table?
+--- @param state     parser.state
+--- @param pos       integer
+--- @param src       vm.node.object
+--- @param enums     table[]
+--- @param isInArray boolean?
+--- @param mark      table?
 local function insertEnum(state, pos, src, enums, isInArray, mark)
     mark = mark or {}
     if mark[src] then
@@ -1491,7 +1491,7 @@ local function trySpecial(state, position, results)
     checkEqualEnum(state, position, results)
 end
 
----@async
+--- @async
 local function tryIndex(state, position, results)
     local parent, oop = findParentInStringIndex(state, position)
     if not parent then
@@ -1504,7 +1504,7 @@ local function tryIndex(state, position, results)
     checkField(state, word, position, position, parent, oop, results)
 end
 
----@async
+--- @async
 local function tryWord(state, position, triggerCharacter, results)
     if triggerCharacter == '('
     or triggerCharacter == '#'
@@ -1566,7 +1566,7 @@ local function tryWord(state, position, triggerCharacter, results)
     end
 end
 
----@async
+--- @async
 local function trySymbol(state, position, results)
     local text = state.lua
     local symbol, start = lookBackward.findSymbol(text, guide.positionToOffset(state, position))
@@ -1831,7 +1831,7 @@ local function getluaDocByContain(state, position)
     return result
 end
 
----@return parser.state.err?, parser.object?
+--- @return parser.state.err?, parser.object?
 local function getluaDocByErr(state, start, position)
     local targetError
     for _, err in ipairs(state.errs) do
@@ -1857,7 +1857,7 @@ local function getluaDocByErr(state, start, position)
     return targetError, targetDoc
 end
 
----@async
+--- @async
 local function tryluaDocBySource(state, position, source, results)
     if     source.type == 'doc.extends.name' then
         if source.parent.type == 'doc.class' then
@@ -2032,7 +2032,7 @@ local function tryluaDocBySource(state, position, source, results)
     return false
 end
 
----@async
+--- @async
 local function tryluaDocByErr(state, position, err, docState, results)
     if     err.type == 'LUADOC_MISS_CLASS_EXTENDS_NAME' then
         local used = {}
@@ -2266,7 +2266,7 @@ local function tryluaDocOfFunction(doc, results, pad)
 end
 
 ---Checks for a lua symbol reference in comment
----@async
+--- @async
 local function trySymbolReference(state, position, results)
     local doc = getLuaDoc(state, position)
     if not doc then
@@ -2294,7 +2294,7 @@ local function trySymbolReference(state, position, results)
     end
 end
 
----@async
+--- @async
 local function tryLuaDoc(state, position, results)
     local doc = getLuaDoc(state, position)
     if not doc then
@@ -2362,7 +2362,7 @@ local function tryComment(state, position, results)
     checkCommon(state, word, position, results)
 end
 
----@async
+--- @async
 local function tryCompletions(state, position, triggerCharacter, results)
     if getComment(state, position) then
         trySymbolReference(state, position, results)
@@ -2384,7 +2384,7 @@ local function tryCompletions(state, position, triggerCharacter, results)
     trySymbol(state, position, results)
 end
 
----@async
+--- @async
 local function completion(uri, position, triggerCharacter)
     local state = files.getLastState(uri) or files.getState(uri)
     if not state then
@@ -2405,7 +2405,7 @@ local function completion(uri, position, triggerCharacter)
     return results
 end
 
----@async
+--- @async
 local function resolve(id)
     local item = resolveStack(id)
     return item

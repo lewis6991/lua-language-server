@@ -3,7 +3,7 @@ local converter = require('proto.converter')
 local log = require('log')
 local spell = require('provider.spell')
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

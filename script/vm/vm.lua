@@ -9,7 +9,7 @@ local mathHuge = math.huge
 
 local weakMT = { __mode = 'kv' }
 
----@class vm
+--- @class vm
 local m = {}
 
 m.ID_SPLITE = '\x1F'
@@ -21,8 +21,8 @@ function m.getSpecial(source)
   return source.special
 end
 
----@param source parser.object
----@return string?
+--- @param source parser.object
+--- @return string?
 function m.getKeyName(source)
   if not source then
     return nil
@@ -49,8 +49,8 @@ function m.getKeyType(source)
   return guide.getKeyType(source)
 end
 
----@param source parser.object
----@return parser.object?
+--- @param source parser.object
+--- @return parser.object?
 function m.getObjectValue(source)
   if source.value then
     return source.value
@@ -61,8 +61,8 @@ function m.getObjectValue(source)
   return nil
 end
 
----@param source parser.object
----@return parser.object?
+--- @param source parser.object
+--- @return parser.object?
 function m.getObjectFunctionValue(source)
   local value = m.getObjectValue(source)
   if value == nil then

@@ -1,23 +1,23 @@
 local util = require('utility')
 
----@class proto.diagnostic
+--- @class proto.diagnostic
 local m = {}
 
----@alias DiagnosticSeverity
+--- @alias DiagnosticSeverity
 ---| 'Hint'
 ---| 'Information'
 ---| 'Warning'
 ---| 'Error'
 
----@alias DiagnosticNeededFileStatus
+--- @alias DiagnosticNeededFileStatus
 ---| 'Any'
 ---| 'Opened'
 ---| 'None'
 
----@class proto.diagnostic.info
----@field severity DiagnosticSeverity
----@field status   DiagnosticNeededFileStatus
----@field group    string
+--- @class proto.diagnostic.info
+--- @field severity DiagnosticSeverity
+--- @field status   DiagnosticNeededFileStatus
+--- @field group    string
 
 m.diagnosticDatas = {}
 m.diagnosticGroups = {}
@@ -226,7 +226,7 @@ m.register({
   status = 'Any',
 })
 
----@return table<string, DiagnosticSeverity>
+--- @return table<string, DiagnosticSeverity>
 function m.getDefaultSeverity()
   local severity = {}
   for name, info in pairs(m.diagnosticDatas) do
@@ -235,7 +235,7 @@ function m.getDefaultSeverity()
   return severity
 end
 
----@return table<string, DiagnosticNeededFileStatus>
+--- @return table<string, DiagnosticNeededFileStatus>
 function m.getDefaultStatus()
   local status = {}
   for name, info in pairs(m.diagnosticDatas) do
@@ -260,8 +260,8 @@ function m.getGroupStatus()
   return group
 end
 
----@param name string
----@return string[]
+--- @param name string
+--- @return string[]
 m.getGroups = util.cacheReturn(function(name)
   local groups = {}
   for groupName, nameMap in pairs(m.diagnosticGroups) do
@@ -273,7 +273,7 @@ m.getGroups = util.cacheReturn(function(name)
   return groups
 end)
 
----@return table<string, true>
+--- @return table<string, true>
 function m.getDiagAndErrNameMap()
   if not m._diagAndErrNames then
     local names = {}

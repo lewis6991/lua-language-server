@@ -4,7 +4,7 @@ local vm = require('vm')
 local lang = require('language')
 local await = require('await')
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

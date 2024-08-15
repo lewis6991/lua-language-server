@@ -1,11 +1,11 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 local guide = require('parser.guide')
 local config = require('config')
 local glob = require('glob')
 
----@class parser.object
----@field package _visibleType? parser.visibleType
+--- @class parser.object
+--- @field package _visibleType? parser.visibleType
 
 local function globMatch(patterns, fieldName)
   return glob.glob(patterns)(fieldName)
@@ -80,11 +80,11 @@ local function getVisibleType(source)
   return 'public'
 end
 
----@class vm.node
----@field package _visibleType parser.visibleType
+--- @class vm.node
+--- @field package _visibleType parser.visibleType
 
----@param source parser.object
----@return parser.visibleType
+--- @param source parser.object
+--- @return parser.visibleType
 function vm.getVisibleType(source)
   local node = vm.compileNode(source)
   if node._visibleType then
@@ -101,8 +101,8 @@ function vm.getVisibleType(source)
   return 'public'
 end
 
----@param source parser.object
----@return vm.global?
+--- @param source parser.object
+--- @return vm.global?
 function vm.getParentClass(source)
   if source.type == 'doc.field' then
     return vm.getGlobalNode(source.class)
@@ -123,9 +123,9 @@ function vm.getParentClass(source)
   return nil
 end
 
----@param suri string
----@param source parser.object
----@return vm.global?
+--- @param suri string
+--- @param source parser.object
+--- @return vm.global?
 function vm.getDefinedClass(suri, source)
   source = guide.getSelfNode(source) or source
   local sets = vm.getVariableSets(source)
@@ -155,8 +155,8 @@ function vm.getDefinedClass(suri, source)
   return nil
 end
 
----@param source parser.object
----@return vm.global?
+--- @param source parser.object
+--- @return vm.global?
 local function getEnvClass(source)
   local func = guide.getParentFunction(source)
   if not func or func.type ~= 'function' then
@@ -170,8 +170,8 @@ local function getEnvClass(source)
   return nil
 end
 
----@param parent parser.object
----@param field parser.object
+--- @param parent parser.object
+--- @param field parser.object
 function vm.isVisible(parent, field)
   local visible = vm.getVisibleType(field)
   if visible == 'public' then

@@ -54,10 +54,10 @@ local accept = {
     ['doc.field.name']   = true,
 }
 
----@async
----@param uri string
----@param position integer
----@param includeDeclaration boolean
+--- @async
+--- @param uri string
+--- @param position integer
+--- @param includeDeclaration boolean
 return function (uri, position, includeDeclaration)
     local ast = files.getState(uri)
     if not ast then

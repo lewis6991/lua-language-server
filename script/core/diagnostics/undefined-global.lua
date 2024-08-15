@@ -1,10 +1,7 @@
 local files = require('files')
 local vm = require('vm')
 local lang = require('language')
-local config = require('config')
 local guide = require('parser.guide')
-local await = require('await')
-local util = require('utility')
 
 local requireLike = {
   ['include'] = true,
@@ -13,7 +10,7 @@ local requireLike = {
   ['load'] = true,
 }
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

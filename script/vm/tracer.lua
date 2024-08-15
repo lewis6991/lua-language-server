@@ -1,33 +1,33 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 local guide = require('parser.guide')
 local util = require('utility')
 
----@class parser.object
----@field package _tracer? vm.tracer
----@field package _casts?  parser.object[]
+--- @class parser.object
+--- @field package _tracer? vm.tracer
+--- @field package _casts?  parser.object[]
 
----@alias tracer.mode 'local' | 'global'
+--- @alias tracer.mode 'local' | 'global'
 
----@class vm.tracer
----@field mode      tracer.mode
----@field name      string
----@field source    parser.object | vm.variable
----@field assigns   (parser.object | vm.variable)[]
----@field assignMap table<parser.object, true>
----@field getMap    table<parser.object, true>
----@field careMap   table<parser.object, true>
----@field mark      table<parser.object, true>
----@field casts     parser.object[]
----@field nodes     table<parser.object, vm.node|false>
----@field main      parser.object
----@field uri       string
----@field castIndex integer?
+--- @class vm.tracer
+--- @field mode      tracer.mode
+--- @field name      string
+--- @field source    parser.object | vm.variable
+--- @field assigns   (parser.object | vm.variable)[]
+--- @field assignMap table<parser.object, true>
+--- @field getMap    table<parser.object, true>
+--- @field careMap   table<parser.object, true>
+--- @field mark      table<parser.object, true>
+--- @field casts     parser.object[]
+--- @field nodes     table<parser.object, vm.node|false>
+--- @field main      parser.object
+--- @field uri       string
+--- @field castIndex integer?
 local mt = {}
 mt.__index = mt
 mt.fastCalc = true
 
----@return parser.object[]
+--- @return parser.object[]
 function mt:getCasts()
   local root = guide.getRoot(self.main)
   if not root._casts then
@@ -42,7 +42,7 @@ function mt:getCasts()
   return root._casts
 end
 
----@param obj parser.object
+--- @param obj parser.object
 function mt:collectAssign(obj)
   while true do
     local block = guide.getParentBlock(obj)
@@ -61,7 +61,7 @@ function mt:collectAssign(obj)
   end
 end
 
----@param obj parser.object
+--- @param obj parser.object
 function mt:collectCare(obj)
   while true do
     if self.careMap[obj] then
@@ -169,9 +169,9 @@ function mt:collectGlobal()
   end
 end
 
----@param start  integer
----@param finish integer
----@return parser.object?
+--- @param start  integer
+--- @param finish integer
+--- @return parser.object?
 function mt:getLastAssign(start, finish)
   local lastAssign
   for _, assign in ipairs(self.assigns) do
@@ -201,7 +201,7 @@ function mt:getLastAssign(start, finish)
   return lastAssign
 end
 
----@param pos integer
+--- @param pos integer
 function mt:resetCastsIndex(pos)
   for i = 1, #self.casts do
     local cast = self.casts[i]
@@ -213,9 +213,9 @@ function mt:resetCastsIndex(pos)
   self.castIndex = nil
 end
 
----@param pos integer
----@param node vm.node
----@return vm.node
+--- @param pos integer
+--- @param node vm.node
+--- @return vm.node
 function mt:fastWardCasts(pos, node)
   if not self.castIndex then
     return node
@@ -745,11 +745,11 @@ local lookIntoChild = util
     end
   )
 
----@param action   parser.object
----@param topNode  vm.node
----@param outNode? vm.node
----@return vm.node topNode
----@return vm.node outNode
+--- @param action   parser.object
+--- @param topNode  vm.node
+--- @param outNode? vm.node
+--- @return vm.node topNode
+--- @return vm.node outNode
 function mt:lookIntoChild(action, topNode, outNode)
   if not self.careMap[action] or self.mark[action] then
     return topNode, outNode or topNode
@@ -760,9 +760,9 @@ function mt:lookIntoChild(action, topNode, outNode)
   return topNode, outNode or topNode
 end
 
----@param block parser.object
----@param start integer
----@param node  vm.node
+--- @param block parser.object
+--- @param start integer
+--- @param node  vm.node
 function mt:lookIntoBlock(block, start, node)
   self:resetCastsIndex(start)
   for _, action in ipairs(block) do
@@ -794,7 +794,7 @@ function mt:lookIntoBlock(block, start, node)
   end
 end
 
----@param source parser.object
+--- @param source parser.object
 function mt:calcNode(source)
   if self.getMap[source] then
     local lastAssign = self:getLastAssign(0, source.finish)
@@ -819,8 +819,8 @@ function mt:calcNode(source)
   end
 end
 
----@param source parser.object
----@return vm.node?
+--- @param source parser.object
+--- @return vm.node?
 function mt:getNode(source)
   local cache = self.nodes[source]
   if cache ~= nil then
@@ -835,13 +835,13 @@ function mt:getNode(source)
   return self.nodes[source] or nil
 end
 
----@class vm.node
----@field package _tracer vm.tracer
+--- @class vm.node
+--- @field package _tracer vm.tracer
 
----@param mode tracer.mode
----@param source parser.object | vm.variable
----@param name string
----@return vm.tracer?
+--- @param mode tracer.mode
+--- @param source parser.object | vm.variable
+--- @param name string
+--- @return vm.tracer?
 local function createTracer(mode, source, name)
   local node = vm.compileNode(source)
   local tracer = node._tracer
@@ -884,8 +884,8 @@ local function createTracer(mode, source, name)
   return tracer
 end
 
----@param source parser.object
----@return vm.node?
+--- @param source parser.object
+--- @return vm.node?
 function vm.traceNode(source)
   local mode, base, name
   if vm.getGlobalNode(source) then

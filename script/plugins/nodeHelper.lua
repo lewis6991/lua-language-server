@@ -3,8 +3,8 @@ local guide = require('parser.guide')
 
 local _M = {}
 
----@class node.match.pattern
----@field next node.match.pattern?
+--- @class node.match.pattern
+--- @field next node.match.pattern?
 
 local function deepCompare(source, pattern)
   local type1, type2 = type(source), type(pattern)
@@ -26,9 +26,9 @@ local function deepCompare(source, pattern)
   return true
 end
 
----@param source parser.object
----@param pattern node.match.pattern
----@return boolean
+--- @param source parser.object
+--- @param pattern node.match.pattern
+--- @return boolean
 function _M.matchPattern(source, pattern)
   if source.type == 'local' then
     if source.parent.type == 'funcargs' and source.parent.parent.type == 'function' then
@@ -44,8 +44,8 @@ end
 
 local vaildVarRegex = '()([a-zA-Z][a-zA-Z0-9_]*)()'
 ---创建类型 *.field.field形式的 pattern
----@param pattern string
----@return node.match.pattern?, string?
+--- @param pattern string
+--- @return node.match.pattern?, string?
 function _M.createFieldPattern(pattern)
   local ret = { next = nil }
   local next = ret

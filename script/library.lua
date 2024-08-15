@@ -279,8 +279,8 @@ local function initBuiltIn(uri)
   end
 end
 
----@param libraryDir fs.path
----@return table?
+--- @param libraryDir fs.path
+--- @return table?
 local function loadSingle3rdConfigFromJson(libraryDir)
   local path = libraryDir / 'config.json'
   local configText = fsu.loadFile(path)
@@ -303,8 +303,8 @@ local function loadSingle3rdConfigFromJson(libraryDir)
   return cfg
 end
 
----@param libraryDir fs.path
----@return table?
+--- @param libraryDir fs.path
+--- @return table?
 local function loadSingle3rdConfigFromLua(libraryDir)
   local path = libraryDir / 'config.lua'
   local configText = fsu.loadFile(path)
@@ -335,7 +335,7 @@ local function loadSingle3rdConfigFromLua(libraryDir)
   return cfg
 end
 
----@param libraryDir fs.path
+--- @param libraryDir fs.path
 local function loadSingle3rdConfig(libraryDir)
   local cfg = loadSingle3rdConfigFromJson(libraryDir)
   if not cfg then
@@ -471,7 +471,7 @@ local function apply3rd(uri, cfg, onlyMemory)
 end
 
 local hasAsked = {}
----@async
+--- @async
 local function askFor3rd(uri, cfg, checkThirdParty)
   if hasAsked[cfg.name] then
     return nil
@@ -515,9 +515,9 @@ local function askFor3rd(uri, cfg, checkThirdParty)
   end
 end
 
----@param a string
----@param b string
----@return boolean
+--- @param a string
+--- @param b string
+--- @return boolean
 local function wholeMatch(a, b)
   local captures = {
     a:match(b),
@@ -612,7 +612,7 @@ local function check3rdByFileName(uri, configs, checkThirdParty)
   end, id)
 end
 
----@async
+--- @async
 local function check3rd(uri)
   if ws.isIgnored(uri) then
     return
@@ -667,7 +667,7 @@ config.watch(function(uri, key, value, oldValue)
   end
 end)
 
----@async
+--- @async
 files.watch(function(ev, uri)
   if ev == 'update' or ev == 'dll' then
     await.sleep(1)

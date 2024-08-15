@@ -82,9 +82,9 @@ local RESERVED = {
 local m = {}
 
 --- 打印表的结构
----@param tbl any
----@param option? table
----@return string
+--- @param tbl any
+--- @param option? table
+--- @return string
 function m.dump(tbl, option)
   if not option then
     option = {}
@@ -191,9 +191,9 @@ function m.dump(tbl, option)
 end
 
 --- 递归判断A与B是否相等
----@param valueA any
----@param valueB any
----@return boolean
+--- @param valueA any
+--- @param valueB any
+--- @return boolean
 function m.equal(valueA, valueB)
   local hasChecked = {}
 
@@ -289,17 +289,17 @@ local function sortTable(tbl)
 end
 
 --- 创建一个有序表
----@param tbl? table
----@return table
+--- @param tbl? table
+--- @return table
 function m.container(tbl)
   return sortTable(tbl)
 end
 
 --- 读取文件
----@param path string
----@param keepBom? boolean
----@return string? text
----@return string? errMsg
+--- @param path string
+--- @param keepBom? boolean
+--- @return string? text
+--- @return string? errMsg
 function m.loadFile(path, keepBom)
   local f, e = ioOpen(path, 'rb')
   if not f then
@@ -322,10 +322,10 @@ function m.loadFile(path, keepBom)
 end
 
 --- 写入文件
----@param path string
----@param content string
----@return boolean ok
----@return string? errMsg
+--- @param path string
+--- @param content string
+--- @return boolean ok
+--- @return string? errMsg
 function m.saveFile(path, content)
   local f, e = ioOpen(path, 'wb')
 
@@ -339,9 +339,9 @@ function m.saveFile(path, content)
 end
 
 --- 计数器
----@param init? integer
----@param step? integer
----@return fun():integer
+--- @param init? integer
+--- @param step? integer
+--- @return fun():integer
 function m.counter(init, step)
   if not step then
     step = 1
@@ -354,10 +354,10 @@ function m.counter(init, step)
 end
 
 --- 排序后遍历
----@generic K, V
----@param t table<K, V>
----@param sorter? fun(a: K, b: K): boolean
----@return fun(): K, V
+--- @generic K, V
+--- @param t table<K, V>
+--- @param sorter? fun(a: K, b: K): boolean
+--- @return fun(): K, V
 function m.sortPairs(t, sorter)
   local keys = {}
   for k in pairs(t) do
@@ -373,9 +373,9 @@ function m.sortPairs(t, sorter)
 end
 
 --- 深拷贝（不处理元表）
----@param source  table
----@param target? table
----@return table
+--- @param source  table
+--- @param target? table
+--- @return table
 function m.deepCopy(source, target)
   local mark = {}
   local function copy(a, b)
@@ -398,8 +398,8 @@ function m.deepCopy(source, target)
 end
 
 --- 序列化
----@param t table
----@return table
+--- @param t table
+--- @return table
 function m.unpack(t)
   local result = {}
   local tid = 0
@@ -427,8 +427,8 @@ function m.unpack(t)
 end
 
 --- 反序列化
----@param t table
----@return table
+--- @param t table
+--- @return table
 function m.pack(t)
   local cache = {}
   local function pack(id)
@@ -550,8 +550,8 @@ function m.utf8Len(str, start, finish)
 end
 
 -- 把数组中的元素顺序*原地*反转
----@param arr any[]
----@return any[]
+--- @param arr any[]
+--- @return any[]
 function m.revertArray(arr)
   local len = #arr
   if len <= 1 then
@@ -565,9 +565,9 @@ function m.revertArray(arr)
 end
 
 -- 创建一个value-key表
----@generic K, V
----@param t table<K, V>
----@return table<V, K>
+--- @generic K, V
+--- @param t table<K, V>
+--- @return table<V, K>
 function m.revertMap(t)
   local nt = {}
   for k, v in pairs(t) do
@@ -620,9 +620,9 @@ function m.tableMultiRemove(t, index)
 end
 
 ---遍历文本的每一行
----@param text string
----@param keepNL? boolean # 保留换行符
----@return fun():string?, integer?
+--- @param text string
+--- @param keepNL? boolean # 保留换行符
+--- @return fun():string?, integer?
 function m.eachLine(text, keepNL)
   local offset = 1
   local lineCount = 0
@@ -662,11 +662,11 @@ function m.eachLine(text, keepNL)
   end
 end
 
----@alias SortByScoreCallback fun(o: any): integer
+--- @alias SortByScoreCallback fun(o: any): integer
 
 -- 按照分数排序，分数越高越靠前
----@param tbl any[]
----@param callbacks SortByScoreCallback | SortByScoreCallback[]
+--- @param tbl any[]
+--- @param callbacks SortByScoreCallback | SortByScoreCallback[]
 function m.sortByScore(tbl, callbacks)
   if type(callbacks) ~= 'table' then
     callbacks = { callbacks }
@@ -694,8 +694,8 @@ function m.sortByScore(tbl, callbacks)
   end)
 end
 
----@param arr any[]
----@return SortByScoreCallback
+--- @param arr any[]
+--- @return SortByScoreCallback
 function m.sortCallbackOfIndex(arr)
   ---@type table<any, integer>
   local indexMap = m.revertMap(arr)
@@ -705,9 +705,9 @@ function m.sortCallbackOfIndex(arr)
 end
 
 ---裁剪字符串
----@param str string
----@param mode? '"left"'|'"right"'
----@return string
+--- @param str string
+--- @param mode? '"left"'|'"right"'
+--- @return string
 function m.trim(str, mode)
   if mode == 'left' then
     return (str:gsub('^%s+', ''))
@@ -740,22 +740,22 @@ function m.arrayToHash(l)
   return t
 end
 
----@class switch
----@field cachedCases string[]
----@field map table<string, function>
----@field _default fun(...):...
+--- @class switch
+--- @field cachedCases string[]
+--- @field map table<string, function>
+--- @field _default fun(...):...
 local switchMT = {}
 switchMT.__index = switchMT
 
----@param name string
----@return switch
+--- @param name string
+--- @return switch
 function switchMT:case(name)
   self.cachedCases[#self.cachedCases + 1] = name
   return self
 end
 
----@param callback async fun(...):...
----@return switch
+--- @param callback async fun(...):...
+--- @return switch
 function switchMT:call(callback)
   for i = 1, #self.cachedCases do
     local name = self.cachedCases[i]
@@ -768,8 +768,8 @@ function switchMT:call(callback)
   return self
 end
 
----@param callback fun(...):...
----@return switch
+--- @param callback fun(...):...
+--- @return switch
 function switchMT:default(callback)
   self._default = callback
   return self
@@ -779,15 +779,15 @@ function switchMT:getMap()
   return self.map
 end
 
----@param name string
----@return boolean
+--- @param name string
+--- @return boolean
 function switchMT:has(name)
   return self.map[name] ~= nil
 end
 
----@param name string
----@param ... any
----@return ...
+--- @param name string
+--- @param ... any
+--- @return ...
 function switchMT:__call(name, ...)
   local callback = self.map[name] or self._default
   if not callback then
@@ -796,7 +796,7 @@ function switchMT:__call(name, ...)
   return callback(...)
 end
 
----@return switch
+--- @return switch
 function m.switch()
   local obj = setmetatable({
     map = {},
@@ -805,9 +805,9 @@ function m.switch()
   return obj
 end
 
----@param f async fun()
----@param name string
----@return any, boolean
+--- @param f async fun()
+--- @param name string
+--- @return any, boolean
 function m.getUpvalue(f, name)
   for i = 1, 999 do
     local uname, value = getupvalue(f, i)
@@ -881,9 +881,9 @@ function m.multiTable(count, default)
   return current
 end
 
----@param t table
----@param sorter boolean|function
----@return any[]
+--- @param t table
+--- @param sorter boolean|function
+--- @return any[]
 function m.getTableKeys(t, sorter)
   local keys = {}
   for k in pairs(t) do
@@ -934,9 +934,9 @@ m.MODE_K = { __mode = 'k' }
 m.MODE_V = { __mode = 'v' }
 m.MODE_KV = { __mode = 'kv' }
 
----@generic T: fun(param: any):any
----@param func T
----@return T
+--- @generic T: fun(param: any):any
+--- @param func T
+--- @return T
 function m.cacheReturn(func)
   local cache = {}
   return function(param)
@@ -947,9 +947,9 @@ function m.cacheReturn(func)
   end
 end
 
----@param a table
----@param b table
----@return table
+--- @param a table
+--- @param b table
+--- @return table
 function m.tableMerge(a, b)
   for k, v in pairs(b) do
     a[k] = v
@@ -957,9 +957,9 @@ function m.tableMerge(a, b)
   return a
 end
 
----@param a any[]
----@param b any[]
----@return any[]
+--- @param a any[]
+--- @param b any[]
+--- @return any[]
 function m.arrayMerge(a, b)
   for i = 1, #b do
     a[#a + 1] = b[i]

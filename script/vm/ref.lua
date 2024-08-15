@@ -1,4 +1,4 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 local util = require('utility')
 local guide = require('parser.guide')
@@ -28,7 +28,7 @@ simpleSwitch = util
     end
   end)
 
----@async
+--- @async
 local function searchInAllFiles(suri, searcher, notify)
   await.delay()
 
@@ -64,7 +64,7 @@ local function searchInAllFiles(suri, searcher, notify)
   end
 end
 
----@async
+--- @async
 local function searchWord(source, pushResult, defMap, fileNotify)
   local key = guide.getKeyName(source)
   if not key then
@@ -147,7 +147,7 @@ local function searchWord(source, pushResult, defMap, fileNotify)
   searchInAllFiles(guide.getUri(source), findWord, fileNotify)
 end
 
----@async
+--- @async
 local function searchFunction(source, pushResult, defMap, fileNotify)
   ---@param src parser.object
   local function checkDef(src)
@@ -235,14 +235,14 @@ local nodeSwitch = util
     searchFunction(source, pushResult, defMap, fileNotify)
   end)
 
----@param source  parser.object
----@param pushResult fun(src: parser.object)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchBySimple(source, pushResult)
   simpleSwitch(source.type, source, pushResult)
 end
 
----@param source  parser.object
----@param pushResult fun(src: parser.object)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchByLocalID(source, pushResult)
   local sourceSets = vm.getVariableSets(source)
   if sourceSets then
@@ -258,10 +258,10 @@ local function searchByLocalID(source, pushResult)
   end
 end
 
----@async
----@param source  parser.object
----@param pushResult fun(src: parser.object)
----@param fileNotify? fun(uri: string): boolean
+--- @async
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
+--- @param fileNotify? fun(uri: string): boolean
 function searchByParentNode(source, pushResult, defMap, fileNotify)
   nodeSwitch(source.type, source, pushResult, defMap, fileNotify)
 end
@@ -313,9 +313,9 @@ local function searchByDef(source, pushResult)
   return defMap
 end
 
----@async
----@param source parser.object
----@param fileNotify? fun(uri: string): boolean
+--- @async
+--- @param source parser.object
+--- @param fileNotify? fun(uri: string): boolean
 function vm.getRefs(source, fileNotify)
   local results = {}
   local mark = {}

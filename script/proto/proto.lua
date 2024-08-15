@@ -26,7 +26,7 @@ local function logRecieve(proto)
   log.info('rpc recieve:', json.encode(proto))
 end
 
----@class proto
+--- @class proto
 local m = {}
 
 m.ability = {}
@@ -43,7 +43,7 @@ function m.getMethodName(proto)
   end
 end
 
----@param callback async fun()
+--- @param callback async fun()
 function m.on(method, callback)
   m.ability[method] = callback
 end
@@ -100,7 +100,7 @@ function m.notify(name, params)
   })
 end
 
----@async
+--- @async
 function m.awaitRequest(name, params)
   local id = reqCounter()
   m.send({

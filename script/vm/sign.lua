@@ -1,28 +1,28 @@
 local guide = require('parser.guide')
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 
----@class vm.sign
----@field parent    parser.object
----@field signList  vm.node[]
----@field docGenric parser.object[]
+--- @class vm.sign
+--- @field parent    parser.object
+--- @field signList  vm.node[]
+--- @field docGenric parser.object[]
 local mt = {}
 mt.__index = mt
 mt.type = 'sign'
 
----@param node vm.node
+--- @param node vm.node
 function mt:addSign(node)
   self.signList[#self.signList + 1] = node
 end
 
----@param doc parser.object
+--- @param doc parser.object
 function mt:addDocGeneric(doc)
   self.docGenric[#self.docGenric + 1] = doc
 end
 
----@param uri string
----@param args parser.object
----@return table<string, vm.node>?
+--- @param uri string
+--- @param args parser.object
+--- @return table<string, vm.node>?
 function mt:resolve(uri, args)
   if not args then
     return nil
@@ -266,7 +266,7 @@ function mt:resolve(uri, args)
   return resolved
 end
 
----@return vm.sign
+--- @return vm.sign
 function vm.createSign()
   local genericMgr = setmetatable({
     signList = {},
@@ -275,17 +275,17 @@ function vm.createSign()
   return genericMgr
 end
 
----@class parser.object
----@field package _sign vm.sign|false|nil
+--- @class parser.object
+--- @field package _sign vm.sign|false|nil
 
----@param source parser.object
----@param sign vm.sign
+--- @param source parser.object
+--- @param sign vm.sign
 function vm.setSign(source, sign)
   source._sign = sign
 end
 
----@param source parser.object
----@return vm.sign?
+--- @param source parser.object
+--- @return vm.sign?
 function vm.getSign(source)
   if source._sign ~= nil then
     return source._sign or nil

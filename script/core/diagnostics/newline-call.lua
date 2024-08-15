@@ -4,7 +4,7 @@ local lang = require('language')
 local await = require('await')
 local sub = require('core.substring')
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   local text = files.getText(uri)

@@ -2,8 +2,8 @@ local guide = require('parser.guide')
 local furi = require('file-uri')
 local ws = require('workspace')
 
----@param doc parser.object
----@return string
+--- @param doc parser.object
+--- @return string
 local function parseUri(doc)
   local uri
   local scheme = furi.split(doc.path)
@@ -22,7 +22,7 @@ local function parseUri(doc)
   return uri
 end
 
----@param results table
+--- @param results table
 return function(results)
   for _, result in ipairs(results) do
     if result.target.type == 'doc.field.name' or result.target.type == 'doc.class.name' then

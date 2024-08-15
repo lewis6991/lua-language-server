@@ -4,7 +4,7 @@ local guide = require('parser.guide')
 local vm = require('vm')
 local await = require('await')
 
----@param defNode  vm.node
+--- @param defNode  vm.node
 local function expandGenerics(defNode)
   ---@type parser.object[]
   local generics = {}
@@ -30,11 +30,10 @@ local function expandGenerics(defNode)
   end
 end
 
----@param funcNode vm.node
----@param i integer
----@param uri string
----@return vm.node?
-local function getDefNode(funcNode, i, uri)
+--- @param funcNode vm.node
+--- @param i integer
+--- @return vm.node?
+local function getDefNode(funcNode, i)
   local defNode = vm.createNode()
   for src in funcNode:eachObject() do
     if src.type == 'function' or src.type == 'doc.type.function' then
@@ -48,7 +47,7 @@ local function getDefNode(funcNode, i, uri)
     end
   end
   if defNode:isEmpty() then
-    return nil
+    return
   end
 
   expandGenerics(defNode)
@@ -56,9 +55,9 @@ local function getDefNode(funcNode, i, uri)
   return defNode
 end
 
----@param funcNode vm.node
----@param i integer
----@return vm.node
+--- @param funcNode vm.node
+--- @param i integer
+--- @return vm.node
 local function getRawDefNode(funcNode, i)
   local defNode = vm.createNode()
   for f in funcNode:eachObject() do
@@ -72,7 +71,7 @@ local function getRawDefNode(funcNode, i)
   return defNode
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then
@@ -91,7 +90,7 @@ return function(uri, callback)
       if not refNode then
         goto CONTINUE
       end
-      local defNode = getDefNode(funcNode, i, uri)
+      local defNode = getDefNode(funcNode, i)
       if not defNode then
         goto CONTINUE
       end

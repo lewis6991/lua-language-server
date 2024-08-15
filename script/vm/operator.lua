@@ -1,4 +1,4 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 local util = require('utility')
 local guide = require('parser.guide')
@@ -58,11 +58,11 @@ vm.OP_UNARY_MAP = util.revertMap(unaryMap)
 vm.OP_BINARY_MAP = util.revertMap(binaryMap)
 vm.OP_OTHER_MAP = util.revertMap(otherMap)
 
----@param operators parser.object[]
----@param op string
----@param value? parser.object
----@param result? vm.node
----@return vm.node?
+--- @param operators parser.object[]
+--- @param op string
+--- @param value? parser.object
+--- @param result? vm.node
+--- @return vm.node?
 local function checkOperators(operators, op, value, result)
   for _, operator in ipairs(operators) do
     if operator.op[1] ~= op or not operator.extends then
@@ -93,10 +93,10 @@ local function checkOperators(operators, op, value, result)
   return result
 end
 
----@param op string
----@param exp parser.object
----@param value? parser.object
----@return vm.node?
+--- @param op string
+--- @param exp parser.object
+--- @param value? parser.object
+--- @return vm.node?
 function vm.runOperator(op, exp, value)
   local uri = guide.getUri(exp)
   local node = vm.compileNode(exp)

@@ -6,7 +6,7 @@ local await = require('await')
 
 -- 检查空代码块
 -- 但是排除忙等待（repeat/while)
----@async
+--- @async
 return function(uri, callback)
   local ast = files.getState(uri)
   if not ast then

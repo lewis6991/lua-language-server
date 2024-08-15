@@ -4,7 +4,7 @@ local lang = require('language')
 local define = require('proto.define')
 local await = require('await')
 
----@async
+--- @async
 return function(uri, callback)
   local ast = files.getState(uri)
   if not ast then

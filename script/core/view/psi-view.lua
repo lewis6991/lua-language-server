@@ -3,21 +3,21 @@ local guide = require('parser.guide')
 local converter = require('proto.converter')
 local subString = require('core.substring')
 
----@class psi.view.node
----@field name string
----@field attr? psi.view.attr
----@field children? psi.view.node[]
+--- @class psi.view.node
+--- @field name string
+--- @field attr? psi.view.attr
+--- @field children? psi.view.node[]
 
----@class psi.view.attr
----@field range psi.view.range
+--- @class psi.view.attr
+--- @field range psi.view.range
 
----@class psi.view.range
----@field start integer
----@field end integer
+--- @class psi.view.range
+--- @field start integer
+--- @field end integer
 
----@param astNode parser.object
----@param state parser.state
----@return psi.view.node | nil
+--- @param astNode parser.object
+--- @param state parser.state
+--- @return psi.view.node | nil
 local function toPsiNode(astNode, state)
   if not astNode or not astNode.start then
     return
@@ -45,8 +45,8 @@ local function toPsiNode(astNode, state)
   }
 end
 
----@param astNode parser.object
----@return psi.view.node | nil
+--- @param astNode parser.object
+--- @return psi.view.node | nil
 local function collectPsi(astNode, state)
   local psiNode = toPsiNode(astNode, state)
 

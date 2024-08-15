@@ -6,25 +6,25 @@ local getRef = require('core.reference')
 local lang = require('language')
 local client = require('client')
 
----@class parser.state
----@field package _codeLens? codeLens
+--- @class parser.state
+--- @field package _codeLens? codeLens
 
----@class codeLens.resolving
----@field mode    'reference'
----@field source? parser.object
+--- @class codeLens.resolving
+--- @field mode    'reference'
+--- @field source? parser.object
 
----@class codeLens.result
----@field position integer
----@field id       integer
+--- @class codeLens.result
+--- @field position integer
+--- @field id       integer
 
----@class codeLens
+--- @class codeLens
 local mt = {}
 mt.__index = mt
 mt.type = 'codeLens'
 mt.id = 0
 
----@param uri string
----@return boolean
+--- @param uri string
+--- @return boolean
 function mt:init(uri)
   self.state = files.getState(uri)
   if not self.state then
@@ -39,8 +39,8 @@ function mt:init(uri)
   return true
 end
 
----@param pos integer
----@param resolving codeLens.resolving
+--- @param pos integer
+--- @param resolving codeLens.resolving
 function mt:addResult(pos, resolving)
   self.id = self.id + 1
   self.results[#self.results + 1] = {
@@ -50,9 +50,9 @@ function mt:addResult(pos, resolving)
   self.resolving[self.id] = resolving
 end
 
----@async
----@param id integer
----@return proto.command?
+--- @async
+--- @param id integer
+--- @return proto.command?
 function mt:resolve(id)
   local resolving = self.resolving[id]
   if not resolving then
@@ -63,7 +63,7 @@ function mt:resolve(id)
   end
 end
 
----@async
+--- @async
 function mt:collectReferences()
   await.delay()
   ---@async
@@ -83,9 +83,9 @@ function mt:collectReferences()
   end)
 end
 
----@async
----@param source parser.object
----@return proto.command?
+--- @async
+--- @param source parser.object
+--- @return proto.command?
 function mt:resolveReference(source)
   local refs = getRef(self.uri, source.finish, false)
   local count = refs and #refs or 0
@@ -111,9 +111,9 @@ function mt:resolveReference(source)
   end
 end
 
----@async
----@param uri string
----@return codeLens.result[]?
+--- @async
+--- @param uri string
+--- @return codeLens.result[]?
 local function getCodeLens(uri)
   local state = files.getState(uri)
   if not state then
@@ -135,9 +135,9 @@ local function getCodeLens(uri)
   return codeLens.results
 end
 
----@async
----@param id integer
----@return proto.command?
+--- @async
+--- @param id integer
+--- @return proto.command?
 local function resolve(uri, id)
   local state = files.getState(uri)
   if not state then

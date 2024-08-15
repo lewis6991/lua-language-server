@@ -6,7 +6,7 @@ local await = require('await')
 
 local checkTypes = { 'getfield', 'setfield', 'getmethod', 'setmethod', 'getindex', 'setindex' }
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

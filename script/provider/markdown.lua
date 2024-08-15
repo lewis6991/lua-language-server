@@ -1,7 +1,7 @@
 local wssymbol = require('core.workspace-symbol')
 local guide = require('parser.guide')
 
----@class markdown
+--- @class markdown
 local mt = {}
 mt.__index = mt
 mt.__name = 'markdown'
@@ -9,7 +9,7 @@ mt.__name = 'markdown'
 mt._splitLine = false
 
 ---Converts `[mySymbol](lua://mySymbol)` into a link that points to the origin of `mySymbol`.
----@param txt string
+--- @param txt string
 local function processSymbolReferences(txt)
   local function replacer(linkText, symbol)
     local source ---@type table
@@ -39,8 +39,8 @@ function mt:__tostring()
   return self:string()
 end
 
----@param language string
----@param text? string|markdown
+--- @param language string
+--- @param text? string|markdown
 function mt:add(language, text)
   if not text then
     return self
@@ -78,7 +78,7 @@ function mt:emptyLine()
   return self
 end
 
----@return string
+--- @return string
 function mt:string(nl)
   if self._cacheResult then
     return self._cacheResult

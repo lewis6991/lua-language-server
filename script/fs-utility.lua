@@ -13,10 +13,10 @@ local tableSort = table.sort
 
 _ENV = nil
 
----@class fs-utility
+--- @class fs-utility
 local m = {}
 --- 读取文件
----@param path string|fs.path
+--- @param path string|fs.path
 function m.loadFile(path, keepBom)
   if type(path) ~= 'string' then
     ---@diagnostic disable-next-line: undefined-field
@@ -40,8 +40,8 @@ function m.loadFile(path, keepBom)
 end
 
 --- 写入文件
----@param path any
----@param content string
+--- @param path any
+--- @param content string
 function m.saveFile(path, content)
   if type(path) ~= 'string' then
     ---@diagnostic disable-next-line: undefined-field
@@ -94,15 +94,15 @@ local function split(str, sep)
   return t
 end
 
----@class dummyfs
----@operator div(string|fs.path|dummyfs): dummyfs
----@field files table
+--- @class dummyfs
+--- @operator div(string|fs.path|dummyfs): dummyfs
+--- @field files table
 local dfs = {}
 dfs.__index = dfs
 dfs.type = 'dummy'
 dfs.path = ''
 
----@return dummyfs
+--- @return dummyfs
 function m.dummyFS(t)
   return setmetatable({
     files = t or {},
@@ -126,7 +126,7 @@ function dfs:__div(filename)
   return new
 end
 
----@package
+--- @package
 function dfs:_open(index)
   local paths = split(self.path, '[/\\]')
   local current = self.files
@@ -146,7 +146,7 @@ function dfs:_open(index)
   return current
 end
 
----@package
+--- @package
 function dfs:_filename()
   return self.path:match('[^/\\]+$')
 end
@@ -171,7 +171,7 @@ function dfs:string()
   return self.path
 end
 
----@return fun(): dummyfs?
+--- @return fun(): dummyfs?
 function dfs:listDirectory()
   local dir = self:_open()
   if type(dir) ~= 'table' then
@@ -262,9 +262,9 @@ function dfs:saveFile(path, text)
   return true
 end
 
----@param path   string|fs.path|dummyfs
----@param option table
----@return fs.path|dummyfs?
+--- @param path   string|fs.path|dummyfs
+--- @param option table
+--- @return fs.path|dummyfs?
 local function fsAbsolute(path, option)
   if type(path) == 'string' then
     local suc, res = pcall(fs.path, path)
@@ -296,9 +296,9 @@ local function fsIsDirectory(path, option)
   return status == 'directory'
 end
 
----@param path fs.path|dummyfs|nil
----@param option table
----@return fun(): fs.path|dummyfs|nil
+--- @param path fs.path|dummyfs|nil
+--- @param option table
+--- @return fun(): fs.path|dummyfs|nil
 local function fsPairs(path, option)
   if not path then
     return function() end
@@ -429,8 +429,8 @@ local function fsCopy(source, target, option)
   return true
 end
 
----@param path dummyfs|fs.path
----@param option table
+--- @param path dummyfs|fs.path
+--- @param option table
 local function fsCreateDirectories(path, option)
   if not path then
     return
@@ -463,9 +463,9 @@ local function fileRemove(path, option)
   end
 end
 
----@param source fs.path|dummyfs?
----@param target fs.path|dummyfs?
----@param option table
+--- @param source fs.path|dummyfs?
+--- @param target fs.path|dummyfs?
+--- @param option table
 local function fileCopy(source, target, option)
   if not source or not target then
     return
@@ -499,9 +499,9 @@ local function fileCopy(source, target, option)
   end
 end
 
----@param source fs.path|dummyfs?
----@param target fs.path|dummyfs?
----@param option table
+--- @param source fs.path|dummyfs?
+--- @param target fs.path|dummyfs?
+--- @param option table
 local function fileSync(source, target, option)
   if not source or not target then
     return
@@ -615,9 +615,9 @@ function m.fileRemove(path, option)
 end
 
 --- 复制文件（夹）
----@param source string|fs.path|dummyfs
----@param target string|fs.path|dummyfs
----@return table
+--- @param source string|fs.path|dummyfs
+--- @param target string|fs.path|dummyfs
+--- @return table
 function m.fileCopy(source, target, option)
   option = buildOption(option)
   local fsSource = fsAbsolute(source, option)
@@ -629,9 +629,9 @@ function m.fileCopy(source, target, option)
 end
 
 --- 同步文件（夹）
----@param source string|fs.path|dummyfs
----@param target string|fs.path|dummyfs
----@return table
+--- @param source string|fs.path|dummyfs
+--- @param target string|fs.path|dummyfs
+--- @return table
 function m.fileSync(source, target, option)
   option = buildOption(option)
   local fsSource = fsAbsolute(source, option)
@@ -642,8 +642,8 @@ function m.fileSync(source, target, option)
   return option
 end
 
----@param dir fs.path
----@param callback fun(fullPath: fs.path)
+--- @param dir fs.path
+--- @param callback fun(fullPath: fs.path)
 function m.scanDirectory(dir, callback)
   for fullpath in fs.pairs(dir) do
     local status = fs.symlink_status(fullpath):type()

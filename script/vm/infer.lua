@@ -1,17 +1,17 @@
 local util     = require 'utility'
 local config   = require 'config'
 local guide    = require 'parser.guide'
----@class vm
+--- @class vm
 local vm       = require 'vm.vm'
 
----@class vm.infer
----@field node vm.node
----@field views table<string, boolean>
----@field _drop table
----@field _lastView? string
----@field _lastViewUri? string
----@field _lastViewDefault? any
----@field _subViews? string[]
+--- @class vm.infer
+--- @field node vm.node
+--- @field views table<string, boolean>
+--- @field _drop table
+--- @field _lastView? string
+--- @field _lastViewUri? string
+--- @field _lastViewDefault? any
+--- @field _subViews? string[]
 local mt = {}
 mt.__index = mt
 mt._hasTable       = false
@@ -242,8 +242,8 @@ local viewNodeSwitch;viewNodeSwitch = util.switch()
         return vm.viewKey(source, uri)
     end)
 
----@param node? vm.node
----@return vm.infer
+--- @param node? vm.node
+--- @return vm.infer
 local function createInfer(node)
     local infer = setmetatable({
         node  = node,
@@ -252,8 +252,8 @@ local function createInfer(node)
     return infer
 end
 
----@param source vm.node.object | vm.node
----@return vm.infer
+--- @param source vm.node.object | vm.node
+--- @return vm.infer
 function vm.getInfer(source)
     ---@type vm.node
     local node
@@ -297,7 +297,7 @@ function mt:_trim()
     end
 end
 
----@param uri string
+--- @param uri string
 function mt:_eraseAlias(uri)
     local count = 0
     for _ in pairs(self.views) do
@@ -340,43 +340,43 @@ function mt:_eraseAlias(uri)
     end
 end
 
----@param uri string
----@param tp string
----@return boolean
+--- @param uri string
+--- @param tp string
+--- @return boolean
 function mt:hasType(uri, tp)
     self:_computeViews(uri)
     return self.views[tp] == true
 end
 
----@param uri string
+--- @param uri string
 function mt:hasUnknown(uri)
     self:_computeViews(uri)
     return not next(self.views)
         or self.views['unknown'] == true
 end
 
----@param uri string
+--- @param uri string
 function mt:hasAny(uri)
     self:_computeViews(uri)
     return self.views['any'] == true
 end
 
----@param uri string
----@return boolean
+--- @param uri string
+--- @return boolean
 function mt:hasClass(uri)
     self:_computeViews(uri)
     return self._hasClass == true
 end
 
----@param uri string
----@return boolean
+--- @param uri string
+--- @return boolean
 function mt:hasFunction(uri)
     self:_computeViews(uri)
     return self.views['function'] == true
         or self._hasDocFunction   == true
 end
 
----@param uri string
+--- @param uri string
 function mt:_computeViews(uri)
     if self.views then
         return
@@ -396,9 +396,9 @@ function mt:_computeViews(uri)
     self:_trim()
 end
 
----@param uri string
----@param default? string
----@return string
+--- @param uri string
+--- @param default? string
+--- @return string
 function mt:view(uri, default)
     if  self._lastView
     and self._lastViewUri == uri
@@ -474,20 +474,20 @@ function mt:view(uri, default)
     return view
 end
 
----@param uri string
+--- @param uri string
 function mt:eachView(uri)
     self:_computeViews(uri)
     return next, self.views
 end
 
----@param uri string
----@return string[]
+--- @param uri string
+--- @return string[]
 function mt:getSubViews(uri)
     self:view(uri)
     return self._subViews
 end
 
----@return string?
+--- @return string?
 function mt:viewLiterals()
     if not self.node then
         return nil
@@ -525,7 +525,7 @@ function mt:viewLiterals()
     return table.concat(literals, '|')
 end
 
----@return string?
+--- @return string?
 function mt:viewClass()
     if not self.node then
         return nil
@@ -548,18 +548,18 @@ function mt:viewClass()
     return table.concat(class, '|')
 end
 
----@param source vm.node.object
----@param uri string
----@return string?
+--- @param source vm.node.object
+--- @param uri string
+--- @return string?
 function vm.viewObject(source, uri)
     local infer = createInfer()
     return viewNodeSwitch(source.type, source, infer, uri)
 end
 
----@param source parser.object
----@param uri string
----@return string?
----@return string|number|boolean|nil
+--- @param source parser.object
+--- @param uri string
+--- @return string?
+--- @return string|number|boolean|nil
 function vm.viewKey(source, uri)
     if source.type == 'doc.type' then
         if #source.types == 1 then

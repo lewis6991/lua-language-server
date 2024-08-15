@@ -7,7 +7,7 @@ local define = require('proto.define')
 local lang = require('language')
 local substr = require('core.substring')
 
----@async
+--- @async
 local function typeHint(uri, results, start, finish)
   local state = files.getState(uri)
   if not state then
@@ -97,7 +97,7 @@ local function hasLiteralArgInCall(call)
   return false
 end
 
----@async
+--- @async
 local function paramName(uri, results, start, finish)
   local paramConfig = config.get(uri, 'Lua.hint.paramName')
   if not paramConfig or paramConfig == 'Disable' then
@@ -158,7 +158,7 @@ local function paramName(uri, results, start, finish)
   end)
 end
 
----@async
+--- @async
 local function arrayIndex(uri, results, start, finish)
   local state = files.getState(uri)
   if not state then
@@ -226,7 +226,7 @@ local function arrayIndex(uri, results, start, finish)
   end)
 end
 
----@async
+--- @async
 local function awaitHint(uri, results, start, finish)
   local awaitConfig = config.get(uri, 'Lua.hint.await')
   if not awaitConfig then
@@ -269,7 +269,7 @@ local blockTypes = {
   'elseblock',
 }
 
----@async
+--- @async
 local function semicolonHint(uri, results, start, finish)
   local state = files.getState(uri)
   if not state then
@@ -326,7 +326,7 @@ local function semicolonHint(uri, results, start, finish)
   end)
 end
 
----@async
+--- @async
 return function(uri, start, finish)
   local results = {}
   typeHint(uri, results, start, finish)

@@ -39,13 +39,13 @@ local parser = m.P({
   ['RangeUnit'] = m.Ct(-m.P(']') * m.C(m.P(1)) * (m.P('-') * -m.P(']') * m.C(m.P(1))) ^ -1),
 })
 
----@class gitignore
----@field pattern string[]
----@field options table
----@field errors table[]
----@field matcher table
----@field interface function[]
----@field data table
+--- @class gitignore
+--- @field pattern string[]
+--- @field options table
+--- @field errors table[]
+--- @field matcher table
+--- @field interface function[]
+--- @field data table
 local mt = {}
 mt.__index = mt
 mt.__name = 'gitignore'
@@ -78,8 +78,8 @@ function mt:setOption(op, val)
   self.options[op] = val
 end
 
----@param key string | "'type'" | "'list'"
----@param func function | "function (path) end"
+--- @param key string | "'type'" | "'list'"
+--- @param func function | "function (path) end"
 function mt:setInterface(key, func)
   if type(func) ~= 'function' then
     return
@@ -160,9 +160,9 @@ function mt:getRelativePath(path)
   return path
 end
 
----@param callback async fun(path: string)
----@param hook? async fun(ev: string, ...)
----@async
+--- @param callback async fun(path: string)
+--- @param hook? async fun(ev: string, ...)
+--- @async
 function mt:scan(path, callback, hook)
   local files = {}
   local list = {}

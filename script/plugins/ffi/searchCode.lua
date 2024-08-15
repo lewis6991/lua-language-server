@@ -14,7 +14,7 @@ local function getLiterals(arg)
   return res
 end
 
----@return string[]?
+--- @return string[]?
 local function getCode(CdefReference)
   local target = CdefReference.target
   if not (target.type == 'field' and target.parent.type == 'getfield') then
@@ -45,7 +45,7 @@ local function getCode(CdefReference)
   end
 end
 
----@async
+--- @async
 return function(CdefReference, target_uri)
   if not CdefReference then
     return nil

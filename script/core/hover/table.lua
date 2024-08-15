@@ -4,10 +4,10 @@ local config = require('config')
 local await = require('await')
 local guide = require('parser.guide')
 
----@param uri string
----@param keys string[]
----@param nodeMap table<string, vm.node>
----@param reachMax integer
+--- @param uri string
+--- @param keys string[]
+--- @param nodeMap table<string, vm.node>
+--- @param reachMax integer
 local function buildAsHash(uri, keys, nodeMap, reachMax)
   local lines = {}
   lines[#lines + 1] = '{'
@@ -39,10 +39,10 @@ local function buildAsHash(uri, keys, nodeMap, reachMax)
   return table.concat(lines, '\n')
 end
 
----@param uri string
----@param keys string[]
----@param nodeMap table<string, vm.node>
----@param reachMax integer
+--- @param uri string
+--- @param keys string[]
+--- @param nodeMap table<string, vm.node>
+--- @param reachMax integer
 local function buildAsConst(uri, keys, nodeMap, reachMax)
   local literalMap = {}
   for _, key in ipairs(keys) do
@@ -80,8 +80,8 @@ local function buildAsConst(uri, keys, nodeMap, reachMax)
   return table.concat(lines, '\n')
 end
 
----@param source parser.object
----@param fields parser.object[]
+--- @param source parser.object
+--- @param fields parser.object[]
 local function getVisibleKeyMap(source, fields)
   local uri = guide.getUri(source)
   local keys = {}
@@ -129,7 +129,7 @@ local function getVisibleKeyMap(source, fields)
   return keys, map
 end
 
----@async
+--- @async
 local function getNodeMap(uri, fields, keyMap)
   ---@type table<string, vm.node>
   local nodeMap = {}
@@ -150,8 +150,8 @@ local function getNodeMap(uri, fields, keyMap)
   return nodeMap
 end
 
----@async
----@return string?
+--- @async
+--- @return string?
 return function(source)
   local uri = guide.getUri(source)
   local maxFields = config.get(uri, 'Lua.hover.previewFields')

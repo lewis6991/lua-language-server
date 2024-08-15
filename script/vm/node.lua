@@ -1,22 +1,22 @@
 local files    = require 'files'
----@class vm
+--- @class vm
 local vm       = require 'vm.vm'
 local ws       = require 'workspace.workspace'
 local guide    = require 'parser.guide'
 local timer    = require 'timer'
 local util     = require 'utility'
 
----@type table<vm.object, vm.node>
+--- @type table<vm.object, vm.node>
 vm.nodeCache = setmetatable({}, util.MODE_K)
 
----@alias vm.node.object vm.object | vm.global | vm.variable
+--- @alias vm.node.object vm.object | vm.global | vm.variable
 
----@class vm.node
----@field [integer] vm.node.object
----@field [vm.node.object] true
----@field fields? table<vm.node|string, vm.node>
----@field undefinedGlobal boolean?
----@field lastInfer? vm.infer
+--- @class vm.node
+--- @field [integer] vm.node.object
+--- @field [vm.node.object] true
+--- @field fields? table<vm.node|string, vm.node>
+--- @field undefinedGlobal boolean?
+--- @field lastInfer? vm.infer
 local mt = {}
 mt.__index    = mt
 mt.id         = 0
@@ -26,8 +26,8 @@ mt.data       = nil
 mt.hasDefined = nil
 mt.originNode = nil
 
----@param node vm.node | vm.node.object
----@return vm.node
+--- @param node vm.node | vm.node.object
+--- @return vm.node
 function mt:merge(node)
     if not node then
         return self
@@ -56,12 +56,12 @@ function mt:merge(node)
     return self
 end
 
----@return boolean
+--- @return boolean
 function mt:isEmpty()
     return #self == 0
 end
 
----@return boolean
+--- @return boolean
 function mt:isTyped()
     for _, c in ipairs(self) do
         if c.type == 'global' and c.cate == 'type' then
@@ -82,8 +82,8 @@ function mt:clear()
     end
 end
 
----@param n integer
----@return vm.node.object?
+--- @param n integer
+--- @return vm.node.object?
 function mt:get(n)
     return self[n]
 end
@@ -97,12 +97,12 @@ function mt:removeOptional()
     return self
 end
 
----@return boolean
+--- @return boolean
 function mt:isOptional()
     return self.optional == true
 end
 
----@return boolean
+--- @return boolean
 function mt:hasFalsy()
     if self.optional then
         return true
@@ -119,7 +119,7 @@ function mt:hasFalsy()
     return false
 end
 
----@return boolean
+--- @return boolean
 function mt:hasKnownType()
     for _, c in ipairs(self) do
         if c.type == 'global' and c.cate == 'type' then
@@ -132,7 +132,7 @@ function mt:hasKnownType()
     return false
 end
 
----@return boolean
+--- @return boolean
 function mt:isNullable()
     if self.optional then
         return true
@@ -151,7 +151,7 @@ function mt:isNullable()
     return false
 end
 
----@return vm.node
+--- @return vm.node
 function mt:setTruthy()
     if self.optional == true then
         self.optional = nil
@@ -189,7 +189,7 @@ function mt:setTruthy()
     return self
 end
 
----@return vm.node
+--- @return vm.node
 function mt:setFalsy()
     if self.optional == false then
         self.optional = nil
@@ -235,7 +235,7 @@ function mt:setFalsy()
     return self
 end
 
----@param name string
+--- @param name string
 function mt:remove(name)
     if name == 'nil' and self.optional == true then
         self.optional = nil
@@ -260,8 +260,8 @@ function mt:remove(name)
     return self
 end
 
----@param uri string
----@param name string
+--- @param uri string
+--- @param name string
 function mt:narrow(uri, name)
     if self.optional == true then
         self.optional = nil
@@ -294,7 +294,7 @@ function mt:narrow(uri, name)
     return self
 end
 
----@param obj vm.object | vm.variable
+--- @param obj vm.object | vm.variable
 function mt:removeObject(obj)
     for index, c in ipairs(self) do
         if c == obj then
@@ -305,7 +305,7 @@ function mt:removeObject(obj)
     end
 end
 
----@param node vm.node
+--- @param node vm.node
 function mt:removeNode(node)
     for _, c in ipairs(node) do
         if c.type == 'global' and c.cate == 'type' then
@@ -327,8 +327,8 @@ function mt:removeNode(node)
     end
 end
 
----@param name string
----@return boolean
+--- @param name string
+--- @return boolean
 function mt:hasType(name)
     for _, c in ipairs(self) do
         if c.type == 'global' and c.cate == 'type' and c.name == name then
@@ -338,8 +338,8 @@ function mt:hasType(name)
     return false
 end
 
----@param name string
----@return boolean
+--- @param name string
+--- @return boolean
 function mt:hasName(name)
     if name == 'nil' and self.optional == true then
         return true
@@ -356,7 +356,7 @@ function mt:hasName(name)
     return false
 end
 
----@return vm.node
+--- @return vm.node
 function mt:asTable()
     self.optional = nil
     for index = #self, 1, -1 do
@@ -386,7 +386,7 @@ function mt:asTable()
     return self
 end
 
----@return fun():vm.node.object
+--- @return fun():vm.node.object
 function mt:eachObject()
     local i = 0
     return function ()
@@ -395,15 +395,15 @@ function mt:eachObject()
     end
 end
 
----@return vm.node
+--- @return vm.node
 function mt:copy()
     return vm.createNode(self)
 end
 
----@param source vm.node.object | vm.generic
----@param node vm.node | vm.node.object
----@param cover? boolean
----@return vm.node
+--- @param source vm.node.object | vm.generic
+--- @param node vm.node | vm.node.object
+--- @param cover? boolean
+--- @return vm.node
 function vm.setNode(source, node, cover)
     if not node then
         if TEST then
@@ -431,13 +431,13 @@ function vm.setNode(source, node, cover)
     return me
 end
 
----@param source vm.node.object
----@return vm.node?
+--- @param source vm.node.object
+--- @return vm.node?
 function vm.getNode(source)
     return vm.nodeCache[source]
 end
 
----@param source vm.object
+--- @param source vm.object
 function vm.removeNode(source)
     vm.nodeCache[source] = nil
 end
@@ -467,9 +467,9 @@ end
 
 local ID = 0
 
----@param a? vm.node | vm.node.object
----@param b? vm.node | vm.node.object
----@return vm.node
+--- @param a? vm.node | vm.node.object
+--- @param b? vm.node | vm.node.object
+--- @return vm.node
 function vm.createNode(a, b)
     ID = ID + 1
     local node = setmetatable({
@@ -484,7 +484,7 @@ function vm.createNode(a, b)
     return node
 end
 
----@type timer?
+--- @type timer?
 local delayTimer
 files.watch(function (ev, uri)
     if ev == 'version' then

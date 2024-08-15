@@ -5,8 +5,8 @@ local lang = require('language')
 local await = require('await')
 local define = require('proto.define')
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 local function allLiteral(source)
   local result = true
   guide.eachSource(source, function(src)
@@ -18,8 +18,8 @@ local function allLiteral(source)
   return result
 end
 
----@param block parser.object
----@return boolean
+--- @param block parser.object
+--- @return boolean
 local function hasReturn(block)
   if block.hasReturn or block.hasExit then
     return true
@@ -52,7 +52,7 @@ local function hasReturn(block)
   return false
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

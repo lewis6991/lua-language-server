@@ -5,7 +5,7 @@ local lang = require('language')
 local ws = require('workspace')
 local files = require('files')
 
----@async
+--- @async
 return function(args)
   local outputPath = args[1] and furi.decode(args[1]) or LOGPATH
   local docPath, mdPath = doc.makeDoc(outputPath)

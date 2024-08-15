@@ -2,7 +2,7 @@ local files = require('files')
 local global = require('vm.global')
 local variable = require('vm.variable')
 
----@async
+--- @async
 files.watch(function(ev, uri)
   if ev == 'update' then
     global.dropUri(uri)

@@ -1,12 +1,10 @@
-local lowers = {}
 local uppers = {}
 for c in ('abcdefghijklmnopqrstuvwxyz'):gmatch('.') do
-  lowers[c] = true
   uppers[c:upper()] = true
 end
 
----@param input string
----@param other string
+--- @param input string
+--- @param other string
 local function isValidFirstChar(input, other)
   local first = input:sub(1, 1):upper()
   if first == other:sub(1, 1):upper() then
@@ -57,11 +55,11 @@ local function isAlmostSame(input, other)
   return true
 end
 
----@param input string
----@param other string
----@param fast? boolean
----@return boolean isMatch
----@return number  deviation
+--- @param input string
+--- @param other string
+--- @param fast? boolean
+--- @return boolean isMatch
+--- @return number  deviation
 return function(input, other, fast)
   if input == other then
     return true, 0

@@ -13,13 +13,13 @@ local tconcat = table.concat
 
 _ENV = nil
 
----@class lazytable.builder
----@field source     table
----@field codeMap    table<integer, string>
----@field dumpMark   table<table, integer>
----@field excludes   table<table, true>
----@field refMap     table<any, integer>
----@field instMap    table<integer, table|function|thread|userdata>
+--- @class lazytable.builder
+--- @field source     table
+--- @field codeMap    table<integer, string>
+--- @field dumpMark   table<table, integer>
+--- @field excludes   table<table, true>
+--- @field refMap     table<any, integer>
+--- @field instMap    table<integer, table|function|thread|userdata>
 local mt = {}
 mt.__index = mt
 mt.tableID = 1
@@ -52,8 +52,8 @@ local RESERVED = {
   ['goto'] = true,
 }
 
----@param k string|integer
----@return string
+--- @param k string|integer
+--- @return string
 local function formatKey(k)
   if type(k) == 'string' then
     if not RESERVED[k] and smatch(k, '^[%a_][%w_]*$') then
@@ -68,13 +68,13 @@ local function formatKey(k)
   error('invalid key type: ' .. type(k))
 end
 
----@param v string|number|boolean
+--- @param v string|number|boolean
 local function formatValue(v)
   return sformat('%q', v)
 end
 
----@param info {[1]: table, [2]: integer, [3]: table?}
----@return string
+--- @param info {[1]: table, [2]: integer, [3]: table?}
+--- @return string
 local function dump(info)
   local codeBuf = {}
 
@@ -111,8 +111,8 @@ local function dump(info)
   return tconcat(codeBuf)
 end
 
----@param obj table|function|userdata|thread
----@return integer
+--- @param obj table|function|userdata|thread
+--- @return integer
 function mt:getObjectID(obj)
   if self.dumpMark[obj] then
     return self.dumpMark[obj]
@@ -151,8 +151,8 @@ function mt:getObjectID(obj)
   return id
 end
 
----@param writter fun(id: integer, code: string): boolean
----@param reader  fun(id: integer): string?
+--- @param writter fun(id: integer, code: string): boolean
+--- @param reader  fun(id: integer): string?
 function mt:bind(writter, reader)
   setmt(self.codeMap, {
     __newindex = function(t, id, code)
@@ -167,13 +167,13 @@ function mt:bind(writter, reader)
   })
 end
 
----@param t table
+--- @param t table
 function mt:exclude(t)
   self.excludes[t] = true
   return self
 end
 
----@return table
+--- @return table
 function mt:entry()
   local entryID = self:getObjectID(self.source)
 
@@ -320,13 +320,13 @@ function mt:entry()
   return entry
 end
 
----@class lazytable
+--- @class lazytable
 local m = {}
 
----@param t table
----@param writter? fun(id: integer, code: string): boolean
----@param reader?  fun(id: integer): string?
----@return lazytable.builder
+--- @param t table
+--- @param writter? fun(id: integer, code: string): boolean
+--- @param reader?  fun(id: integer): string?
+--- @return lazytable.builder
 function m.build(t, writter, reader)
   local builder = setmt({
     source = t,

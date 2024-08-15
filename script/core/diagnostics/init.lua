@@ -8,7 +8,7 @@ local diagd = require('proto.diagnostic')
 
 local sleepRest = 0.0
 
----@async
+--- @async
 local function checkSleep(uri, passed)
   local speedRate = config.get(uri, 'Lua.diagnostics.workspaceRate')
   if speedRate <= 0 or speedRate >= 100 then
@@ -31,9 +31,9 @@ local function checkSleep(uri, passed)
   sleepRest = sleepRest - sleeped
 end
 
----@param uri  string
----@param name string
----@return string
+--- @param uri  string
+--- @param name string
+--- @return string
 local function getSeverity(uri, name)
   local severity = config.get(uri, 'Lua.diagnostics.severity')[name]
     or define.DiagnosticDefaultSeverity[name]
@@ -60,9 +60,9 @@ local function getSeverity(uri, name)
   return severity
 end
 
----@param uri  string
----@param name string
----@return string
+--- @param uri  string
+--- @param name string
+--- @return string
 local function getStatus(uri, name)
   local status = config.get(uri, 'Lua.diagnostics.neededFileStatus')[name]
     or define.DiagnosticDefaultNeededFileStatus[name]
@@ -89,13 +89,13 @@ local function getStatus(uri, name)
   return status
 end
 
----@async
----@param uri string
----@param name string
----@param isScopeDiag boolean
----@param response async fun(result: any)
----@param ignoreFileOpenState? boolean
----@return boolean
+--- @async
+--- @param uri string
+--- @param name string
+--- @param isScopeDiag boolean
+--- @param response async fun(result: any)
+--- @param ignoreFileOpenState? boolean
+--- @return boolean
 local function check(uri, name, isScopeDiag, response, ignoreFileOpenState)
   local disables = config.get(uri, 'Lua.diagnostics.disable')
   if util.arrayHas(disables, name) then
@@ -163,12 +163,12 @@ local function buildDiagList()
   return diagList
 end
 
----@async
----@param uri string
----@param isScopeDiag boolean
----@param response async fun(result: any)
----@param checked? async fun(name: string)
----@param ignoreFileOpenState? boolean
+--- @async
+--- @param uri string
+--- @param isScopeDiag boolean
+--- @param response async fun(result: any)
+--- @param checked? async fun(name: string)
+--- @param ignoreFileOpenState? boolean
 return function(uri, isScopeDiag, response, checked, ignoreFileOpenState)
   local ast = files.getState(uri)
   if not ast then

@@ -155,7 +155,7 @@ local care = {
   end,
 }
 
----@async
+--- @async
 return function(uri)
   local state = files.getState(uri)
   local text = files.getText(uri)

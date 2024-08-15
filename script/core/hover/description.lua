@@ -84,9 +84,9 @@ local function asString(source)
         or asStringView(source, literal)
 end
 
----@param comment string
----@param suri string
----@return string?
+--- @param comment string
+--- @param suri string
+--- @return string?
 local function normalizeComment(comment, suri)
     if not comment then
         return nil
@@ -126,7 +126,7 @@ local function getBindComment(source)
     return table.concat(lines, '\n')
 end
 
----@async
+--- @async
 local function packSee(see)
     local name = see.name[1]
     local buf  = {}
@@ -150,7 +150,7 @@ local function packSee(see)
     return table.concat(buf)
 end
 
----@async
+--- @async
 local function lookUpDocSees(lines, docGroup)
     local sees = {}
     for _, doc in ipairs(docGroup) do
@@ -171,7 +171,7 @@ local function lookUpDocSees(lines, docGroup)
     end
 end
 
----@async
+--- @async
 local function lookUpDocComments(source)
     local docGroup = source.bindDocs
     if not docGroup then
@@ -400,7 +400,7 @@ local function getFunctionComment(source, raw)
     return comment
 end
 
----@async
+--- @async
 local function tryDocComment(source, raw)
     local md = markdown()
     if source.value and source.value.type == 'function' then
@@ -428,7 +428,7 @@ local function tryDocComment(source, raw)
     return result
 end
 
----@async
+--- @async
 local function tryDocOverloadToComment(source, raw)
     if source.type ~= 'doc.type.function' then
         return
@@ -469,7 +469,7 @@ local function tyrDocParamComment(source)
     end
 end
 
----@param source parser.object
+--- @param source parser.object
 local function tryDocEnum(source)
     if source.type ~= 'doc.enum' then
         return
@@ -529,7 +529,7 @@ local function tryDocEnum(source)
     end
 end
 
----@async
+--- @async
 return function (source, raw)
     if source.type == 'string' then
         return asString(source)

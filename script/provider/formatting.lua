@@ -37,7 +37,7 @@ local m = {}
 
 m.loadedDefaultConfig = false
 
----@param uri string
+--- @param uri string
 function m.updateConfig(uri)
   if not m.loadedDefaultConfig then
     m.loadedDefaultConfig = true
@@ -76,7 +76,7 @@ function m.updateConfig(uri)
   end
 end
 
----@param symbols? string[]
+--- @param symbols? string[]
 function m.updateNonStandardSymbols(symbols)
   if symbols == nil then
     return

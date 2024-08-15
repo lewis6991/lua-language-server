@@ -78,7 +78,7 @@ local function convertIndex(source)
     return source
 end
 
----@async
+--- @async
 return function (uri, offset)
     local ast = files.getState(uri)
     if not ast then

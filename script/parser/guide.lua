@@ -1,88 +1,88 @@
 local error = error
 local type = type
 
----@class parser.object
----@field bindDocs              parser.object[]
----@field bindGroup             parser.object[]
----@field bindSource            parser.object
----@field value                 parser.object
----@field parent                parser.object
----@field type                  string
----@field special               string
----@field tag                   string
----@field args                  { [integer]: parser.object, start: integer, finish: integer, type: string }
----@field locals                parser.object[]
----@field returns?              parser.object[]
----@field breaks?               parser.object[]
----@field exps                  parser.object[]
----@field keys                  parser.object
----@field uri                   string
----@field start                 integer
----@field finish                integer
----@field range                 integer
----@field effect                integer
----@field bstart                integer
----@field attrs                 string[]
----@field specials              parser.object[]
----@field labels                parser.object[]
----@field node                  parser.object
----@field field                 parser.object
----@field method                parser.object
----@field index                 parser.object
----@field extends               parser.object[]|parser.object
----@field types                 parser.object[]
----@field fields                parser.object[]
----@field tkey                  parser.object
----@field tvalue                parser.object
----@field tindex                integer
----@field op                    parser.object
----@field next                  parser.object
----@field docParam              parser.object
----@field sindex                integer
----@field name                  parser.object
----@field call                  parser.object
----@field closure               parser.object
----@field proto                 parser.object
----@field exp                   parser.object
----@field alias                 parser.object
----@field class                 parser.object
----@field enum                  parser.object
----@field vararg                parser.object
----@field param                 parser.object
----@field overload              parser.object
----@field docParamMap           table<string, integer>
----@field upvalues              table<string, string[]>
----@field ref                   parser.object[]
----@field returnIndex           integer
----@field assignIndex           integer
----@field docIndex              integer
----@field docs                  parser.object
----@field state                 table
----@field comment               table
----@field optional              boolean
----@field max                   parser.object
----@field init                  parser.object
----@field step                  parser.object
----@field redundant             { max: integer, passed: integer }
----@field filter                parser.object
----@field loc                   parser.object
----@field keyword               integer[]
----@field casts                 parser.object[]
----@field mode?                 '+' | '-'
----@field hasGoTo?              true
----@field hasReturn?            true
----@field hasBreak?             true
----@field hasExit?              true
----@field [integer]             parser.object|any
----@field dot                   { type: string, start: integer, finish: integer }
----@field colon                 { type: string, start: integer, finish: integer }
----@field package _root         parser.object
----@field package _eachCache?   parser.object[]
----@field package _isGlobal?    boolean
----@field package _typeCache?   parser.object[][]
+--- @class parser.object
+--- @field bindDocs              parser.object[]
+--- @field bindGroup             parser.object[]
+--- @field bindSource            parser.object
+--- @field value                 parser.object
+--- @field parent                parser.object
+--- @field type                  string
+--- @field special               string
+--- @field tag                   string
+--- @field args                  { [integer]: parser.object, start: integer, finish: integer, type: string }
+--- @field locals                parser.object[]
+--- @field returns?              parser.object[]
+--- @field breaks?               parser.object[]
+--- @field exps                  parser.object[]
+--- @field keys                  parser.object
+--- @field uri                   string
+--- @field start                 integer
+--- @field finish                integer
+--- @field range                 integer
+--- @field effect                integer
+--- @field bstart                integer
+--- @field attrs                 string[]
+--- @field specials              parser.object[]
+--- @field labels                parser.object[]
+--- @field node                  parser.object
+--- @field field                 parser.object
+--- @field method                parser.object
+--- @field index                 parser.object
+--- @field extends               parser.object[]|parser.object
+--- @field types                 parser.object[]
+--- @field fields                parser.object[]
+--- @field tkey                  parser.object
+--- @field tvalue                parser.object
+--- @field tindex                integer
+--- @field op                    parser.object
+--- @field next                  parser.object
+--- @field docParam              parser.object
+--- @field sindex                integer
+--- @field name                  parser.object
+--- @field call                  parser.object
+--- @field closure               parser.object
+--- @field proto                 parser.object
+--- @field exp                   parser.object
+--- @field alias                 parser.object
+--- @field class                 parser.object
+--- @field enum                  parser.object
+--- @field vararg                parser.object
+--- @field param                 parser.object
+--- @field overload              parser.object
+--- @field docParamMap           table<string, integer>
+--- @field upvalues              table<string, string[]>
+--- @field ref                   parser.object[]
+--- @field returnIndex           integer
+--- @field assignIndex           integer
+--- @field docIndex              integer
+--- @field docs                  parser.object
+--- @field state                 table
+--- @field comment               table
+--- @field optional              boolean
+--- @field max                   parser.object
+--- @field init                  parser.object
+--- @field step                  parser.object
+--- @field redundant             { max: integer, passed: integer }
+--- @field filter                parser.object
+--- @field loc                   parser.object
+--- @field keyword               integer[]
+--- @field casts                 parser.object[]
+--- @field mode?                 '+' | '-'
+--- @field hasGoTo?              true
+--- @field hasReturn?            true
+--- @field hasBreak?             true
+--- @field hasExit?              true
+--- @field [integer]             parser.object|any
+--- @field dot                   { type: string, start: integer, finish: integer }
+--- @field colon                 { type: string, start: integer, finish: integer }
+--- @field package _root         parser.object
+--- @field package _eachCache?   parser.object[]
+--- @field package _isGlobal?    boolean
+--- @field package _typeCache?   parser.object[][]
 
----@class guide
----@field debugMode boolean
+--- @class guide
+--- @field debugMode boolean
 local m = {}
 
 m.ANY = { '<ANY>' }
@@ -190,7 +190,7 @@ local childMap = {
   ['doc.attr'] = { '#names' },
 }
 
----@type table<string, fun(obj: parser.object, list: parser.object[])>
+--- @type table<string, fun(obj: parser.object, list: parser.object[])>
 local compiledChildMap = setmetatable({}, {
   __index = function(self, name)
     local defs = childMap[name]
@@ -285,8 +285,8 @@ m.actionMap = {
 }
 
 --- 是否是字面量
----@param obj table
----@return boolean
+--- @param obj table
+--- @return boolean
 function m.isLiteral(obj)
   local tp = obj.type
   return tp == 'nil'
@@ -306,8 +306,8 @@ function m.isLiteral(obj)
 end
 
 --- 获取字面量
----@param obj table
----@return any
+--- @param obj table
+--- @return any
 function m.getLiteral(obj)
   if m.isLiteral(obj) then
     return obj[1]
@@ -316,8 +316,8 @@ function m.getLiteral(obj)
 end
 
 --- 寻找父函数
----@param obj parser.object
----@return parser.object?
+--- @param obj parser.object
+--- @return parser.object?
 function m.getParentFunction(obj)
   for _ = 1, 10000 do
     obj = obj.parent
@@ -333,8 +333,8 @@ function m.getParentFunction(obj)
 end
 
 --- 寻找所在区块
----@param obj parser.object
----@return parser.object?
+--- @param obj parser.object
+--- @return parser.object?
 function m.getBlock(obj)
   for _ = 1, 10000 do
     if not obj then
@@ -362,8 +362,8 @@ function m.getBlock(obj)
 end
 
 --- 寻找所在父区块
----@param obj parser.object
----@return parser.object?
+--- @param obj parser.object
+--- @return parser.object?
 function m.getParentBlock(obj)
   for _ = 1, 10000 do
     obj = obj.parent
@@ -379,8 +379,8 @@ function m.getParentBlock(obj)
 end
 
 --- 寻找所在可break的父区块
----@param obj parser.object
----@return parser.object?
+--- @param obj parser.object
+--- @return parser.object?
 function m.getBreakBlock(obj)
   for _ = 1, 10000 do
     obj = obj.parent
@@ -399,8 +399,8 @@ function m.getBreakBlock(obj)
 end
 
 --- 寻找doc的主体
----@param obj parser.object
----@return parser.object
+--- @param obj parser.object
+--- @return parser.object
 function m.getDocState(obj)
   for _ = 1, 10000 do
     local parent = obj.parent
@@ -416,8 +416,8 @@ function m.getDocState(obj)
 end
 
 --- 寻找所在父类型
----@param obj parser.object
----@return parser.object?
+--- @param obj parser.object
+--- @return parser.object?
 function m.getParentType(obj, want)
   for _ = 1, 10000 do
     obj = obj.parent
@@ -432,8 +432,8 @@ function m.getParentType(obj, want)
 end
 
 --- 寻找所在父类型
----@param obj parser.object
----@return parser.object?
+--- @param obj parser.object
+--- @return parser.object?
 function m.getParentTypes(obj, wants)
   for _ = 1, 10000 do
     obj = obj.parent
@@ -448,8 +448,8 @@ function m.getParentTypes(obj, wants)
 end
 
 --- 寻找根区块
----@param obj parser.object
----@return parser.object
+--- @param obj parser.object
+--- @return parser.object
 function m.getRoot(obj)
   local source = obj
   if source._root then
@@ -473,8 +473,8 @@ function m.getRoot(obj)
   error('guide.getRoot overstack')
 end
 
----@param obj parser.object | { uri: string }
----@return string
+--- @param obj parser.object | { uri: string }
+--- @return string
 function m.getUri(obj)
   if obj.uri then
     return obj.uri
@@ -486,7 +486,7 @@ function m.getUri(obj)
   return ''
 end
 
----@return parser.object?
+--- @return parser.object?
 function m.getENV(source, start)
   if not start then
     start = 1
@@ -495,10 +495,10 @@ function m.getENV(source, start)
 end
 
 --- 获取指定区块中可见的局部变量
----@param source parser.object
----@param name string # 变量名
----@param pos integer # 可见位置
----@return parser.object?
+--- @param source parser.object
+--- @param name string # 变量名
+--- @param pos integer # 可见位置
+--- @return parser.object?
 function m.getLocal(source, name, pos)
   local block = source
   -- find nearest source
@@ -562,8 +562,8 @@ function m.getVisibleLocals(block, pos)
 end
 
 --- 获取指定区块中可见的标签
----@param block parser.object
----@param name string
+--- @param block parser.object
+--- @param name string
 function m.getLabel(block, name)
   local current = m.getBlock(block)
   for _ = 1, 10000 do
@@ -665,9 +665,9 @@ local function addChilds(list, obj)
 end
 
 --- 遍历所有包含position的source
----@param ast parser.object
----@param position integer
----@param callback fun(src: parser.object): any
+--- @param ast parser.object
+--- @param position integer
+--- @param callback fun(src: parser.object): any
 function m.eachSourceContain(ast, position, callback)
   local list = { ast }
   local mark = {}
@@ -741,10 +741,10 @@ local function getSourceTypeCache(ast)
 end
 
 --- 遍历所有指定类型的source
----@param ast parser.object
----@param type string
----@param callback fun(src: parser.object): any
----@return any
+--- @param ast parser.object
+--- @param type string
+--- @param callback fun(src: parser.object): any
+--- @return any
 function m.eachSourceType(ast, type, callback)
   local cache = getSourceTypeCache(ast)
   local myCache = cache[type]
@@ -759,9 +759,9 @@ function m.eachSourceType(ast, type, callback)
   end
 end
 
----@param ast parser.object
----@param tps string[]
----@param callback fun(src: parser.object)
+--- @param ast parser.object
+--- @param tps string[]
+--- @param callback fun(src: parser.object)
 function m.eachSourceTypes(ast, tps, callback)
   local cache = getSourceTypeCache(ast)
   for x = 1, #tps do
@@ -775,8 +775,8 @@ function m.eachSourceTypes(ast, tps, callback)
 end
 
 --- 遍历所有的source
----@param ast parser.object
----@param callback fun(src: parser.object): boolean?
+--- @param ast parser.object
+--- @param callback fun(src: parser.object): boolean?
 function m.eachSource(ast, callback)
   local cache = ast._eachCache
   if not cache then
@@ -804,8 +804,8 @@ function m.eachSource(ast, callback)
   end
 end
 
----@param source   parser.object
----@param callback fun(src: parser.object)
+--- @param source   parser.object
+--- @param callback fun(src: parser.object)
 function m.eachChild(source, callback)
   local f = eachChildMap[source.type]
   if not f then
@@ -815,9 +815,9 @@ function m.eachChild(source, callback)
 end
 
 --- 获取指定的 special
----@param ast parser.object
----@param name string
----@param callback fun(src: parser.object)
+--- @param ast parser.object
+--- @param name string
+--- @param callback fun(src: parser.object)
 function m.eachSpecialOf(ast, name, callback)
   local root = m.getRoot(ast)
   local state = root.state
@@ -836,9 +836,9 @@ end
 --- 将 position 拆分成行号与列号
 ---
 --- 第一行是0
----@param position integer
----@return integer row
----@return integer col
+--- @param position integer
+--- @return integer row
+--- @return integer col
 function m.rowColOf(position)
   return position // 10000, position % 10000
 end
@@ -846,9 +846,9 @@ end
 --- 将行列合并为 position
 ---
 --- 第一行是0
----@param row integer
----@param col integer
----@return integer
+--- @param row integer
+--- @param col integer
+--- @return integer
 function m.positionOf(row, col)
   return row * 10000 + math.min(col, 10000 - 1)
 end
@@ -871,14 +871,14 @@ function m.positionToOffsetByLines(lines, position)
 end
 
 --- 返回全文光标位置
----@param state any
----@param position integer
+--- @param state any
+--- @param position integer
 function m.positionToOffset(state, position)
   return m.positionToOffsetByLines(state.lines, position)
 end
 
----@param lines integer[]
----@param offset integer
+--- @param lines integer[]
+--- @param offset integer
 function m.offsetToPositionByLines(lines, offset)
   local left = 0
   local right = #lines
@@ -1006,7 +1006,7 @@ function m.getKeyNameOfLiteral(obj)
   end
 end
 
----@return string?
+--- @return string?
 function m.getKeyName(obj)
   if not obj then
     return nil
@@ -1108,8 +1108,8 @@ function m.getKeyType(obj)
 end
 
 ---是否是全局变量（包括 _G.XXX 形式）
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 function m.isGlobal(source)
   if source._isGlobal ~= nil then
     return source._isGlobal
@@ -1207,20 +1207,20 @@ local basicTypeMap = {
   ['userdata'] = true,
 }
 
----@param str string
----@return boolean
+--- @param str string
+--- @return boolean
 function m.isBasicType(str)
   return basicTypeMap[str] == true
 end
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 function m.isBlockType(source)
   return blockTypes[source.type] == true
 end
 
----@param source parser.object
----@return parser.object?
+--- @param source parser.object
+--- @return parser.object?
 function m.getSelfNode(source)
   if source.type == 'getlocal' or source.type == 'setlocal' then
     source = source.node
@@ -1246,8 +1246,8 @@ function m.getSelfNode(source)
   return nil
 end
 
----@param func parser.object
----@return parser.object?
+--- @param func parser.object
+--- @return parser.object?
 function m.getFunctionSelfNode(func)
   if func.type ~= 'function' then
     return nil
@@ -1259,8 +1259,8 @@ function m.getFunctionSelfNode(func)
   return nil
 end
 
----@param source parser.object
----@return parser.object?
+--- @param source parser.object
+--- @return parser.object?
 function m.getTopBlock(source)
   for _ = 1, 1000 do
     local block = source.parent
@@ -1275,8 +1275,8 @@ function m.getTopBlock(source)
   return nil
 end
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 function m.isParam(source)
   if source.type ~= 'local' and source.type ~= 'self' then
     return false
@@ -1287,8 +1287,8 @@ function m.isParam(source)
   return true
 end
 
----@param source parser.object
----@return parser.object[]?
+--- @param source parser.object
+--- @return parser.object[]?
 function m.getParams(source)
   if source.type == 'call' then
     local args = source.args
@@ -1310,9 +1310,9 @@ function m.getParams(source)
   return nil
 end
 
----@param source parser.object
----@param index integer
----@return parser.object?
+--- @param source parser.object
+--- @param index integer
+--- @return parser.object?
 function m.getParam(source, index)
   local args = m.getParams(source)
   return args and args[index] or nil

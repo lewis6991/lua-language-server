@@ -84,7 +84,7 @@ local invaildKeyWord <const> = {
 
 local constName <const>      = 'm'
 
----@class ffi.builder
+--- @class ffi.builder
 local builder                = { switch_ast = utility.switch() }
 
 function builder:getTypeAst(name)

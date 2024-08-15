@@ -107,9 +107,9 @@ local function convertIndex(source)
     return source
 end
 
----@async
----@param source parser.object
----@param results table
+--- @async
+--- @param source parser.object
+--- @param results table
 local function checkSee(source, results)
     if source.type ~= 'doc.see.name' then
         return
@@ -126,7 +126,7 @@ local function checkSee(source, results)
     end
 end
 
----@async
+--- @async
 return function (uri, offset)
     local ast = files.getState(uri)
     if not ast then

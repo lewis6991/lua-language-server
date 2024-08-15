@@ -7,37 +7,37 @@ local lang = require('language')
 
 local m = {}
 
----@class meta
----@field root    string
----@field classes meta.class[]
+--- @class meta
+--- @field root    string
+--- @field classes meta.class[]
 
----@class meta.class
----@field name        string
----@field comment     string
----@field location    string
----@field namespace   string
----@field baseClass   string
----@field attribute   string
----@field integerface string[]
----@field fields      meta.field[]
----@field methods     meta.method[]
+--- @class meta.class
+--- @field name        string
+--- @field comment     string
+--- @field location    string
+--- @field namespace   string
+--- @field baseClass   string
+--- @field attribute   string
+--- @field integerface string[]
+--- @field fields      meta.field[]
+--- @field methods     meta.method[]
 
----@class meta.field
----@field name     string
----@field typeName string
----@field comment  string
----@field location string
+--- @class meta.field
+--- @field name     string
+--- @field typeName string
+--- @field comment  string
+--- @field location string
 
----@class meta.method
----@field name           string
----@field comment        string
----@field location       string
----@field isStatic       boolean
----@field returnTypeName string
----@field params         {name: string, typeName: string}[]
+--- @class meta.method
+--- @field name           string
+--- @field comment        string
+--- @field location       string
+--- @field isStatic       boolean
+--- @field returnTypeName string
+--- @field params         {name: string, typeName: string}[]
 
----@param ... string
----@return string
+--- @param ... string
+--- @return string
 local function mergeString(...)
   local buf = {}
   for i = 1, select('#', ...) do
@@ -58,9 +58,9 @@ local function addComments(lines, comment)
   lines[#lines + 1] = '--'
 end
 
----@param lines string[]
----@param name string
----@param method meta.method
+--- @param lines string[]
+--- @param name string
+--- @param method meta.method
 local function addMethod(lines, name, method)
   if not method.name:match('^[%a_][%w_]*$') then
     return
@@ -84,9 +84,9 @@ local function addMethod(lines, name, method)
   lines[#lines + 1] = ''
 end
 
----@param root string
----@param class meta.class
----@return string
+--- @param root string
+--- @param class meta.class
+--- @return string
 local function buildText(root, class)
   local lines = {}
 
@@ -128,9 +128,9 @@ local function buildRootText(api)
   return table.concat(lines, '\n')
 end
 
----@async
----@param path string
----@param api meta
+--- @async
+--- @param path string
+--- @param api meta
 function m.build(path, api)
   local files = util.multiTable(2, function()
     return { '---@meta' }

@@ -18,10 +18,10 @@ local assert     = assert
 
 _ENV = nil
 
----@alias parser.position integer
+--- @alias parser.position integer
 
----@param str string
----@return table<integer, boolean>
+--- @param str string
+--- @return table<integer, boolean>
 local function stringToCharMap(str)
     local map = {}
     local pos = 1
@@ -239,16 +239,16 @@ local LocalLimit = 200
 
 local parseExp, parseAction
 
----@class parser.state.err
----@field type string
----@field start? parser.position
----@field finish? parser.position
----@field info? table
----@field fix? table
----@field version? string[]|string
----@field level? string | 'Error' | 'Warning'
+--- @class parser.state.err
+--- @field type string
+--- @field start? parser.position
+--- @field finish? parser.position
+--- @field info? table
+--- @field fix? table
+--- @field version? string[]|string
+--- @field level? string | 'Error' | 'Warning'
 
----@type fun(err:parser.state.err):parser.state.err|nil
+--- @type fun(err:parser.state.err):parser.state.err|nil
 local pushError
 
 local function addSpecial(name, obj)
@@ -262,8 +262,8 @@ local function addSpecial(name, obj)
     obj.special = name
 end
 
----@param offset integer
----@param leftOrRight '"left"'|'"right"'
+--- @param offset integer
+--- @param leftOrRight '"left"'|'"right"'
 local function getPosition(offset, leftOrRight)
     if not offset or offset > #Lua then
         return LineMulti * Line + #Lua - LineOffset + 1
@@ -275,9 +275,9 @@ local function getPosition(offset, leftOrRight)
     end
 end
 
----@return string?          word
----@return parser.position? startPosition
----@return parser.position? finishPosition
+--- @return string?          word
+--- @return parser.position? startPosition
+--- @return parser.position? finishPosition
 local function peekWord()
     local word = Tokens[Index + 1]
     if not word then
@@ -721,7 +721,7 @@ local function parseLocalAttrs()
     return attrs
 end
 
----@param obj table
+--- @param obj table
 local function createLocal(obj, attrs)
     obj.type   = 'local'
     obj.effect = obj.finish
@@ -2604,7 +2604,7 @@ local function parseUnaryOP()
     return op, myLevel
 end
 
----@param level integer # op level must greater than this level
+--- @param level integer # op level must greater than this level
 local function parseBinaryOP(asAction, level)
     local token  = Tokens[Index + 1]
     local symbol = (BinarySymbol[token] and token)
@@ -2765,9 +2765,9 @@ local function skipSeps()
     end
 end
 
----@return parser.object?   first
----@return parser.object?   second
----@return parser.object[]? rest
+--- @return parser.object?   first
+--- @return parser.object?   second
+--- @return parser.object[]? rest
 local function parseSetValues()
     skipSpace()
     local first = parseExp()
@@ -2822,8 +2822,8 @@ local function pushActionIntoCurrentChunk(action)
     end
 end
 
----@return parser.object?   second
----@return parser.object[]? rest
+--- @return parser.object?   second
+--- @return parser.object[]? rest
 local function parseVarTails(parser, isLocal)
     if Tokens[Index + 1] ~= ',' then
         return nil

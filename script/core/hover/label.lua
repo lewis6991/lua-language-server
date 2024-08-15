@@ -45,7 +45,7 @@ local function asDocTypeName(source)
   end
 end
 
----@async
+--- @async
 local function asValue(source, title)
   local name = buildName(source, false) or ''
   local ifr = vm.getInfer(source)
@@ -72,7 +72,7 @@ local function asValue(source, title)
   return table.concat(pack, ' ')
 end
 
----@async
+--- @async
 local function asLocal(source)
   local node
   if source.type == 'local' or source.type == 'self' then
@@ -92,7 +92,7 @@ local function asLocal(source)
   end
 end
 
----@async
+--- @async
 local function asGlobal(source)
   return asValue(source, '(global)')
 end
@@ -123,7 +123,7 @@ local function isGlobalField(source)
   end
 end
 
----@async
+--- @async
 local function asField(source)
   if isGlobalField(source) then
     return asGlobal(source)
@@ -189,7 +189,7 @@ local function asNumber(source)
   return formatNumber(num)
 end
 
----@async
+--- @async
 return function(source, oop)
   if source.type == 'function' or source.type == 'doc.type.function' then
     return asFunction(source, oop)

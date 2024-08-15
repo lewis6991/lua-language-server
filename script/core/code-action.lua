@@ -10,10 +10,10 @@ local furi = require('file-uri')
 local undefined = require('core.diagnostics.undefined-global')
 local vm = require('vm')
 
----@param uri  string
----@param row  integer
----@param mode string
----@param code string
+--- @param uri  string
+--- @param row  integer
+--- @param mode string
+--- @param code string
 local function checkDisableByLuaDocExits(uri, row, mode, code)
   if row < 0 then
     return nil

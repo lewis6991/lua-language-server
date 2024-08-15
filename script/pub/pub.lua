@@ -27,7 +27,7 @@ local brave = require 'brave'
 brave.register(%d, %q)
 ]]
 
----@class pub
+--- @class pub
 local m = {}
 m.type = 'pub'
 m.braves = {}
@@ -42,8 +42,8 @@ function m.on(name, callback)
 end
 
 --- 招募勇者，勇者会从公告板上领取任务，完成任务后到看板娘处交付任务
----@param num integer
----@param privatePad string?
+--- @param num integer
+--- @param privatePad string?
 function m.recruitBraves(num, privatePad)
   for _ = 1, num do
     local id = #m.braves + 1
@@ -118,10 +118,10 @@ function m.popReport(brave, name, params)
 end
 
 --- 发布任务
----@param name string
----@param params any
----@return any
----@async
+--- @param name string
+--- @param params any
+--- @return any
+--- @async
 function m.awaitTask(name, params)
   local info = {
     id = counter(),
@@ -139,9 +139,9 @@ end
 
 --- 发布同步任务，如果任务进入了队列，会返回执行器
 --- 通过 jumpQueue 可以插队
----@param name string
----@param params any
----@param callback? function
+--- @param name string
+--- @param params any
+--- @param callback? function
 function m.task(name, params, callback)
   local info = {
     id = counter(),

@@ -12,12 +12,12 @@ require('provider')
 
 local counter = util.counter()
 
----@class languageClient
----@field _outs table
----@field _gc   gc
----@field _waiting table
----@field _methods table
----@field onSend function
+--- @class languageClient
+--- @field _outs table
+--- @field _gc   gc
+--- @field _waiting table
+--- @field _methods table
+--- @field onSend function
 local mt = {}
 mt.__index = mt
 
@@ -86,7 +86,7 @@ local defaultClientOptions = {
   },
 }
 
----@async
+--- @async
 function mt:initialize(params)
   local initParams = util.tableMerge(params or {}, defaultClientOptions)
   self:awaitRequest('initialize', initParams)
@@ -107,7 +107,7 @@ function mt:reportHangs()
   return table.concat(hangs, '\n')
 end
 
----@param callback async fun(client: languageClient)
+--- @param callback async fun(client: languageClient)
 function mt:start(callback)
   CLI = true
 
@@ -183,7 +183,7 @@ function mt:request(method, params, callback)
   })
 end
 
----@async
+--- @async
 function mt:awaitRequest(method, params)
   return await.wait(function(waker)
     self:request(method, params, function(result)
@@ -247,7 +247,7 @@ function mt:registerFakers()
   end
 end
 
----@return languageClient
+--- @return languageClient
 return function()
   local self = setmetatable({
     _gc = gc(),

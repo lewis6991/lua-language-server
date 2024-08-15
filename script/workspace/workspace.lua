@@ -14,13 +14,13 @@ local loading = require('workspace.loading')
 local inspect = require('inspect')
 local lang = require('language')
 
----@class workspace
+--- @class workspace
 local m = {}
 m.type = 'workspace'
 m.watchList = {}
 
 --- 注册事件
----@param callback async fun(ev: string, uri: string)
+--- @param callback async fun(ev: string, uri: string)
 function m.watch(callback)
   m.watchList[#m.watchList + 1] = callback
 end
@@ -129,7 +129,7 @@ local globInteferFace = {
 }
 
 --- 创建排除文件匹配器
----@param scp scope
+--- @param scp scope
 function m.getNativeMatcher(scp)
   if scp:get('nativeMatcher') then
     return scp:get('nativeMatcher')
@@ -193,7 +193,7 @@ function m.getNativeMatcher(scp)
 end
 
 --- 创建代码库筛选器
----@param scp scope
+--- @param scp scope
 function m.getLibraryMatchers(scp)
   if scp:get('libraryMatcher') then
     return scp:get('libraryMatcher')
@@ -249,7 +249,7 @@ function m.getLibraryMatchers(scp)
 end
 
 --- 文件是否被忽略
----@param uri string
+--- @param uri string
 function m.isIgnored(uri)
   local scp = scope.getScope(uri)
   local path = m.getRelativePath(uri)
@@ -260,7 +260,7 @@ function m.isIgnored(uri)
   return ignore(path)
 end
 
----@async
+--- @async
 function m.isValidLuaUri(uri)
   if not files.isLua(uri) then
     return false
@@ -271,7 +271,7 @@ function m.isValidLuaUri(uri)
   return true
 end
 
----@async
+--- @async
 function m.awaitLoadFile(uri)
   m.awaitReady(uri)
   local scp = scope.getScope(uri)
@@ -300,8 +300,8 @@ function m.removeFile(uri)
 end
 
 --- 预读工作区内所有文件
----@async
----@param scp scope
+--- @async
+--- @param scp scope
 function m.awaitPreload(scp)
   await.close('preload:' .. scp:getName())
   await.setID('preload:' .. scp:getName())
@@ -383,7 +383,7 @@ function m.awaitPreload(scp)
 end
 
 --- 查找符合指定file path的所有uri
----@param path string
+--- @param path string
 function m.findUrisByFilePath(path)
   if type(path) ~= 'string' then
     return {}
@@ -404,9 +404,9 @@ function m.findUrisByFilePath(path)
   return results
 end
 
----@param folderUri? string
----@param path string
----@return string?
+--- @param folderUri? string
+--- @param path string
+--- @return string?
 function m.getAbsolutePath(folderUri, path)
   path = files.normalize(path)
   if fs.path(path):is_relative() then
@@ -419,9 +419,9 @@ function m.getAbsolutePath(folderUri, path)
   return path
 end
 
----@param uriOrPath string|string
----@return string
----@return boolean suc
+--- @param uriOrPath string|string
+--- @return string
+--- @return boolean suc
 function m.getRelativePath(uriOrPath)
   local path, uri
   if uriOrPath:sub(1, 5) == 'file:' then
@@ -444,7 +444,7 @@ function m.getRelativePath(uriOrPath)
   end
 end
 
----@param scp scope
+--- @param scp scope
 function m.reload(scp)
   ---@async
   await.call(function()
@@ -461,7 +461,7 @@ function m.init()
   m.reload(scope.fallback)
 end
 
----@param scp scope
+--- @param scp scope
 function m.flushFiles(scp)
   local cachedUris = scp:get('cachedUris')
   scp:set('cachedUris', {})
@@ -473,7 +473,7 @@ function m.flushFiles(scp)
   end
 end
 
----@param scp scope
+--- @param scp scope
 function m.resetFiles(scp)
   local cachedUris = scp:get('cachedUris')
   if cachedUris then
@@ -488,8 +488,8 @@ function m.resetFiles(scp)
   end
 end
 
----@async
----@param scp scope
+--- @async
+--- @param scp scope
 function m.awaitReload(scp)
   await.unique('workspace reload:' .. scp:getName())
   await.sleep(0.1)
@@ -512,13 +512,13 @@ function m.awaitReload(scp)
   m.onWatch('reload', scp.uri)
 end
 
----@return scope
+--- @return scope
 function m.getFirstScope()
   return m.folders[1] or scope.fallback
 end
 
 ---等待工作目录加载完成
----@async
+--- @async
 function m.awaitReady(uri)
   if m.isReady(uri) then
     return
@@ -530,14 +530,14 @@ function m.awaitReady(uri)
   end)
 end
 
----@param uri string
----@return boolean
+--- @param uri string
+--- @return boolean
 function m.isReady(uri)
   local scp = scope.getScope(uri)
   return scp:get('ready') == true
 end
 
----@return boolean
+--- @return boolean
 function m.isAllReady()
   local scp = scope.fallback
   if not scp:get('ready') then

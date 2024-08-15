@@ -1,4 +1,4 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 local util = require('utility')
 local guide = require('parser.guide')
@@ -25,14 +25,14 @@ simpleSwitch = util
     pushResult(source)
   end)
 
----@param source  parser.object
----@param pushResult fun(src: parser.object)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchBySimple(source, pushResult)
   simpleSwitch(source.type, source, pushResult)
 end
 
----@param source  parser.object
----@param pushResult fun(src: parser.object)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchByLocalID(source, pushResult)
   local idSources = vm.getVariableSets(source)
   if not idSources then
@@ -57,8 +57,8 @@ local function searchByNode(source, pushResult)
   end
 end
 
----@param source parser.object
----@return       parser.object[]
+--- @param source parser.object
+--- @return       parser.object[]
 function vm.getDefs(source)
   local results = {}
   local mark = {}
@@ -101,7 +101,7 @@ local function checkHasDef(checkFunc, source, pushResult)
   return err == HAS_DEF_ERR
 end
 
----@param source parser.object
+--- @param source parser.object
 function vm.hasDef(source)
   local mark = {}
   local hasLocal

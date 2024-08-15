@@ -1,7 +1,7 @@
 local sfind = string.find
 local ssub = string.sub
 
----@param text string
+--- @param text string
 return function(text)
   local current = 1
   local lines = {}

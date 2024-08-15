@@ -19,8 +19,8 @@ local M = {}
 -- \\server\share\some\path  --> file://server/share/some/path
 
 --- path -> uri
----@param path string
----@return string uri
+--- @param path string
+--- @return string uri
 function M.encode(path)
   local authority = ''
   if platform.os == 'windows' then
@@ -60,8 +60,8 @@ end
 -- file://server/share/some/path  --> \\server\share\some\path
 
 --- uri -> path
----@param uri string
----@return string path
+--- @param uri string
+--- @return string path
 function M.decode(uri)
   local scheme, authority, path = uri:match('([^:]*):?/?/?([^/]*)(.*)')
   if not scheme then
@@ -88,8 +88,8 @@ function M.split(uri)
   return uri:match('([^:]*):/?/?([^/]*)(.*)')
 end
 
----@param uri string
----@return boolean
+--- @param uri string
+--- @return boolean
 function M.isValid(uri)
   local scheme, _, path = M.split(uri)
   if not scheme or scheme == '' then

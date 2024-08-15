@@ -425,7 +425,7 @@ end
 
 local JsonEmpty = function() end
 
----@return {s: integer, d:integer, f:integer, v: any}
+--- @return {s: integer, d:integer, f:integer, v: any}
 local function decode_ast(str)
   if type(str) ~= 'string' then
     error('expected argument of type string, got ' .. type(str))

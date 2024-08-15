@@ -26,16 +26,16 @@ local function isExists(filename)
   return true
 end
 
----@class filewatch
+--- @class filewatch
 local M = {}
 
 M._eventList = {}
 M._watchings = {}
 
----@async
----@param path string
----@param recursive boolean
----@param filter? fun(path: string):boolean
+--- @async
+--- @param path string
+--- @param recursive boolean
+--- @param filter? fun(path: string):boolean
 function M.watch(path, recursive, filter)
   if path == '' or not fs.is_directory(fs.path(path)) then
     return function() end
@@ -71,7 +71,7 @@ function M.watch(path, recursive, filter)
   end
 end
 
----@param callback async fun(ev: string, path: string)
+--- @param callback async fun(ev: string, path: string)
 function M.event(callback)
   M._eventList[#M._eventList + 1] = callback
 end

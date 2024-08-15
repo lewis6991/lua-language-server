@@ -15,7 +15,7 @@ local types = {
   'tableindex',
 }
 
----@async
+--- @async
 return function(uri, callback)
   local ast = files.getState(uri)
   if not ast then

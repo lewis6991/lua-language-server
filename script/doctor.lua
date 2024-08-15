@@ -12,7 +12,7 @@ local sformat = string.format
 local getregistry = debug.getregistry
 local getmetatable = debug.getmetatable
 local getupvalue = debug.getupvalue
----@diagnostic disable-next-line: deprecated
+--- @diagnostic disable-next-line: deprecated
 local getuservalue = debug.getuservalue or debug.getfenv
 local getlocal = debug.getlocal
 local getinfo = debug.getinfo
@@ -154,9 +154,9 @@ end
 
 local _private = {}
 
----@generic T
----@param o T
----@return T
+--- @generic T
+--- @param o T
+--- @return T
 local function private(o)
   if not o then
     return nil
@@ -171,7 +171,7 @@ m._ignoreMainThread = true
 
 --- 获取内存快照，生成一个内部数据结构。
 --- 一般不用这个API，改用 report 或 catch。
----@return table
+--- @return table
 m.snapshot = private(function()
   if m._lastCache then
     return m._lastCache
@@ -481,7 +481,7 @@ end)
 --- 输入既可以是对象实体，也可以是对象的描述（从其他接口的返回值中复制过来）。
 --- 返回字符串数组的数组，每个字符串描述了如何从根节点引用到指定的对象。
 --- 可以同时查找多个对象。
----@return string[][]
+--- @return string[][]
 m.catch = private(function(...)
   local targets = {}
   for i = 1, select('#', ...) do
@@ -534,11 +534,11 @@ m.catch = private(function(...)
   return result
 end)
 
----@alias report {point: string, count: integer, name: string, childs: integer}
+--- @alias report {point: string, count: integer, name: string, childs: integer}
 
 --- 生成一个内存快照的报告。
 --- 你应当将其输出到一个文件里再查看。
----@return report[]
+--- @return report[]
 m.report = private(function()
   local snapshot = m.snapshot()
   local cache = {}
@@ -588,7 +588,7 @@ m.exclude = private(function(...)
 end)
 
 --- 比较2个报告
----@return table
+--- @return table
 m.compare = private(function(old, new)
   local newHash = {}
   local ret = {}
@@ -607,14 +607,14 @@ m.compare = private(function(old, new)
 end)
 
 --- 是否忽略主线程的栈
----@param flag boolean
+--- @param flag boolean
 m.ignoreMainThread = private(function(flag)
   m._ignoreMainThread = flag
 end)
 
 --- 是否启用缓存，启用后会始终使用第一次查找的结果，
 --- 适用于连续查找引用。如果想要查找新的引用需要先关闭缓存。
----@param flag boolean
+--- @param flag boolean
 m.enableCache = private(function(flag)
   if flag then
     m._cache = true

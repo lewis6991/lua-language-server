@@ -7,7 +7,7 @@ local scope = require('workspace.scope')
 local ws = require('workspace')
 local fs = require('bee.filesystem')
 
----@class pluginInterfaces
+--- @class pluginInterfaces
 local pluginConfigs = {
   -- create plugin for vm module
   VM = {
@@ -15,7 +15,7 @@ local pluginConfigs = {
   },
 }
 
----@class plugin
+--- @class plugin
 local m = {}
 
 function m.showError(scp, err)
@@ -26,9 +26,9 @@ function m.showError(scp, err)
   client.showMessage('Error', lang.script('PLUGIN_RUNTIME_ERROR', scp:get('pluginPath'), err))
 end
 
----@alias plugin.event 'OnSetText' | 'OnTransformAst' | 'ResolveRequire'
+--- @alias plugin.event 'OnSetText' | 'OnTransformAst' | 'ResolveRequire'
 
----@param event plugin.event
+--- @param event plugin.event
 function m.dispatch(event, uri, ...)
   local scp = scope.getScope(uri)
   local interfaces = scp:get('pluginInterfaces')
@@ -69,8 +69,8 @@ function m.getVmPlugin(uri)
   return interfaces.VM
 end
 
----@async
----@param scp scope
+--- @async
+--- @param scp scope
 local function checkTrustLoad(scp)
   if TRUST_ALL_PLUGINS then
     return true
@@ -134,7 +134,7 @@ local function createMethodGroup(interfaces, key, methods)
   return #methodGroup > 0 and methodGroup or nil
 end
 
----@param uri string
+--- @param uri string
 local function initPlugin(uri)
   await.call(function() ---@async
     local scp = scope.getScope(uri)

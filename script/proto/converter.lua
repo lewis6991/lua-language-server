@@ -4,14 +4,14 @@ local encoder = require('encoder')
 
 local offsetEncoding = 'utf16'
 
----@class converter
+--- @class converter
 local m = {}
 
----@alias position {line: integer, character: integer}
+--- @alias position {line: integer, character: integer}
 
----@param row integer
----@param col integer
----@return position
+--- @param row integer
+--- @param col integer
+--- @return position
 function m.position(row, col)
   return {
     line = row,
@@ -19,9 +19,9 @@ function m.position(row, col)
   }
 end
 
----@param state parser.state
----@param pos integer
----@return position
+--- @param state parser.state
+--- @param pos integer
+--- @return position
 local function rawPackPosition(state, pos)
   local row, col = guide.rowColOf(pos)
   if col > 0 then
@@ -45,9 +45,9 @@ local function rawPackPosition(state, pos)
   }
 end
 
----@param state parser.state
----@param pos integer
----@return position
+--- @param state parser.state
+--- @param pos integer
+--- @return position
 local function diffedPackPosition(state, pos)
   local offset = guide.positionToOffset(state, pos)
   local originOffset = files.diffedOffsetBack(state, offset)
@@ -67,9 +67,9 @@ local function diffedPackPosition(state, pos)
   }
 end
 
----@param state parser.state
----@param pos integer
----@return position
+--- @param state parser.state
+--- @param pos integer
+--- @return position
 function m.packPosition(state, pos)
   if files.hasDiffed(state) then
     return diffedPackPosition(state, pos)
@@ -78,9 +78,9 @@ function m.packPosition(state, pos)
   end
 end
 
----@param state parser.state
----@param position position
----@return integer
+--- @param state parser.state
+--- @param position position
+--- @return integer
 local function rawUnpackPosition(state, position)
   local row, col = position.line, position.character
   if col > 0 then
@@ -97,9 +97,9 @@ local function rawUnpackPosition(state, position)
   return pos
 end
 
----@param state parser.state
----@param position position
----@return integer
+--- @param state parser.state
+--- @param position position
+--- @return integer
 local function diffedUnpackPosition(state, position)
   local row, col = position.line, position.character
   if col > 0 then
@@ -118,9 +118,9 @@ local function diffedUnpackPosition(state, position)
   return pos
 end
 
----@param state    parser.state
----@param position position
----@return integer
+--- @param state    parser.state
+--- @param position position
+--- @return integer
 function m.unpackPosition(state, position)
   if files.hasDiffed(state) then
     return diffedUnpackPosition(state, position)
@@ -129,12 +129,12 @@ function m.unpackPosition(state, position)
   end
 end
 
----@alias range {start: position, end: position}
+--- @alias range {start: position, end: position}
 
----@param state  parser.state
----@param start  integer
----@param finish integer
----@return range
+--- @param state  parser.state
+--- @param start  integer
+--- @param finish integer
+--- @return range
 function m.packRange(state, start, finish)
   local range = {
     start = m.packPosition(state, start),
@@ -143,9 +143,9 @@ function m.packRange(state, start, finish)
   return range
 end
 
----@param start position
----@param finish position
----@return range
+--- @param start position
+--- @param finish position
+--- @return range
 function m.range(start, finish)
   return {
     start = start,
@@ -153,21 +153,21 @@ function m.range(start, finish)
   }
 end
 
----@param state parser.state
----@param range range
----@return integer start
----@return integer finish
+--- @param state parser.state
+--- @param range range
+--- @return integer start
+--- @return integer finish
 function m.unpackRange(state, range)
   local start = m.unpackPosition(state, range.start)
   local finish = m.unpackPosition(state, range['end'])
   return start, finish
 end
 
----@alias location {uri: string, range: range}
+--- @alias location {uri: string, range: range}
 
----@param uri string
----@param range range
----@return location
+--- @param uri string
+--- @param range range
+--- @return location
 function m.location(uri, range)
   return {
     uri = uri,
@@ -175,13 +175,13 @@ function m.location(uri, range)
   }
 end
 
----@alias locationLink {targetUri:string, targetRange: range, targetSelectionRange: range, originSelectionRange: range}
+--- @alias locationLink {targetUri:string, targetRange: range, targetSelectionRange: range, originSelectionRange: range}
 
----@param uri string
----@param range range
----@param selection range
----@param origin range
----@return locationLink
+--- @param uri string
+--- @param range range
+--- @param selection range
+--- @param origin range
+--- @return locationLink
 function m.locationLink(uri, range, selection, origin)
   return {
     targetUri = uri,
@@ -191,11 +191,11 @@ function m.locationLink(uri, range, selection, origin)
   }
 end
 
----@alias textEdit {range: range, newText: string}
+--- @alias textEdit {range: range, newText: string}
 
----@param range   range
----@param newtext string
----@return textEdit
+--- @param range   range
+--- @param newtext string
+--- @return textEdit
 function m.textEdit(range, newtext)
   return {
     range = range,
@@ -207,23 +207,23 @@ function m.setOffsetEncoding(encoding)
   offsetEncoding = encoding:lower():gsub('%-', '')
 end
 
----@param s        string
----@param i?       integer
----@param j?       integer
----@return integer
+--- @param s        string
+--- @param i?       integer
+--- @param j?       integer
+--- @return integer
 function m.len(s, i, j)
   return encoder.len(offsetEncoding, s, i, j)
 end
 
----@class proto.command
----@field title string
----@field command string
----@field arguments any[]
+--- @class proto.command
+--- @field title string
+--- @field command string
+--- @field arguments any[]
 
----@param title string
----@param command string
----@param arguments any[]
----@return proto.command
+--- @param title string
+--- @param command string
+--- @param arguments any[]
+--- @return proto.command
 function m.command(title, command, arguments)
   return {
     title = title,

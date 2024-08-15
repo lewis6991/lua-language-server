@@ -2,49 +2,49 @@ local util = require('utility')
 local scope = require('workspace.scope')
 local guide = require('parser.guide')
 local config = require('config')
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 
----@type table<string, vm.global>
+--- @type table<string, vm.global>
 local allGlobals = {}
----@type table<string, table<string, boolean>>
+--- @type table<string, table<string, boolean>>
 local globalSubs = util.multiTable(2)
 
----@class parser.object
----@field package _globalBase parser.object
----@field package _globalBaseMap table<string, parser.object>
----@field global vm.global
+--- @class parser.object
+--- @field package _globalBase parser.object
+--- @field package _globalBaseMap table<string, parser.object>
+--- @field global vm.global
 
----@class vm.global.link
----@field sets parser.object[]
----@field gets parser.object[]
+--- @class vm.global.link
+--- @field sets parser.object[]
+--- @field gets parser.object[]
 
----@class vm.global
----@field links table<string, vm.global.link>
----@field setsCache? table<string, parser.object[]>
----@field cate vm.global.cate
+--- @class vm.global
+--- @field links table<string, vm.global.link>
+--- @field setsCache? table<string, parser.object[]>
+--- @field cate vm.global.cate
 local mt = {}
 mt.__index = mt
 mt.type = 'global'
 mt.name = ''
 
----@param uri    string
----@param source parser.object
+--- @param uri    string
+--- @param source parser.object
 function mt:addSet(uri, source)
   local link = self.links[uri]
   link.sets[#link.sets + 1] = source
   self.setsCache = nil
 end
 
----@param uri    string
----@param source parser.object
+--- @param uri    string
+--- @param source parser.object
 function mt:addGet(uri, source)
   local link = self.links[uri]
   link.gets[#link.gets + 1] = source
 end
 
----@param suri string
----@return parser.object[]
+--- @param suri string
+--- @return parser.object[]
 function mt:getSets(suri)
   if not self.setsCache then
     self.setsCache = {}
@@ -73,7 +73,7 @@ function mt:getSets(suri)
   return cache
 end
 
----@return parser.object[]
+--- @return parser.object[]
 function mt:getAllSets()
   if not self.setsCache then
     self.setsCache = {}
@@ -94,44 +94,44 @@ function mt:getAllSets()
   return cache
 end
 
----@param uri string
+--- @param uri string
 function mt:dropUri(uri)
   self.links[uri] = nil
   self.setsCache = nil
 end
 
----@return string
+--- @return string
 function mt:getName()
   return self.name
 end
 
----@return string
+--- @return string
 function mt:getCodeName()
   return (self.name:gsub(vm.ID_SPLITE, '.'))
 end
 
----@return string
+--- @return string
 function mt:asKeyName()
   return self.cate .. '|' .. self.name
 end
 
----@return string
+--- @return string
 function mt:getKeyName()
   return self.name:match('[^' .. vm.ID_SPLITE .. ']+$')
 end
 
----@return string?
+--- @return string?
 function mt:getFieldName()
   return self.name:match(vm.ID_SPLITE .. '(.-)$')
 end
 
----@return boolean
+--- @return boolean
 function mt:isAlive()
   return next(self.links) ~= nil
 end
 
----@param uri string
----@return parser.object?
+--- @param uri string
+--- @return parser.object?
 function mt:getParentBase(uri)
   local parentID = self.name:match('^(.-)' .. vm.ID_SPLITE)
   if not parentID then
@@ -153,8 +153,8 @@ function mt:getParentBase(uri)
   return vm.getGlobalBase(luckyBoy)
 end
 
----@param cate vm.global.cate
----@return vm.global
+--- @param cate vm.global.cate
+--- @return vm.global
 local function createGlobal(name, cate)
   return setmetatable({
     name = name,
@@ -168,9 +168,9 @@ local function createGlobal(name, cate)
   }, mt)
 end
 
----@class parser.object
----@field package _globalNode vm.global|false
----@field package _enums?     parser.object[]
+--- @class parser.object
+--- @field package _globalNode vm.global|false
+--- @field package _enums?     parser.object[]
 
 local compileObject
 local compilerGlobalSwitch = util
@@ -431,12 +431,12 @@ local compilerGlobalSwitch = util
     source._globalNode = class
   end)
 
----@alias vm.global.cate '"variable"' | '"type"'
+--- @alias vm.global.cate '"variable"' | '"type"'
 
----@param cate vm.global.cate
----@param name string
----@param uri? string
----@return vm.global
+--- @param cate vm.global.cate
+--- @param name string
+--- @param uri? string
+--- @return vm.global
 function vm.declareGlobal(cate, name, uri)
   local key = cate .. '|' .. name
   if uri then
@@ -448,10 +448,10 @@ function vm.declareGlobal(cate, name, uri)
   return allGlobals[key]
 end
 
----@param cate   vm.global.cate
----@param name   string
----@param field? string
----@return vm.global?
+--- @param cate   vm.global.cate
+--- @param name   string
+--- @param field? string
+--- @return vm.global?
 function vm.getGlobal(cate, name, field)
   local key = cate .. '|' .. name
   if field then
@@ -460,9 +460,9 @@ function vm.getGlobal(cate, name, field)
   return allGlobals[key]
 end
 
----@param cate   vm.global.cate
----@param name   string
----@return vm.global[]
+--- @param cate   vm.global.cate
+--- @param name   string
+--- @return vm.global[]
 function vm.getGlobalFields(cate, name)
   local globals = {}
   local key = cate .. '|' .. name
@@ -486,8 +486,8 @@ function vm.getGlobalFields(cate, name)
   return globals
 end
 
----@param cate   vm.global.cate
----@return vm.global[]
+--- @param cate   vm.global.cate
+--- @return vm.global[]
 function vm.getGlobals(cate)
   local globals = {}
 
@@ -505,14 +505,14 @@ function vm.getGlobals(cate)
   return globals
 end
 
----@return table<string, vm.global>
+--- @return table<string, vm.global>
 function vm.getAllGlobals()
   return allGlobals
 end
 
----@param suri string
----@param cate   vm.global.cate
----@return parser.object[]
+--- @param suri string
+--- @param cate   vm.global.cate
+--- @return parser.object[]
 function vm.getGlobalSets(suri, cate)
   local globals = vm.getGlobals(cate)
   local result = {}
@@ -525,10 +525,10 @@ function vm.getGlobalSets(suri, cate)
   return result
 end
 
----@param suri string
----@param cate vm.global.cate
----@param name string
----@return boolean
+--- @param suri string
+--- @param cate vm.global.cate
+--- @param name string
+--- @return boolean
 function vm.hasGlobalSets(suri, cate, name)
   local global = vm.getGlobal(cate, name)
   if not global then
@@ -541,9 +541,9 @@ function vm.hasGlobalSets(suri, cate, name)
   return true
 end
 
----@param uri string
----@param key string
----@return boolean
+--- @param uri string
+--- @param key string
+--- @return boolean
 local function checkIsGlobalRegex(uri, key)
   local dglobalsregex = config.get(uri, 'Lua.diagnostics.globalsRegex')
   if not dglobalsregex then
@@ -559,7 +559,7 @@ local function checkIsGlobalRegex(uri, key)
   return false
 end
 
----@param src parser.object
+--- @param src parser.object
 local function checkIsUndefinedGlobal(src)
   if src.type ~= 'getglobal' then
     return false
@@ -597,8 +597,8 @@ local function checkIsUndefinedGlobal(src)
   return true
 end
 
----@param src parser.object
----@return boolean
+--- @param src parser.object
+--- @return boolean
 function vm.isUndefinedGlobal(src)
   local node = vm.compileNode(src)
   if node.undefinedGlobal == nil then
@@ -607,7 +607,7 @@ function vm.isUndefinedGlobal(src)
   return node.undefinedGlobal
 end
 
----@param source parser.object
+--- @param source parser.object
 function compileObject(source)
   if source._globalNode ~= nil then
     return
@@ -616,20 +616,20 @@ function compileObject(source)
   compilerGlobalSwitch(source.type, source)
 end
 
----@param source parser.object
----@return vm.global?
+--- @param source parser.object
+--- @return vm.global?
 function vm.getGlobalNode(source)
   return source._globalNode or nil
 end
 
----@param source parser.object
----@return parser.object[]?
+--- @param source parser.object
+--- @return parser.object[]?
 function vm.getEnums(source)
   return source._enums
 end
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 function vm.compileByGlobal(source)
   local global = vm.getGlobalNode(source)
   if not global then
@@ -665,8 +665,8 @@ function vm.compileByGlobal(source)
   return true
 end
 
----@param source parser.object
----@return parser.object?
+--- @param source parser.object
+--- @return parser.object?
 function vm.getGlobalBase(source)
   if source._globalBase then
     return source._globalBase
@@ -695,7 +695,7 @@ function vm.getGlobalBase(source)
   return source._globalBase
 end
 
----@param source parser.object
+--- @param source parser.object
 local function compileAst(source)
   local env = guide.getENV(source)
   if not env then
@@ -719,7 +719,7 @@ local function compileAst(source)
   end)
 end
 
----@param uri string
+--- @param uri string
 local function dropUri(uri)
   local globalSub = globalSubs[uri]
   globalSubs[uri] = nil

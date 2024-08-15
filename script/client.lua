@@ -93,10 +93,10 @@ local function packMessage(...)
   return table.concat(strs, '\t')
 end
 
----@alias message.type '"Error"'|'"Warning"'|'"Info"'|'"Log"'
+--- @alias message.type '"Error"'|'"Warning"'|'"Info"'|'"Log"'
 
 ---show message to client
----@param type message.type
+--- @param type message.type
 function m.showMessage(type, ...)
   local message = packMessage(...)
   proto.notify('window/showMessage', {
@@ -110,10 +110,10 @@ function m.showMessage(type, ...)
   log.info('ShowMessage', type, message)
 end
 
----@param type message.type
----@param message string
----@param titles  string[]
----@param callback fun(action?: string, index?: integer)
+--- @param type message.type
+--- @param message string
+--- @param titles  string[]
+--- @param callback fun(action?: string, index?: integer)
 function m.requestMessage(type, message, titles, callback)
   proto.notify('window/logMessage', {
     type = define.MessageType[type] or 3,
@@ -142,19 +142,19 @@ function m.requestMessage(type, message, titles, callback)
   end)
 end
 
----@param type message.type
----@param message string
----@param titles  string[]
----@return string action
----@return integer index
----@async
+--- @param type message.type
+--- @param message string
+--- @param titles  string[]
+--- @return string action
+--- @return integer index
+--- @async
 function m.awaitRequestMessage(type, message, titles)
   return await.wait(function(waker)
     m.requestMessage(type, message, titles, waker)
   end)
 end
 
----@param type message.type
+--- @param type message.type
 function m.logMessage(type, ...)
   local message = packMessage(...)
   proto.notify('window/logMessage', {
@@ -196,17 +196,17 @@ function m.watchFiles(path)
   end
 end
 
----@class config.change
----@field key       string
----@field prop?     string
----@field value     any
----@field action    '"add"'|'"set"'|'"prop"'
----@field global?   boolean
----@field uri?      string
+--- @class config.change
+--- @field key       string
+--- @field prop?     string
+--- @field value     any
+--- @field action    '"add"'|'"set"'|'"prop"'
+--- @field global?   boolean
+--- @field uri?      string
 
----@param uri string?
----@param changes config.change[]
----@return config.change[]
+--- @param uri string?
+--- @param changes config.change[]
+--- @return config.change[]
 local function getValidChanges(uri, changes)
   local newChanges = {}
   if not uri then
@@ -221,18 +221,18 @@ local function getValidChanges(uri, changes)
   return newChanges
 end
 
----@class json.patch
----@field op 'add' | 'remove' | 'replace'
----@field path string
----@field value any
+--- @class json.patch
+--- @field op 'add' | 'remove' | 'replace'
+--- @field path string
+--- @field value any
 
----@class json.patchInfo
----@field key string
----@field value any
+--- @class json.patchInfo
+--- @field key string
+--- @field value any
 
----@param cfg table
----@param rawKey string
----@return json.patchInfo
+--- @param cfg table
+--- @param rawKey string
+--- @return json.patchInfo
 local function searchPatchInfo(cfg, rawKey)
   ---@param key string
   ---@param parentKey string
@@ -273,10 +273,10 @@ local function searchPatchInfo(cfg, rawKey)
     }
 end
 
----@param uri? string
----@param cfg table
----@param change config.change
----@return json.patch?
+--- @param uri? string
+--- @param cfg table
+--- @param change config.change
+--- @return json.patch?
 local function makeConfigPatch(uri, cfg, change)
   local info = searchPatchInfo(cfg, change.key)
   if change.action == 'add' then
@@ -325,10 +325,10 @@ local function makeConfigPatch(uri, cfg, change)
   return nil
 end
 
----@param uri? string
----@param path string
----@param changes config.change[]
----@return string?
+--- @param uri? string
+--- @param path string
+--- @param changes config.change[]
+--- @return string?
 local function editConfigJson(uri, path, changes)
   local text = util.loadFile(path)
   if not text then
@@ -356,8 +356,8 @@ local function editConfigJson(uri, path, changes)
   return text
 end
 
----@param changes config.change[]
----@param applied config.change[]
+--- @param changes config.change[]
+--- @param applied config.change[]
 local function removeAppliedChanges(changes, applied)
   local appliedMap = {}
   for _, change in ipairs(applied) do
@@ -470,7 +470,7 @@ local function tryModifyClient(uri, finalChanges)
   return true
 end
 
----@param finalChanges config.change[]
+--- @param finalChanges config.change[]
 local function tryModifyClientGlobal(finalChanges)
   if #finalChanges == 0 then
     return
@@ -498,8 +498,8 @@ local function tryModifyClientGlobal(finalChanges)
   removeAppliedChanges(finalChanges, changes)
 end
 
----@param changes config.change[]
----@return string
+--- @param changes config.change[]
+--- @return string
 local function buildMaunuallyMessage(changes)
   local message = {}
   for _, change in ipairs(changes) do
@@ -517,8 +517,8 @@ local function buildMaunuallyMessage(changes)
   return table.concat(message, '\n')
 end
 
----@param changes config.change[]
----@param onlyMemory? boolean
+--- @param changes config.change[]
+--- @param onlyMemory? boolean
 function m.setConfig(changes, onlyMemory)
   local finalChanges = {}
   for _, change in ipairs(changes) do
@@ -577,10 +577,10 @@ function m.setConfig(changes, onlyMemory)
   end, log.error)
 end
 
----@alias textEditor {start: integer, finish: integer, text: string}
+--- @alias textEditor {start: integer, finish: integer, text: string}
 
----@param uri   string
----@param edits textEditor[]
+--- @param uri   string
+--- @param edits textEditor[]
 function m.editText(uri, edits)
   local files = require('files')
   local state = files.getState(uri)
@@ -603,9 +603,9 @@ function m.editText(uri, edits)
   log.info('workspace/applyEdit', inspect(params))
 end
 
----@alias textMultiEditor {uri: string, start: integer, finish: integer, text: string}
+--- @alias textMultiEditor {uri: string, start: integer, finish: integer, text: string}
 
----@param editors textMultiEditor[]
+--- @param editors textMultiEditor[]
 function m.editMultiText(editors)
   local files = require('files')
   local changes = {}
@@ -630,7 +630,7 @@ function m.editMultiText(editors)
   log.info('workspace/applyEdit', inspect(params))
 end
 
----@param callback async fun(ev: string)
+--- @param callback async fun(ev: string)
 function m.event(callback)
   m._eventList[#m._eventList + 1] = callback
 end

@@ -51,7 +51,7 @@ local function errorhandler(err)
   print(debug.traceback())
 end
 
----@async
+--- @async
 xpcall(lclient.start, errorhandler, lclient, function(client)
   await.disable()
   client:registerFakers()

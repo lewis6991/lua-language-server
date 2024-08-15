@@ -3,7 +3,7 @@ local guide = require('parser.guide')
 local lang = require('language')
 local await = require('await')
 
----@async
+--- @async
 return function(uri, callback)
   local ast = files.getState(uri)
   if not ast then

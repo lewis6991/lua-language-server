@@ -1,14 +1,14 @@
 local byte = string.byte
 local max = 0x7fffffff
 
----@class SDBMHash
+--- @class SDBMHash
 local mt = {}
 mt.__index = mt
 
 mt.cache = nil
 
----@param str string
----@return integer
+--- @param str string
+--- @return integer
 function mt:rawHash(str)
   local id = 0
   for i = 1, #str do
@@ -18,8 +18,8 @@ function mt:rawHash(str)
   return id & max
 end
 
----@param str string
----@return integer
+--- @param str string
+--- @return integer
 function mt:hash(str)
   local id = self:rawHash(str)
   local other = self.cache[id]
@@ -50,7 +50,7 @@ end
 
 mt.__call = mt.hash
 
----@return SDBMHash
+--- @return SDBMHash
 return function()
   local self = setmetatable({
     cache = {},

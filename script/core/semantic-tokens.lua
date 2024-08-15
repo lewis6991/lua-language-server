@@ -655,7 +655,7 @@ local Care = util.switch()
         }
     end)
     : case 'nonstandardSymbol.comment'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start  = source.start,
             finish = source.finish,
@@ -663,7 +663,7 @@ local Care = util.switch()
         }
     end)
     : case 'nonstandardSymbol.continue'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start  = source.start,
             finish = source.finish,
@@ -671,7 +671,7 @@ local Care = util.switch()
         }
     end)
     : case 'doc.cast.block'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start      = source.start,
             finish     = source.finish,
@@ -679,7 +679,7 @@ local Care = util.switch()
         }
     end)
     : case 'doc.cast.name'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start      = source.start,
             finish     = source.finish,
@@ -687,7 +687,7 @@ local Care = util.switch()
         }
     end)
     : case 'doc.type.code'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start      = source.start,
             finish     = source.finish,
@@ -696,7 +696,7 @@ local Care = util.switch()
         }
     end)
     : case 'doc.operator.name'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start      = source.start,
             finish     = source.finish,
@@ -704,7 +704,7 @@ local Care = util.switch()
         }
     end)
     : case 'doc.meta.name'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start      = source.start,
             finish     = source.finish,
@@ -712,7 +712,7 @@ local Care = util.switch()
         }
     end)
     : case 'doc.attr'
-    : call(function (source, options, results)
+    : call(function (source, _options, results)
         results[#results+1] = {
             start      = source.start,
             finish     = source.finish,
@@ -720,9 +720,8 @@ local Care = util.switch()
         }
     end)
 
----@param state table
----@param results table
-local function buildTokens(state, results)
+--- @param results table
+local function buildTokens(results)
     local tokens = {}
     local lastLine = 0
     local lastStartChar = 0
@@ -757,7 +756,7 @@ local function buildTokens(state, results)
     return tokens
 end
 
----@async
+--- @async
 local function solveMultilineAndOverlapping(state, results)
     table.sort(results, function (a, b)
         if a.start == b.start then
@@ -863,7 +862,7 @@ local function solveMultilineAndOverlapping(state, results)
     return new
 end
 
----@async
+--- @async
 return function (uri, start, finish)
     local results = {}
     if not config.get(uri, 'Lua.semantic.enable') then
@@ -939,7 +938,7 @@ return function (uri, start, finish)
 
     results = solveMultilineAndOverlapping(state, results)
 
-    local tokens = buildTokens(state, results)
+    local tokens = buildTokens(results)
 
     return tokens
 end

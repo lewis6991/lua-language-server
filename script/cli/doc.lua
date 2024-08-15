@@ -18,7 +18,7 @@ local fs       = require 'bee.filesystem'
 
 local export = {}
 
----@async
+--- @async
 local function packObject(source, mark)
     if type(source) ~= 'table' then
         return source
@@ -90,7 +90,7 @@ local function packObject(source, mark)
     return new
 end
 
----@async
+--- @async
 local function getExtends(source)
     if source.type == 'doc.class' then
         if not source.extends then
@@ -106,9 +106,9 @@ local function getExtends(source)
     end
 end
 
----@async
----@param global vm.global
----@param results table
+--- @async
+--- @param global vm.global
+--- @param results table
 local function collectTypes(global, results)
     if guide.isBasicType(global.name) then
         return
@@ -231,9 +231,9 @@ local function collectTypes(global, results)
     end)
 end
 
----@async
----@param global vm.global
----@param results table
+--- @async
+--- @param global vm.global
+--- @param results table
 local function collectVars(global, results)
     local result = {
         name    = global:getCodeName(),
@@ -279,7 +279,7 @@ local function collectVars(global, results)
 end
 
 ---Add config settings to JSON output.
----@param results table
+--- @param results table
 local function collectConfig(results)
     local result = {
         name = 'LuaLS',
@@ -291,8 +291,8 @@ local function collectConfig(results)
     results[#results+1] = result
 end
 
----@async
----@param callback fun(i, max)
+--- @async
+--- @param callback fun(i, max)
 function export.export(outputPath, callback)
     local results = {}
     local globals = vm.getAllGlobals()
@@ -337,8 +337,8 @@ function export.getDocOutputPath()
     return doc_output_path
 end
 
----@async
----@param outputPath string
+--- @async
+--- @param outputPath string
 function export.makeDoc(outputPath)
     ws.awaitReady(ws.rootUri)
 
@@ -361,7 +361,7 @@ end
 
 
 ---Find file 'doc.json'.
----@return fs.path
+--- @return fs.path
 local function findDocJson()
     local doc_json_path
     if type(DOC_UPDATE) == 'string' then
@@ -376,8 +376,8 @@ local function findDocJson()
     end
 end
 
----@return string # path of 'doc.json'
----@return string # path to be documented
+--- @return string # path of 'doc.json'
+--- @return string # path to be documented
 local function getPathDocUpdate()
     local doc_json_path = findDocJson()
     local ok, doc_path = pcall(

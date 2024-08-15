@@ -63,7 +63,7 @@ local function isDocClass(source)
   return false
 end
 
----@param source parser.object
+--- @param source parser.object
 local function isDeclareFunctionParam(source)
   if source.parent.type ~= 'funcargs' then
     return false

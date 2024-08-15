@@ -16,24 +16,24 @@ local cacher = require('lazy-cacher')
 local sp = require('bee.subprocess')
 local pub = require('pub')
 
----@class file
----@field uri           string
----@field ref?          integer
----@field trusted?      boolean
----@field rows?         integer[]
----@field originText?   string
----@field text?         string
----@field version?      integer
----@field originLines?  integer[]
----@field diffInfo?     table[]
----@field cache?        table
----@field id            integer
----@field state?        parser.state
----@field compileCount? integer
----@field words?        table
+--- @class file
+--- @field uri           string
+--- @field ref?          integer
+--- @field trusted?      boolean
+--- @field rows?         integer[]
+--- @field originText?   string
+--- @field text?         string
+--- @field version?      integer
+--- @field originLines?  integer[]
+--- @field diffInfo?     table[]
+--- @field cache?        table
+--- @field id            integer
+--- @field state?        parser.state
+--- @field compileCount? integer
+--- @field words?        table
 
----@class files
----@field lazyCache?   lazy-cacher
+--- @class files
+--- @field lazyCache?   lazy-cacher
 local M = {}
 
 M.watchList = {}
@@ -60,8 +60,8 @@ local fileID = util.counter()
 
 local uriMap = {}
 
----@param path fs.path
----@return fs.path
+--- @param path fs.path
+--- @return fs.path
 local function getRealParent(path)
   local parent = path:parent_path()
   if parent:string():gsub('^%w+:', string.lower) == path:string():gsub('^%w+:', string.lower) then
@@ -71,9 +71,9 @@ local function getRealParent(path)
   return getRealParent(parent) / res:filename()
 end
 
--- 获取文件的真实uri，但不穿透软链接
----@param uri string
----@return string
+--- Get the real uri of the file, but do not penetrate the soft link
+--- @param uri string
+--- @return string
 function M.getRealUri(uri)
   if platform.os ~= 'windows' then
     return furi.normalize(uri)
@@ -110,8 +110,8 @@ function M.getRealUri(uri)
   return ruri
 end
 
---- 打开文件
----@param uri string
+--- Open file
+--- @param uri string
 function M.open(uri)
   M.openMap[uri] = {
     cache = {},
@@ -119,8 +119,8 @@ function M.open(uri)
   M.onWatch('open', uri)
 end
 
---- 关闭文件
----@param uri string
+--- Close file
+--- @param uri string
 function M.close(uri)
   M.openMap[uri] = nil
   local file = M.fileMap[uri]
@@ -135,9 +135,9 @@ function M.close(uri)
   end
 end
 
---- 是否打开
----@param uri string
----@return boolean
+--- Whether to open
+--- @param uri string
+--- @return boolean
 function M.isOpen(uri)
   return M.openMap[uri] ~= nil
 end
@@ -150,7 +150,7 @@ function M.getOpenedCache(uri)
   return data.cache
 end
 
---- 是否是库文件
+--- Whether it is a library file
 function M.isLibrary(uri, excludeFolder)
   if excludeFolder then
     for _, scp in ipairs(scope.folders) do
@@ -170,22 +170,22 @@ function M.isLibrary(uri, excludeFolder)
   return false
 end
 
---- 获取库文件的根目录
----@return string?
+--- Get the root directory of the library file
+--- @return string?
 function M.getLibraryUri(suri, uri)
   local scp = scope.getScope(suri)
   return scp:getLinkedUri(uri)
 end
 
---- 是否存在
----@return boolean
+--- Does it exist
+--- @return boolean
 function M.exists(uri)
   return M.fileMap[uri] ~= nil
 end
 
----@param file file
----@param text string
----@return string
+--- @param file file
+--- @param text string
+--- @return string
 local function pluginOnSetText(file, text)
   local plugin = require('plugin')
   file.diffInfo = nil
@@ -214,17 +214,17 @@ local function pluginOnSetText(file, text)
   return text
 end
 
----@param file file
+--- @param file file
 function M.removeState(file)
   file.state = nil
   M.stateMap[file.uri] = nil
 end
 
---- 设置文件文本
----@param uri string
----@param text? string
----@param isTrust? boolean
----@param callback? function
+--- Set file text
+--- @param uri string
+--- @param text? string
+--- @param isTrust? boolean
+--- @param callback? function
 function M.setText(uri, text, isTrust, callback)
   if not text then
     return
@@ -373,7 +373,7 @@ function M.getWordsOfHead(uri, head)
   return words[head]
 end
 
---- 获取文件版本
+--- Get file version
 function M.getVersion(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -382,9 +382,9 @@ function M.getVersion(uri)
   return file.version
 end
 
---- 获取文件文本
----@param uri string
----@return string? text
+--- Get file text
+--- @param uri string
+--- @return string? text
 function M.getText(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -393,9 +393,9 @@ function M.getText(uri)
   return file.text
 end
 
---- 获取文件原始文本
----@param uri string
----@return string? text
+--- Get the original text of the file
+--- @param uri string
+--- @return string? text
 function M.getOriginText(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -404,8 +404,8 @@ function M.getOriginText(uri)
   return file.originText
 end
 
----@param uri string
----@param text string
+--- @param uri string
+--- @param text string
 function M.setOriginText(uri, text)
   local file = M.fileMap[uri]
   if not file then
@@ -414,9 +414,9 @@ function M.setOriginText(uri, text)
   file.originText = text
 end
 
---- 获取文件原始行表
----@param uri string
----@return integer[]
+--- Get the original line table of the file
+--- @param uri string
+--- @return integer[]
 function M.getOriginLines(uri)
   local file = M.fileMap[uri]
   assert(file, 'file not exists:' .. uri)
@@ -462,8 +462,8 @@ function M.delRef(uri)
   end
 end
 
---- 移除文件
----@param uri string
+--- Remove files
+--- @param uri string
 function M.remove(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -480,9 +480,9 @@ function M.remove(uri)
   M.onWatch('remove', uri)
 end
 
---- 获取一个包含所有文件uri的数组
----@param suri? string
----@return string[]
+--- Get an array containing all file uris
+--- @param suri? string
+--- @return string[]
 function M.getAllUris(suri)
   local scp = suri and scope.getScope(suri) or nil
   local files = {}
@@ -498,7 +498,7 @@ function M.getAllUris(suri)
 end
 
 --- 遍历文件
----@param suri? string
+--- @param suri? string
 function M.eachFile(suri)
   local files = M.getAllUris(suri)
   local i = 0
@@ -533,8 +533,8 @@ function M.getLazyCache()
   return M.lazyCache
 end
 
----@param state parser.state
----@param file file
+--- @param state parser.state
+--- @param file file
 function M.compileStateThen(state, file)
   M.stateTrace[state] = true
   M.stateMap[file.uri] = state
@@ -584,8 +584,8 @@ function M.compileStateThen(state, file)
   M.onWatch('compile', file.uri)
 end
 
----@param uri string
----@return boolean
+--- @param uri string
+--- @return boolean
 function M.checkPreload(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -622,8 +622,8 @@ function M.checkPreload(uri)
   return true
 end
 
----@param uri string
----@param callback fun(state: parser.state?)
+--- @param uri string
+--- @param callback fun(state: parser.state?)
 function M.compileStateAsync(uri, callback)
   local file = M.fileMap[uri]
   if not file then
@@ -675,8 +675,8 @@ local function pluginOnTransformAst(uri, state)
   return state
 end
 
----@param uri string
----@return parser.state?
+--- @param uri string
+--- @return parser.state?
 function M.compileState(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -730,15 +730,15 @@ function M.compileState(uri)
   return state
 end
 
----@class parser.state
----@field diffInfo? table[]
----@field originLines? integer[]
----@field originText? string
----@field lua? string
+--- @class parser.state
+--- @field diffInfo? table[]
+--- @field originLines? integer[]
+--- @field originText? string
+--- @field lua? string
 
---- 获取文件语法树
----@param uri string
----@return parser.state? state
+--- Get file syntax tree
+--- @param uri string
+--- @return parser.state? state
 function M.getState(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -748,8 +748,8 @@ function M.getState(uri)
   return state
 end
 
----@param uri string
----@return parser.state?
+--- @param uri string
+--- @return parser.state?
 function M.getLastState(uri)
   return M.stateMap[uri]
 end
@@ -758,22 +758,11 @@ function M.getFile(uri)
   return M.fileMap[uri] or M.dllMap[uri]
 end
 
----@param text string
-local function isNameChar(text)
-  if text:match('^[\xC2-\xFD][\x80-\xBF]*$') then
-    return true
-  end
-  if text:match('^[%w_]+$') then
-    return true
-  end
-  return false
-end
-
---- 将应用差异前的offset转换为应用差异后的offset
----@param state  parser.state
----@param offset integer
----@return integer start
----@return integer finish
+--- Convert the offset before applying the difference to the offset after applying the difference
+--- @param state  parser.state
+--- @param offset integer
+--- @return integer start
+--- @return integer finish
 function M.diffedOffset(state, offset)
   if not state.diffInfo then
     return offset, offset
@@ -781,11 +770,11 @@ function M.diffedOffset(state, offset)
   return smerger.getOffset(state.diffInfo, offset)
 end
 
---- 将应用差异后的offset转换为应用差异前的offset
----@param state  parser.state
----@param offset integer
----@return integer start
----@return integer finish
+--- Convert the offset after applying the difference to the offset before applying the difference
+--- @param state  parser.state
+--- @param offset integer
+--- @return integer start
+--- @return integer finish
 function M.diffedOffsetBack(state, offset)
   if not state.diffInfo then
     return offset, offset
@@ -793,12 +782,12 @@ function M.diffedOffsetBack(state, offset)
   return smerger.getOffsetBack(state.diffInfo, offset)
 end
 
----@param state parser.state
+--- @param state parser.state
 function M.hasDiffed(state)
   return state.diffInfo ~= nil
 end
 
---- 获取文件的自定义缓存信息（在文件内容更新后自动失效）
+--- Get the custom cache information of the file (it will automatically expire after the file content is updated)
 function M.getCache(uri)
   local file = M.fileMap[uri]
   if not file then
@@ -807,7 +796,7 @@ function M.getCache(uri)
   return file.cache
 end
 
---- 获取文件关联
+--- Get file association
 function M.getAssoc(uri)
   local patt = {}
   for k, v in pairs(config.get(uri, 'files.associations')) do
@@ -819,9 +808,9 @@ function M.getAssoc(uri)
   return M.assocMatcher
 end
 
---- 判断是否是Lua文件
----@param uri string
----@return boolean
+--- Determine whether it is a Lua file
+--- @param uri string
+--- @return boolean
 function M.isLua(uri)
   if util.stringEndWith(uri:lower(), '.lua') then
     return true
@@ -833,8 +822,8 @@ function M.isLua(uri)
 end
 
 --- Does the uri look like a `Dynamic link library` ?
----@param uri string
----@return boolean
+--- @param uri string
+--- @return boolean
 function M.isDll(uri)
   local ext = uri:match('%.([^%.%/%\\]+)$')
   if not ext then
@@ -853,8 +842,8 @@ function M.isDll(uri)
 end
 
 --- Save dll, makes opens and words, discard content
----@param uri string
----@param content string
+--- @param uri string
+--- @param content string
 function M.saveDll(uri, content)
   if not content then
     return
@@ -884,8 +873,8 @@ function M.saveDll(uri, content)
   M.onWatch('dll', uri)
 end
 
----@param uri string
----@return string[]|nil
+--- @param uri string
+--- @return string[]|nil
 function M.getDllOpens(uri)
   local file = M.dllMap[uri]
   if not file then
@@ -894,8 +883,8 @@ function M.getDllOpens(uri)
   return file.opens
 end
 
----@param uri string
----@return string[]|nil
+--- @param uri string
+--- @return string[]|nil
 function M.getDllWords(uri)
   local file = M.dllMap[uri]
   if not file then
@@ -904,7 +893,7 @@ function M.getDllWords(uri)
   return file.words
 end
 
----@return integer
+--- @return integer
 function M.countStates()
   local n = 0
   for _ in pairs(M.stateTrace) do
@@ -913,8 +902,8 @@ function M.countStates()
   return n
 end
 
----@param path string
----@return string
+--- @param path string
+--- @return string
 function M.normalize(path)
   path = path:gsub('%$%{(.-)%}', function(key)
     if key == '3rd' then
@@ -945,8 +934,8 @@ function M.normalize(path)
   return path
 end
 
---- 注册事件
----@param callback async fun(ev: string, uri: string)
+--- Register event
+--- @param callback async fun(ev: string, uri: string)
 function M.watch(callback)
   M.watchList[#M.watchList + 1] = callback
 end

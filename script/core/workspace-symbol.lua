@@ -2,10 +2,9 @@ local files = require('files')
 local guide = require('parser.guide')
 local matchKey = require('core.matchkey')
 local define = require('proto.define')
-local await = require('await')
 local vm = require('vm')
 
-local function buildSource(uri, source, key, results)
+local function buildSource(source, key, results)
   if source.type == 'local' or source.type == 'setlocal' or source.type == 'setglobal' then
     local name = source[1]
     if matchKey(key, name) then
@@ -48,13 +47,13 @@ local function searchFile(uri, key, results)
   end
 
   guide.eachSource(ast.ast, function(source)
-    buildSource(uri, source, key, results)
+    buildSource(source, key, results)
   end)
 end
 
----@param key string
----@param suri? string
----@param results table[]
+--- @param key string
+--- @param suri? string
+--- @param results table[]
 local function searchGlobalAndClass(key, suri, results)
   for _, global in pairs(vm.getAllGlobals()) do
     local name = global:getCodeName()
@@ -88,9 +87,9 @@ local function searchGlobalAndClass(key, suri, results)
   end
 end
 
----@param key string
----@param suri? string
----@param results table[]
+--- @param key string
+--- @param suri? string
+--- @param results table[]
 local function searchClassField(key, suri, results)
   local class, inField = key:match('^(.+)%.(.-)$')
   if not class then
@@ -131,9 +130,9 @@ local function searchClassField(key, suri, results)
   end)
 end
 
----@param key string
----@param suri? string
----@param results table[]
+--- @param key string
+--- @param suri? string
+--- @param results table[]
 local function searchWords(key, suri, results)
   for uri in files.eachFile(suri) do
     searchFile(uri, key, results)
@@ -143,9 +142,9 @@ local function searchWords(key, suri, results)
   end
 end
 
----@param key string
----@param suri? string
----@param includeWords? boolean
+--- @param key string
+--- @param suri? string
+--- @param includeWords? boolean
 return function(key, suri, includeWords)
   local results = {}
 

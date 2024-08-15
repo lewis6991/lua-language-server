@@ -8,14 +8,14 @@ local util = require('utility')
 local furi = require('file-uri')
 local pub = require('pub')
 
----@class workspace.loading
----@field scp scope
----@field _bar progress
----@field _stash function[]
----@field _refs string[]
----@field _cache table<string, boolean>
----@field _sets function[]
----@field _removed boolean
+--- @class workspace.loading
+--- @field scp scope
+--- @field _bar progress
+--- @field _stash function[]
+--- @field _refs string[]
+--- @field _cache table<string, boolean>
+--- @field _sets function[]
+--- @field _removed boolean
 local mt = {}
 mt.__index = mt
 
@@ -33,7 +33,7 @@ function mt:update()
   self._bar:setPercentage(self.read / self.max * 100.0)
 end
 
----@param uri string
+--- @param uri string
 function mt:checkMaxPreload(uri)
   local max = config.get(uri, 'Lua.workspace.maxPreload')
   if self.preload <= max then
@@ -60,9 +60,9 @@ function mt:checkMaxPreload(uri)
   return false
 end
 
----@param uri string
----@param libraryUri? string
----@async
+--- @param uri string
+--- @param libraryUri? string
+--- @async
 function mt:loadFile(uri, libraryUri)
   if files.isLua(uri) then
     if not libraryUri then
@@ -151,7 +151,7 @@ function mt:loadFile(uri, libraryUri)
   await.delay()
 end
 
----@async
+--- @async
 function mt:loadAll(fileName)
   local startClock = os.clock()
   log.info('Load files from disk:', fileName)
@@ -191,13 +191,13 @@ function mt:isRemoved()
   return self._removed == true
 end
 
----@class workspace.loading.manager
+--- @class workspace.loading.manager
 local m = {}
 
----@type table<workspace.loading, boolean>
+--- @type table<workspace.loading, boolean>
 m._loadings = setmetatable({}, { __mode = 'k' })
 
----@return workspace.loading
+--- @return workspace.loading
 function m.create(scp)
   local loading = setmetatable({
     scp = scp,

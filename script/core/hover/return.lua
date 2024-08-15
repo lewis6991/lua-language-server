@@ -1,8 +1,8 @@
 local vm = require('vm.vm')
 local guide = require('parser.guide')
 
----@param source parser.object
----@return parser.object[]
+--- @param source parser.object
+--- @return parser.object[]
 local function getReturnDocs(source)
   local returns = {}
 

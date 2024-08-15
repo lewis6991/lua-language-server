@@ -7,21 +7,21 @@ local scope = require('workspace.scope')
 local util = require('utility')
 local plugin = require('plugin')
 
----@class require-path
+--- @class require-path
 local m = {}
 
----@class require-manager
----@field scp scope
----@field nameMap table<string, string>
----@field visibleCache table<string, require-manager.visibleResult[]>
----@field requireCache table<string, table>
+--- @class require-manager
+--- @field scp scope
+--- @field nameMap table<string, string>
+--- @field visibleCache table<string, require-manager.visibleResult[]>
+--- @field requireCache table<string, table>
 local mt = {}
 mt.__index = mt
 
----@alias require-manager.visibleResult { searcher: string, name: string }
+--- @alias require-manager.visibleResult { searcher: string, name: string }
 
----@param scp scope
----@return require-manager
+--- @param scp scope
+--- @return require-manager
 local function createRequireManager(scp)
   return setmetatable({
     scp = scp,
@@ -32,9 +32,9 @@ local function createRequireManager(scp)
 end
 
 --- `aaa/bbb/ccc.lua` 与 `?.lua` 将返回 `aaa.bbb.cccc`
----@param path string
----@param searcher string
----@return string?
+--- @param path string
+--- @param searcher string
+--- @return string?
 function mt:getRequireNameByPath(path, searcher)
   local separator = config.get(self.scp.uri, 'Lua.completion.requireSeparator')
   local stemPath = path:gsub('%.[^%.]+$', ''):gsub('[/\\%.]+', separator)
@@ -53,8 +53,8 @@ function mt:getRequireNameByPath(path, searcher)
   return nil
 end
 
----@param path string
----@return require-manager.visibleResult[]
+--- @param path string
+--- @return require-manager.visibleResult[]
 function mt:getRequireResultByPath(path)
   local vm = require('vm')
   local uri = furi.encode(path)
@@ -139,14 +139,14 @@ function mt:getRequireResultByPath(path)
   return result
 end
 
----@param name string
+--- @param name string
 function mt:addName(name)
   local separator = config.get(self.scp.uri, 'Lua.completion.requireSeparator')
   local fsname = name:gsub('%' .. separator, '/')
   self.nameMap[fsname] = name
 end
 
----@return require-manager.visibleResult[]
+--- @return require-manager.visibleResult[]
 function mt:getVisiblePath(path)
   local uri = furi.encode(path)
   if not self.scp:isChildUri(uri) and not self.scp:isLinkedUri(uri) then
@@ -162,9 +162,9 @@ function mt:getVisiblePath(path)
 end
 
 --- 查找符合指定require name的所有uri
----@param name string
----@return string[]
----@return table<string, string>?
+--- @param name string
+--- @return string[]
+--- @return table<string, string>?
 function mt:searchUrisByRequireName(name)
   local vm = require('vm')
   local searchers = config.get(self.scp.uri, 'Lua.runtime.path')
@@ -230,10 +230,10 @@ function mt:searchUrisByRequireName(name)
 end
 
 --- 查找符合指定require name的所有uri，并排除当前文件
----@param suri string
----@param name string
----@return string[]
----@return table<string, string>?
+--- @param suri string
+--- @param name string
+--- @return string[]
+--- @return table<string, string>?
 function mt:findUrisByRequireName(suri, name)
   if type(name) ~= 'string' then
     return {}
@@ -258,9 +258,9 @@ function mt:findUrisByRequireName(suri, name)
   return results, searcherMap
 end
 
----@param uri string
----@param path string
----@return require-manager.visibleResult[]
+--- @param uri string
+--- @param path string
+--- @return require-manager.visibleResult[]
 function m.getVisiblePath(uri, path)
   local scp = scope.getScope(uri)
   ---@type require-manager
@@ -268,10 +268,10 @@ function m.getVisiblePath(uri, path)
   return mgr:getVisiblePath(path)
 end
 
----@param uri string
----@param name string
----@return string[]
----@return table<string, string>?
+--- @param uri string
+--- @param name string
+--- @return string[]
+--- @return table<string, string>?
 function m.findUrisByRequireName(uri, name)
   local scp = scope.getScope(uri)
   ---@type require-manager
@@ -279,10 +279,10 @@ function m.findUrisByRequireName(uri, name)
   return mgr:findUrisByRequireName(uri, name)
 end
 
----@param suri string
----@param uri string
----@param name string
----@return boolean
+--- @param suri string
+--- @param uri string
+--- @param name string
+--- @return boolean
 function m.isMatchedUri(suri, uri, name)
   local searchers = config.get(suri, 'Lua.runtime.path')
   local strict = config.get(suri, 'Lua.runtime.pathStrict')

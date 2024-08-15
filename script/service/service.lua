@@ -1,4 +1,4 @@
----@diagnostic disable: deprecated
+--- @diagnostic disable: deprecated
 local pub = require('pub')
 local thread = require('bee.thread')
 local await = require('await')
@@ -18,7 +18,7 @@ local client = require('client')
 require('jsonc')
 require('json-beautify')
 
----@class service
+--- @class service
 local m = {}
 m.type = 'service'
 m.idleClock = 0.0

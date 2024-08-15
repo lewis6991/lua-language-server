@@ -3,8 +3,8 @@ local guide = require('parser.guide')
 local lang = require('language')
 local vm = require('vm.vm')
 
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 local function isBindDoc(source)
   if not source.bindDocs then
     return false

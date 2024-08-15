@@ -19,8 +19,8 @@ local function isToBeClosed(source)
   return false
 end
 
----@param source parser.object?
----@return boolean
+--- @param source parser.object?
+--- @return boolean
 local function isValidFunction(source)
   if not source then
     return false
@@ -41,7 +41,7 @@ local function isValidFunction(source)
   return true
 end
 
----@async
+--- @async
 local function collect(ast, white, roots, links)
   ---@async
   guide.eachSourceType(ast, 'function', function(src)
@@ -83,7 +83,7 @@ local function turnBlack(source, black, white, links)
   end
 end
 
----@async
+--- @async
 return function(uri, callback)
   local state = files.getState(uri)
   if not state then

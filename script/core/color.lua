@@ -2,8 +2,8 @@ local files = require('files')
 local guide = require('parser.guide')
 
 local colorPattern = string.rep('%x', 8)
----@param source parser.object
----@return boolean
+--- @param source parser.object
+--- @return boolean
 local function isColor(source)
   ---@type string
   local text = source[1]
@@ -13,8 +13,8 @@ local function isColor(source)
   return text:match(colorPattern)
 end
 
----@param colorText string
----@return Color
+--- @param colorText string
+--- @return Color
 local function textToColor(colorText)
   return {
     alpha = tonumber(colorText:sub(1, 2), 16) / 255,
@@ -24,8 +24,8 @@ local function textToColor(colorText)
   }
 end
 
----@param color Color
----@return string
+--- @param color Color
+--- @return string
 local function colorToText(color)
   return string.format(
     '%02X%02X%02X%02X',
@@ -36,18 +36,18 @@ local function colorToText(color)
   )
 end
 
----@class Color
----@field red number
----@field green number
----@field blue number
----@field alpha number
+--- @class Color
+--- @field red number
+--- @field green number
+--- @field blue number
+--- @field alpha number
 
----@class ColorValue
----@field color Color
----@field start integer
----@field finish integer
+--- @class ColorValue
+--- @field color Color
+--- @field start integer
+--- @field finish integer
 
----@async
+--- @async
 local function colors(uri)
   local state = files.getState(uri)
   local text = files.getText(uri)

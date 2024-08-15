@@ -8,10 +8,10 @@ local mmax = math.max
 
 _ENV = nil
 
----@class lazy-cacher
----@field _opening linked-table
----@field _openingMap table<string, file*>
----@field _dir string
+--- @class lazy-cacher
+--- @field _opening linked-table
+--- @field _openingMap table<string, file*>
+--- @field _dir string
 local mt = {}
 mt.__index = mt
 mt.type = 'lazy-cacher'
@@ -22,16 +22,16 @@ mt.openingFiles = {}
 
 mt.errorHandler = function(err) end
 
----@param fileID string
+--- @param fileID string
 function mt:_closeFile(fileID)
   self._opening:pop(fileID)
   self._openingMap[fileID]:close()
   self._openingMap[fileID] = nil
 end
 
----@param fileID string
----@return file*?
----@return string? errorMessage
+--- @param fileID string
+--- @return file*?
+--- @return string? errorMessage
 function mt:_getFile(fileID)
   if self._openingMap[fileID] then
     self._opening:pop(fileID)
@@ -52,9 +52,9 @@ function mt:_getFile(fileID)
   return file
 end
 
----@param fileID string
----@return fun(id: integer, code: string): boolean
----@return fun(id: integer): string?
+--- @param fileID string
+--- @return fun(id: integer, code: string): boolean
+--- @return fun(id: integer): string?
 function mt:writterAndReader(fileID)
   local maxFileSize = self.maxFileSize
   local map = {}
@@ -156,9 +156,9 @@ function mt:writterAndReader(fileID)
   return writter, reader
 end
 
----@param dir string
----@param errorHandle? fun(string)
----@return lazy-cacher?
+--- @param dir string
+--- @param errorHandle? fun(string)
+--- @return lazy-cacher?
 return function(dir, errorHandle)
   fs.create_directories(fs.path(dir))
   local self = setmt({

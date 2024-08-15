@@ -3,9 +3,9 @@ local timer = require('timer')
 local scope = require('workspace.scope')
 local template = require('config.template')
 
----@alias config.source '"client"'|'"path"'|'"local"'
+--- @alias config.source '"client"'|'"path"'|'"local"'
 
----@class config.api
+--- @class config.api
 local m = {}
 m.watchList = {}
 
@@ -15,10 +15,10 @@ m.nullSymbols = {
   [m.NULL] = true,
 }
 
----@param scp      scope
----@param key      string
----@param nowValue any
----@param rawValue any
+--- @param scp      scope
+--- @param key      string
+--- @param nowValue any
+--- @param rawValue any
 local function update(scp, key, nowValue, rawValue)
   local now = m.getNowTable(scp)
   local raw = m.getRawTable(scp)
@@ -27,9 +27,9 @@ local function update(scp, key, nowValue, rawValue)
   raw[key] = rawValue
 end
 
----@param uri? string
----@param key? string
----@return scope
+--- @param uri? string
+--- @param key? string
+--- @return scope
 local function getScope(uri, key)
   local raw = m.getRawTable(scope.override)
   if raw then
@@ -49,9 +49,9 @@ local function getScope(uri, key)
   return scope.fallback
 end
 
----@param scp   scope
----@param key   string
----@param value any
+--- @param scp   scope
+--- @param key   string
+--- @param value any
 function m.setByScope(scp, key, value)
   local unit = template[key]
   if not unit then
@@ -69,9 +69,9 @@ function m.setByScope(scp, key, value)
   return true
 end
 
----@param uri?   string
----@param key   string
----@param value any
+--- @param uri?   string
+--- @param key   string
+--- @param value any
 function m.set(uri, key, value)
   local unit = template[key]
   assert(unit, 'unknown key: ' .. key)
@@ -153,9 +153,9 @@ function m.prop(uri, key, prop, value)
   return false
 end
 
----@param uri? string
----@param key string
----@return any
+--- @param uri? string
+--- @param key string
+--- @return any
 function m.get(uri, key)
   local scp = getScope(uri, key)
   local value = m.getNowTable(scp)[key]
@@ -168,9 +168,9 @@ function m.get(uri, key)
   return value
 end
 
----@param uri string
----@param key string
----@return any
+--- @param uri string
+--- @param key string
+--- @return any
 function m.getRaw(uri, key)
   local scp = getScope(uri, key)
   local value = m.getRawTable(scp)[key]
@@ -183,18 +183,18 @@ function m.getRaw(uri, key)
   return value
 end
 
----@param scp  scope
+--- @param scp  scope
 function m.getNowTable(scp)
   return scp:get('config.now') or scp:set('config.now', {})
 end
 
----@param scp  scope
+--- @param scp  scope
 function m.getRawTable(scp)
   return scp:get('config.raw') or scp:set('config.raw', {})
 end
 
----@param scp  scope
----@param ...  table
+--- @param scp  scope
+--- @param ...  table
 function m.update(scp, ...)
   local oldConfig = m.getNowTable(scp)
   local newConfig = {}
@@ -240,7 +240,7 @@ function m.update(scp, ...)
   m.event(scp.uri, '')
 end
 
----@param callback fun(uri: string, key: string, value: any, oldValue: any)
+--- @param callback fun(uri: string, key: string, value: any, oldValue: any)
 function m.watch(callback)
   m.watchList[#m.watchList + 1] = callback
 end

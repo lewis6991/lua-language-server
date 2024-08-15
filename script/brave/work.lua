@@ -96,19 +96,19 @@ brave.on('removeCaches', function(path)
   end
 end)
 
----@class brave.param.compile
----@field uri string
----@field text string
----@field mode string
----@field version string
----@field options brave.param.compile.options
+--- @class brave.param.compile
+--- @field uri string
+--- @field text string
+--- @field mode string
+--- @field version string
+--- @field options brave.param.compile.options
 
----@class brave.param.compile.options
----@field special table<string, string>
----@field unicodeName boolean
----@field nonstandardSymbol table<string, true>
+--- @class brave.param.compile.options
+--- @field special table<string, string>
+--- @field unicodeName boolean
+--- @field nonstandardSymbol table<string, true>
 
----@param param brave.param.compile
+--- @param param brave.param.compile
 brave.on('compile', function(param)
   local parser = require('parser')
   local clock = os.clock()

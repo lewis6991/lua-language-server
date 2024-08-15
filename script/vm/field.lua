@@ -1,4 +1,4 @@
----@class vm
+--- @class vm
 local vm = require('vm.vm')
 local util = require('utility')
 local guide = require('parser.guide')
@@ -40,8 +40,8 @@ local function searchByNode(source, pushResult, mark)
   end)
 end
 
----@param source parser.object
----@return       parser.object[]
+--- @param source parser.object
+--- @return       parser.object[]
 function vm.getFields(source)
   local results = {}
   local mark = {}

@@ -3,7 +3,7 @@ local thread = require('bee.thread')
 local taskPad = thread.channel('taskpad')
 local waiter = thread.channel('waiter')
 
----@class pub_brave
+--- @class pub_brave
 local m = {}
 m.type = 'brave'
 m.ability = {}
