@@ -311,32 +311,30 @@ function mt:_eraseAlias(uri)
   end
   local expandAlias = config.get(uri, 'Lua.hover.expandAlias')
   for n in self.node:eachObject() do
-    if n.type == 'global' and n.cate == 'type' then
-      if not LOCK[n.name] then
-        LOCK[n.name] = true
-        for _, set in ipairs(n:getSets(uri)) do
-          if set.type == 'doc.alias' then
-            if expandAlias then
-              self._drop[n.name] = true
-              local newInfer = createInfer()
-              for _, ext in ipairs(set.extends.types) do
-                viewNodeSwitch(ext.type, ext, newInfer, uri)
-              end
-              if newInfer._hasTable then
-                self.views['table'] = true
-              end
-            else
-              for _, ext in ipairs(set.extends.types) do
-                local view = viewNodeSwitch(ext.type, ext, createInfer(), uri)
-                if view and view ~= n.name then
-                  self._drop[view] = true
-                end
+    if n.type == 'global' and n.cate == 'type' and not LOCK[n.name] then
+      LOCK[n.name] = true
+      for _, set in ipairs(n:getSets(uri)) do
+        if set.type == 'doc.alias' then
+          if expandAlias then
+            self._drop[n.name] = true
+            local newInfer = createInfer()
+            for _, ext in ipairs(set.extends.types) do
+              viewNodeSwitch(ext.type, ext, newInfer, uri)
+            end
+            if newInfer._hasTable then
+              self.views['table'] = true
+            end
+          else
+            for _, ext in ipairs(set.extends.types) do
+              local view = viewNodeSwitch(ext.type, ext, createInfer(), uri)
+              if view and view ~= n.name then
+                self._drop[view] = true
               end
             end
           end
         end
-        LOCK[n.name] = nil
       end
+      LOCK[n.name] = nil
     end
   end
 end
@@ -551,41 +549,36 @@ end
 --- @return string?
 --- @return string|number|boolean|nil
 function vm.viewKey(source, uri)
-  if source.type == 'doc.type' then
+  local ty = source.type
+  if ty == 'doc.type' then
     if #source.types == 1 then
       return vm.viewKey(source.types[1], uri)
     else
       local key = vm.getInfer(source):view(uri)
       return '[' .. key .. ']', key
     end
-  end
-  if source.type == 'tableindex' or source.type == 'setindex' or source.type == 'getindex' then
-    local index = source.index
-    local name = vm.getInfer(index):viewLiterals()
+  elseif ty == 'tableindex' or ty == 'setindex' or ty == 'getindex' then
+    local name = vm.getInfer(source.index):viewLiterals()
     if not name then
-      return nil
+      return
     end
     return ('[%s]'):format(name), name
-  end
-  if source.type == 'tableexp' then
+  elseif ty == 'tableexp' then
     return ('[%d]'):format(source.tindex), source.tindex
-  end
-  if source.type == 'doc.field' then
+  elseif ty == 'doc.field' then
     return vm.viewKey(source.field, uri)
-  end
-  if source.type == 'doc.type.field' then
+  elseif ty == 'doc.type.field' then
     return vm.viewKey(source.name, uri)
-  end
-  if source.type == 'doc.type.name' then
+  elseif ty == 'doc.type.name' then
     return '[' .. source[1] .. ']', source[1]
-  end
-  if source.type == 'doc.type.string' then
+  elseif ty == 'doc.type.string' then
     local name = util.viewString(source[1], source[2])
     return ('[%s]'):format(name), name
   end
+
   local key = vm.getKeyName(source)
   if key == nil then
-    return nil
+    return
   end
   if type(key) == 'string' then
     return key, key

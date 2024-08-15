@@ -421,10 +421,7 @@ function vm.isSubType(uri, child, parent, mark, errs)
   end
 
   if childName == parentName then
-    if not checkValue(parent, child, mark, errs) then
-      return false
-    end
-    return true
+    return checkValue(parent, child, mark, errs)
   end
 
   if parentName == 'number' and childName == 'integer' then
@@ -451,14 +448,18 @@ function vm.isSubType(uri, child, parent, mark, errs)
     return true
   end
 
-  local result = checkParentEnum(parentName, child, uri, mark, errs)
-  if result ~= nil then
-    return result
+  do
+    local result = checkParentEnum(parentName, child, uri, mark, errs)
+    if result ~= nil then
+      return result
+    end
   end
 
-  result = checkChildEnum(childName, parent, uri, mark, errs)
-  if result ~= nil then
-    return result
+  do
+    local result = checkChildEnum(childName, parent, uri, mark, errs)
+    if result ~= nil then
+      return result
+    end
   end
 
   if parentName == 'table' and not guide.isBasicType(childName) then
@@ -617,8 +618,7 @@ function vm.getTableValue(uri, tnode, knode, inversion)
         for _, field in ipairs(tn) do
           if field.type == 'tableindex' and field.value then
             result:merge(vm.compileNode(field.value))
-          end
-          if field.type == 'tablefield' and field.value then
+          elseif field.type == 'tablefield' and field.value then
             if inversion then
               if vm.isSubType(uri, 'string', knode) then
                 result:merge(vm.compileNode(field.value))
@@ -628,8 +628,7 @@ function vm.getTableValue(uri, tnode, knode, inversion)
                 result:merge(vm.compileNode(field.value))
               end
             end
-          end
-          if field.type == 'tableexp' and field.value and field.tindex == 1 then
+          elseif field.type == 'tableexp' and field.value and field.tindex == 1 then
             if inversion then
               if vm.isSubType(uri, 'integer', knode) then
                 result:merge(vm.compileNode(field.value))
@@ -639,8 +638,7 @@ function vm.getTableValue(uri, tnode, knode, inversion)
                 result:merge(vm.compileNode(field.value))
               end
             end
-          end
-          if field.type == 'varargs' then
+          elseif field.type == 'varargs' then
             result:merge(vm.compileNode(field))
           end
         end
@@ -675,22 +673,18 @@ function vm.getTableKey(uri, tnode, vnode, reverse)
           end
         end
       end
-    end
-    if tn.type == 'doc.type.array' then
+    elseif tn.type == 'doc.type.array' then
       result:merge(vm.declareGlobal('type', 'integer'))
-    end
-    if tn.type == 'table' then
+    elseif tn.type == 'table' then
       if not vm.isUnknown(tnode) then
         for _, field in ipairs(tn) do
           if field.type == 'tableindex' then
             if field.index then
               result:merge(vm.compileNode(field.index))
             end
-          end
-          if field.type == 'tablefield' then
+          elseif field.type == 'tablefield' then
             result:merge(vm.declareGlobal('type', 'string'))
-          end
-          if field.type == 'tableexp' then
+          elseif field.type == 'tableexp' then
             result:merge(vm.declareGlobal('type', 'integer'))
           end
         end

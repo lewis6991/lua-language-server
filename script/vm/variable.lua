@@ -30,8 +30,6 @@ end
 --- @field package _variableNode vm.variable|false
 --- @field package _variableNodes table<string, vm.variable>
 
-local compileVariables, getLoc
-
 --- @param id string
 --- @param source parser.object
 --- @param base parser.object
@@ -46,13 +44,12 @@ local function insertVariableID(id, source, base)
   end
   local variable = root._variableNodes[id]
   variable.base = base
-  if guide.isAssign(source) then
-    variable.sets[#variable.sets + 1] = source
-  else
-    variable.gets[#variable.gets + 1] = source
-  end
+  local c = guide.isAssign(source) and variable.sets or variable.gets
+  c[#c + 1] = source
   return variable
 end
+
+local compileVariables, getLoc
 
 --- @type table<string|string[], fun(source: parser.object): parser.object?>
 local leftswitch_table = {
@@ -293,34 +290,13 @@ function vm.getVariable(source, key)
 end
 
 --- @param source parser.object
---- @param name   string
---- @return vm.variable?
-function vm.getVariableInfoByCodeName(source, name)
-  local id = vm.getVariableID(source)
-  if not id then
-    return nil
-  end
-  local root = guide.getRoot(source)
-  if not root._variableNodes then
-    return nil
-  end
-  local headPos = name:find('.', 1, true)
-  if not headPos then
-    return root._variableNodes[id]
-  end
-  local vid = id .. name:sub(headPos):gsub('%.', vm.ID_SPLITE)
-  return root._variableNodes[vid]
-end
-
---- @param source parser.object
 --- @param key?   string
 --- @return parser.object[]?
 function vm.getVariableSets(source, key)
   local variable = vm.getVariable(source, key)
-  if not variable then
-    return nil
+  if variable then
+    return variable.sets
   end
-  return variable.sets
 end
 
 --- @param source parser.object
@@ -328,10 +304,9 @@ end
 --- @return parser.object[]?
 function vm.getVariableGets(source, key)
   local variable = vm.getVariable(source, key)
-  if not variable then
-    return nil
+  if variable then
+    return variable.gets
   end
-  return variable.gets
 end
 
 --- @param source parser.object

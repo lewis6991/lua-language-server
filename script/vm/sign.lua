@@ -25,7 +25,7 @@ end
 --- @return table<string, vm.node>?
 function mt:resolve(uri, args)
   if not args then
-    return nil
+    return
   end
 
   ---@type table<string, vm.node>
@@ -286,9 +286,11 @@ function vm.getSign(source)
     return source._sign or nil
   end
   source._sign = false
-  if source.type == 'function' then
+  local ty = source.type
+
+  if ty == 'function' then
     if not source.bindDocs then
-      return nil
+      return
     end
     for _, doc in ipairs(source.bindDocs) do
       if doc.type == 'doc.generic' then
@@ -299,7 +301,7 @@ function vm.getSign(source)
       end
     end
     if not source._sign then
-      return nil
+      return
     end
     if source.args then
       for _, arg in ipairs(source.args) do
@@ -310,21 +312,16 @@ function vm.getSign(source)
         source._sign:addSign(argNode)
       end
     end
-  end
-  if
-    source.type == 'doc.type.function'
-    or source.type == 'doc.type.table'
-    or source.type == 'doc.type.array'
-  then
+  elseif ty == 'doc.type.function' or ty == 'doc.type.table' or ty == 'doc.type.array' then
     local hasGeneric
     guide.eachSourceType(source, 'doc.generic.name', function(_)
       hasGeneric = true
     end)
     if not hasGeneric then
-      return nil
+      return
     end
     source._sign = vm.createSign()
-    if source.type == 'doc.type.function' then
+    if ty == 'doc.type.function' then
       for _, arg in ipairs(source.args) do
         if arg.extends then
           local argNode = vm.compileNode(arg.extends)
@@ -338,5 +335,6 @@ function vm.getSign(source)
       end
     end
   end
+
   return source._sign or nil
 end

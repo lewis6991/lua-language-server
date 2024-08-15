@@ -19,7 +19,8 @@ local function cloneObject(source, resolved)
   if not resolved or not source then
     return source
   end
-  if source.type == 'doc.generic.name' then
+  local ty = source.type
+  if ty == 'doc.generic.name' then
     local key = source[1]
     local newName = {
       type = source.type,
@@ -33,8 +34,7 @@ local function cloneObject(source, resolved)
       newName._resolved = resolved[key]
     end
     return newName
-  end
-  if source.type == 'doc.type' then
+  elseif ty == 'doc.type' then
     local newType = {
       type = source.type,
       start = source.start,
@@ -48,8 +48,7 @@ local function cloneObject(source, resolved)
       newType.types[i] = newObj
     end
     return newType
-  end
-  if source.type == 'doc.type.arg' then
+  elseif ty == 'doc.type.arg' then
     local newArg = {
       type = source.type,
       start = source.start,
@@ -59,8 +58,7 @@ local function cloneObject(source, resolved)
       extends = cloneObject(source.extends, resolved),
     }
     return newArg
-  end
-  if source.type == 'doc.type.array' then
+  elseif ty == 'doc.type.array' then
     local newArray = {
       type = source.type,
       start = source.start,
@@ -69,8 +67,7 @@ local function cloneObject(source, resolved)
       node = cloneObject(source.node, resolved),
     }
     return newArray
-  end
-  if source.type == 'doc.type.table' then
+  elseif ty == 'doc.type.table' then
     local newTable = {
       type = source.type,
       start = source.start,
@@ -90,8 +87,7 @@ local function cloneObject(source, resolved)
       newTable.fields[i] = newField
     end
     return newTable
-  end
-  if source.type == 'doc.type.function' then
+  elseif ty == 'doc.type.function' then
     local newDocFunc = {
       type = source.type,
       start = source.start,
