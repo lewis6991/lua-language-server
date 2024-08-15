@@ -1,6 +1,5 @@
 --- @diagnostic disable: deprecated
 local pub = require('pub')
-local thread = require('bee.thread')
 local await = require('await')
 local timer = require('timer')
 local proto = require('proto')
@@ -19,10 +18,10 @@ require('jsonc')
 require('json-beautify')
 
 --- @class service
-local m = {}
-m.type = 'service'
-m.idleClock = 0.0
-m.sleeping = false
+local M = {}
+M.type = 'service'
+M.idleClock = 0.0
+M.sleeping = false
 
 local function countMemory()
   local mems = {}
@@ -36,7 +35,7 @@ local function countMemory()
   return total, mems
 end
 
-function m.reportMemoryCollect()
+function M.reportMemoryCollect()
   local totalMemBefore = countMemory()
   local clock = os.clock()
   collectgarbage()
@@ -56,7 +55,7 @@ function m.reportMemoryCollect()
   return table.concat(lines, '\n')
 end
 
-function m.reportMemory()
+function M.reportMemory()
   local totalMem, mems = countMemory()
 
   local lines = {}
@@ -68,7 +67,7 @@ function m.reportMemory()
   return table.concat(lines, '\n')
 end
 
-function m.reportTask()
+function M.reportTask()
   local total = 0
   local running = 0
   local suspended = 0
@@ -99,7 +98,7 @@ function m.reportTask()
   return table.concat(lines, '\n')
 end
 
-function m.reportCache()
+function M.reportCache()
   local total = 0
   local dead = 0
 
@@ -117,7 +116,7 @@ function m.reportCache()
   return table.concat(lines, '\n')
 end
 
-function m.reportProto()
+function M.reportProto()
   local holdon = 0
   local waiting = 0
 
@@ -135,15 +134,15 @@ function m.reportProto()
   return table.concat(lines, '\n')
 end
 
-function m.report()
+function M.report()
   local t = timer.loop(600.0, function()
     local lines = {}
     lines[#lines + 1] = ''
     lines[#lines + 1] = '========= Medical Examination Report ========='
-    lines[#lines + 1] = m.reportMemory()
-    lines[#lines + 1] = m.reportTask()
-    lines[#lines + 1] = m.reportCache()
-    lines[#lines + 1] = m.reportProto()
+    lines[#lines + 1] = M.reportMemory()
+    lines[#lines + 1] = M.reportTask()
+    lines[#lines + 1] = M.reportCache()
+    lines[#lines + 1] = M.reportProto()
     lines[#lines + 1] = '=============================================='
 
     log.info(table.concat(lines, '\n'))
@@ -151,24 +150,24 @@ function m.report()
   t:onTimer()
 end
 
-function m.eventLoop()
+function M.eventLoop()
   pub.task('timer', 1)
   pub.on('wakeup', function()
-    m.reportStatus()
+    M.reportStatus()
     fw.update()
   end)
 
   local function busy()
-    if not m.workingClock then
-      m.workingClock = time.monotonic()
-      m.reportStatus()
+    if not M.workingClock then
+      M.workingClock = time.monotonic()
+      M.reportStatus()
     end
   end
 
   local function idle()
-    if m.workingClock then
-      m.workingClock = nil
-      m.reportStatus()
+    if M.workingClock then
+      M.workingClock = nil
+      M.reportStatus()
     end
   end
 
@@ -205,14 +204,14 @@ end
 
 local showStatusTip = math.random(100) == 1
 
-function m.reportStatus()
+function M.reportStatus()
   if not client.getOption('statusBar') then
     return
   end
   local info = {}
-  if m.workingClock and time.monotonic() - m.workingClock > 100 then
+  if M.workingClock and time.monotonic() - M.workingClock > 100 then
     info.text = '$(loading~spin)Lua'
-  elseif m.sleeping then
+  elseif M.sleeping then
     info.text = '💤Lua'
   else
     info.text = '😺Lua'
@@ -234,14 +233,14 @@ function m.reportStatus()
   end
 
   info.tooltip = table.concat(tooltips, '\n')
-  if util.equal(m.lastInfo, info) then
+  if util.equal(M.lastInfo, info) then
     return
   end
-  m.lastInfo = info
+  M.lastInfo = info
   proto.notify('$/status/report', info)
 end
 
-function m.testVersion()
+function M.testVersion()
   local stack = debug.setcstacklimit(200)
   debug.setcstacklimit(stack + 1)
   if type(stack) == 'number' and debug.setcstacklimit(stack) == stack + 1 then
@@ -252,24 +251,24 @@ function m.testVersion()
   end
 end
 
-function m.sayHello()
+function M.sayHello()
   proto.notify('$/hello', { 'world' })
 end
 
-function m.lockCache()
+function M.lockCache()
   local fs = require('bee.filesystem')
   local sp = require('bee.subprocess')
   local cacheDir = string.format('%s/cache', LOGPATH)
   local myCacheDir = string.format('%s/%d', cacheDir, sp.get_id())
   fs.create_directories(fs.path(myCacheDir))
   local err
-  m.lockFile, err = io.open(myCacheDir .. '/.lock', 'wb')
+  M.lockFile, err = io.open(myCacheDir .. '/.lock', 'wb')
   if err then
     log.error(err)
   end
 end
 
-function m.start()
+function M.start()
   util.enableCloseFunction()
   await.setErrorHandle(log.error)
   pub.recruitBraves(4)
@@ -282,15 +281,15 @@ function m.start()
   else
     proto.listen('stdio')
   end
-  m.report()
-  m.testVersion()
-  m.lockCache()
+  M.report()
+  M.testVersion()
+  M.lockCache()
 
   require('provider')
 
-  m.sayHello()
+  M.sayHello()
 
-  m.eventLoop()
+  M.eventLoop()
 end
 
-return m
+return M

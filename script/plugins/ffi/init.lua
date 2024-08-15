@@ -1,11 +1,8 @@
 local cdriver                = require 'plugins.ffi.c-parser.cdriver'
 local util                   = require 'plugins.ffi.c-parser.util'
 local utility                = require 'utility'
-local SDBMHash               = require 'SDBMHash'
-local config                 = require 'config'
 local fs                     = require 'bee.filesystem'
 local ws                     = require 'workspace'
-local furi                   = require 'file-uri'
 
 local namespace <const>      = 'ffi.namespace*.'
 
@@ -88,7 +85,7 @@ local constName <const>      = 'm'
 local builder                = { switch_ast = utility.switch() }
 
 function builder:getTypeAst(name)
-    for i, asts in ipairs(self.globalAsts) do
+    for _, asts in ipairs(self.globalAsts) do
         if asts[name] then
             return asts[name]
         end
@@ -166,7 +163,7 @@ local function getArrayType(arr)
         return arr and '[]' or ''
     end
     local res = ''
-    for i, v in ipairs(arr) do
+    for _ in ipairs(arr) do
         res = res .. '[]'
     end
     return res
@@ -188,7 +185,7 @@ end
 
 function builder:buildFunction(lines, tt, name)
     local param_names = {}
-    for i, param in ipairs(tt.params or {}) do
+    for _, param in ipairs(tt.params or {}) do
         local param_name = getValidName(param.name)
         lines[#lines+1] = ('---@param %s %s%s'):format(param_name, self:getType(param.type), getArrayType(param.idxs))
         param_names[#param_names+1] = param_name
@@ -266,7 +263,7 @@ end
 function builder:buildEnum(lines, tt, name)
     local enumer = {}
     for i, val in ipairs(tt.values) do
-        local name = val.name
+        local vname = val.name
         local v = val.value
         if not v then
             if i == 1 then
@@ -279,7 +276,7 @@ function builder:buildEnum(lines, tt, name)
             v = calculate(enumer, v)
         end
         if v then
-            val.realValue = pushEnumValue(enumer, name, v)
+            val.realValue = pushEnumValue(enumer, vname, v)
         end
     end
     local alias = {}
@@ -312,7 +309,7 @@ local function stringStartsWith(self, searchString, position)
     return string.sub(self, position + 1, #searchString + position) == searchString
 end
 local firstline = ('---@meta \n ---@class %s \n local %s = {}'):format(namespace, constName)
-local m = {}
+local M = {}
 local function compileCode(lines, asts, b)
     for _, ast in ipairs(asts) do
         local tt = ast.type
@@ -337,7 +334,7 @@ local function compileCode(lines, asts, b)
     end
     return lines
 end
-function m.compileCodes(codes)
+function M.compileCodes(codes)
     ---@class ffi.builder
     local b = setmetatable({ globalAsts = {}, cacheEnums = {} }, { __index = builder })
 
@@ -354,8 +351,8 @@ function m.compileCodes(codes)
     return lines
 end
 
-function m.build_single(codes, fileDir, uri)
-    local texts = m.compileCodes(codes)
+function M.build_single(codes, fileDir, uri)
+    local texts = M.compileCodes(codes)
     if not texts then
         return
     end
@@ -371,4 +368,4 @@ function m.build_single(codes, fileDir, uri)
     return true
 end
 
-return m
+return M

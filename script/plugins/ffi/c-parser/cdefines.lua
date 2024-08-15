@@ -124,8 +124,8 @@ get_type_of_exp = typed('Exp, TypeList -> {string}?', function(exp, lst)
   return nil
 end)
 
-function cdefines.register_define(lst, name, text, define_set)
-  local exp, err, line, col = c99.match_language_expression_grammar(text .. ' ')
+function cdefines.register_define(lst, name, text, _define_set)
+  local exp, _err, _line, _col = c99.match_language_expression_grammar(text .. ' ')
   if not exp then
     -- failed parsing expression
     -- print(("failed parsing: %d:%d: %s\n"):format(line, col, text))

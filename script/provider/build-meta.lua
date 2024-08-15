@@ -3,7 +3,7 @@ local await = require('await')
 local progress = require('progress')
 local lang = require('language')
 
-local m = {}
+local M = {}
 
 --- @class meta
 --- @field root    string
@@ -129,7 +129,7 @@ end
 --- @async
 --- @param path string
 --- @param api meta
-function m.build(path, api)
+function M.build(path, api)
   local files = util.multiTable(2, function()
     return { '---@meta' }
   end)
@@ -151,4 +151,4 @@ function m.build(path, api)
   end
 end
 
-return m
+return M

@@ -1,7 +1,7 @@
 local util = require('utility')
 
 --- @class proto.diagnostic
-local m = {}
+local M = {}
 
 --- @alias DiagnosticSeverity
 ---| 'Hint'
@@ -19,26 +19,26 @@ local m = {}
 --- @field status   DiagnosticNeededFileStatus
 --- @field group    string
 
-m.diagnosticDatas = {}
-m.diagnosticGroups = {}
+M.diagnosticDatas = {}
+M.diagnosticGroups = {}
 
-function m.register(names)
+function M.register(names)
   ---@param info proto.diagnostic.info
   return function(info)
     for _, name in ipairs(names) do
-      m.diagnosticDatas[name] = {
+      M.diagnosticDatas[name] = {
         severity = info.severity,
         status = info.status,
       }
-      if not m.diagnosticGroups[info.group] then
-        m.diagnosticGroups[info.group] = {}
+      if not M.diagnosticGroups[info.group] then
+        M.diagnosticGroups[info.group] = {}
       end
-      m.diagnosticGroups[info.group][name] = true
+      M.diagnosticGroups[info.group][name] = true
     end
   end
 end
 
-m.register({
+M.register({
   'unused-local',
   'unused-function',
   'unused-label',
@@ -54,7 +54,7 @@ m.register({
   status = 'Opened',
 })
 
-m.register({
+M.register({
   'redundant-value',
   'unbalanced-assignments',
   'redundant-parameter',
@@ -69,7 +69,7 @@ m.register({
   status = 'Any',
 })
 
-m.register({
+M.register({
   'need-check-nil',
   'undefined-field',
   'cast-local-type',
@@ -84,7 +84,7 @@ m.register({
   status = 'Opened',
 })
 
-m.register({
+M.register({
   'duplicate-doc-alias',
   'undefined-doc-class',
   'undefined-doc-name',
@@ -102,7 +102,7 @@ m.register({
   status = 'Any',
 })
 
-m.register({
+M.register({
   'incomplete-signature-doc',
   'missing-global-doc',
   'missing-local-export-doc',
@@ -112,7 +112,7 @@ m.register({
   status = 'None',
 })
 
-m.register({
+M.register({
   'codestyle-check',
 })({
   group = 'codestyle',
@@ -120,7 +120,7 @@ m.register({
   status = 'None',
 })
 
-m.register({
+M.register({
   'spell-check',
 })({
   group = 'codestyle',
@@ -128,7 +128,7 @@ m.register({
   status = 'None',
 })
 
-m.register({
+M.register({
   'name-style-check',
 })({
   group = 'codestyle',
@@ -136,7 +136,7 @@ m.register({
   status = 'None',
 })
 
-m.register({
+M.register({
   'newline-call',
   'newfield-call',
   'ambiguity-1',
@@ -148,7 +148,7 @@ m.register({
   status = 'Any',
 })
 
-m.register({
+M.register({
   'await-in-sync',
   'not-yieldable',
 })({
@@ -157,7 +157,7 @@ m.register({
   status = 'None',
 })
 
-m.register({
+M.register({
   'no-unknown',
 })({
   group = 'strong',
@@ -165,7 +165,7 @@ m.register({
   status = 'None',
 })
 
-m.register({
+M.register({
   'redefined-local',
 })({
   group = 'redefined',
@@ -173,7 +173,7 @@ m.register({
   status = 'Opened',
 })
 
-m.register({
+M.register({
   'undefined-global',
   'global-in-nil-env',
 })({
@@ -182,7 +182,7 @@ m.register({
   status = 'Any',
 })
 
-m.register({
+M.register({
   'lowercase-global',
   'undefined-env-child',
 })({
@@ -191,7 +191,7 @@ m.register({
   status = 'Any',
 })
 
-m.register({
+M.register({
   'global-element',
 })({
   group = 'conventions',
@@ -199,7 +199,7 @@ m.register({
   status = 'None',
 })
 
-m.register({
+M.register({
   'duplicate-index',
 })({
   group = 'duplicate',
@@ -207,7 +207,7 @@ m.register({
   status = 'Any',
 })
 
-m.register({
+M.register({
   'duplicate-set-field',
 })({
   group = 'duplicate',
@@ -215,7 +215,7 @@ m.register({
   status = 'Opened',
 })
 
-m.register({
+M.register({
   'close-non-object',
   'deprecated',
   'discard-returns',
@@ -227,34 +227,34 @@ m.register({
 })
 
 --- @return table<string, DiagnosticSeverity>
-function m.getDefaultSeverity()
+function M.getDefaultSeverity()
   local severity = {}
-  for name, info in pairs(m.diagnosticDatas) do
+  for name, info in pairs(M.diagnosticDatas) do
     severity[name] = info.severity
   end
   return severity
 end
 
 --- @return table<string, DiagnosticNeededFileStatus>
-function m.getDefaultStatus()
+function M.getDefaultStatus()
   local status = {}
-  for name, info in pairs(m.diagnosticDatas) do
+  for name, info in pairs(M.diagnosticDatas) do
     status[name] = info.status
   end
   return status
 end
 
-function m.getGroupSeverity()
+function M.getGroupSeverity()
   local group = {}
-  for name in pairs(m.diagnosticGroups) do
+  for name in pairs(M.diagnosticGroups) do
     group[name] = 'Fallback'
   end
   return group
 end
 
-function m.getGroupStatus()
+function M.getGroupStatus()
   local group = {}
-  for name in pairs(m.diagnosticGroups) do
+  for name in pairs(M.diagnosticGroups) do
     group[name] = 'Fallback'
   end
   return group
@@ -262,9 +262,9 @@ end
 
 --- @param name string
 --- @return string[]
-m.getGroups = util.cacheReturn(function(name)
+M.getGroups = util.cacheReturn(function(name)
   local groups = {}
-  for groupName, nameMap in pairs(m.diagnosticGroups) do
+  for groupName, nameMap in pairs(M.diagnosticGroups) do
     if nameMap[name] then
       groups[#groups + 1] = groupName
     end
@@ -274,10 +274,10 @@ m.getGroups = util.cacheReturn(function(name)
 end)
 
 --- @return table<string, true>
-function m.getDiagAndErrNameMap()
-  if not m._diagAndErrNames then
+function M.getDiagAndErrNameMap()
+  if not M._diagAndErrNames then
     local names = {}
-    for name in pairs(m.getDefaultSeverity()) do
+    for name in pairs(M.getDefaultSeverity()) do
       names[name] = true
     end
     for _, fileName in ipairs({ 'parser.compile', 'parser.luadoc' }) do
@@ -297,9 +297,9 @@ function m.getDiagAndErrNameMap()
       end
     end
     table.sort(names)
-    m._diagAndErrNames = names
+    M._diagAndErrNames = names
   end
-  return m._diagAndErrNames
+  return M._diagAndErrNames
 end
 
-return m
+return M

@@ -5,14 +5,14 @@ local encoder = require('encoder')
 local offsetEncoding = 'utf16'
 
 --- @class converter
-local m = {}
+local M = {}
 
 --- @alias position {line: integer, character: integer}
 
 --- @param row integer
 --- @param col integer
 --- @return position
-function m.position(row, col)
+function M.position(row, col)
   return {
     line = row,
     character = col,
@@ -70,7 +70,7 @@ end
 --- @param state parser.state
 --- @param pos integer
 --- @return position
-function m.packPosition(state, pos)
+function M.packPosition(state, pos)
   if files.hasDiffed(state) then
     return diffedPackPosition(state, pos)
   else
@@ -121,7 +121,7 @@ end
 --- @param state    parser.state
 --- @param position position
 --- @return integer
-function m.unpackPosition(state, position)
+function M.unpackPosition(state, position)
   if files.hasDiffed(state) then
     return diffedUnpackPosition(state, position)
   else
@@ -135,10 +135,10 @@ end
 --- @param start  integer
 --- @param finish integer
 --- @return range
-function m.packRange(state, start, finish)
+function M.packRange(state, start, finish)
   local range = {
-    start = m.packPosition(state, start),
-    ['end'] = m.packPosition(state, finish),
+    start = M.packPosition(state, start),
+    ['end'] = M.packPosition(state, finish),
   }
   return range
 end
@@ -146,7 +146,7 @@ end
 --- @param start position
 --- @param finish position
 --- @return range
-function m.range(start, finish)
+function M.range(start, finish)
   return {
     start = start,
     ['end'] = finish,
@@ -157,9 +157,9 @@ end
 --- @param range range
 --- @return integer start
 --- @return integer finish
-function m.unpackRange(state, range)
-  local start = m.unpackPosition(state, range.start)
-  local finish = m.unpackPosition(state, range['end'])
+function M.unpackRange(state, range)
+  local start = M.unpackPosition(state, range.start)
+  local finish = M.unpackPosition(state, range['end'])
   return start, finish
 end
 
@@ -168,7 +168,7 @@ end
 --- @param uri string
 --- @param range range
 --- @return location
-function m.location(uri, range)
+function M.location(uri, range)
   return {
     uri = uri,
     range = range,
@@ -182,7 +182,7 @@ end
 --- @param selection range
 --- @param origin range
 --- @return locationLink
-function m.locationLink(uri, range, selection, origin)
+function M.locationLink(uri, range, selection, origin)
   return {
     targetUri = uri,
     targetRange = range,
@@ -196,14 +196,14 @@ end
 --- @param range   range
 --- @param newtext string
 --- @return textEdit
-function m.textEdit(range, newtext)
+function M.textEdit(range, newtext)
   return {
     range = range,
     newText = newtext,
   }
 end
 
-function m.setOffsetEncoding(encoding)
+function M.setOffsetEncoding(encoding)
   offsetEncoding = encoding:lower():gsub('%-', '')
 end
 
@@ -211,7 +211,7 @@ end
 --- @param i?       integer
 --- @param j?       integer
 --- @return integer
-function m.len(s, i, j)
+function M.len(s, i, j)
   return encoder.len(offsetEncoding, s, i, j)
 end
 
@@ -224,7 +224,7 @@ end
 --- @param command string
 --- @param arguments any[]
 --- @return proto.command
-function m.command(title, command, arguments)
+function M.command(title, command, arguments)
   return {
     title = title,
     command = command,
@@ -232,4 +232,4 @@ function m.command(title, command, arguments)
   }
 end
 
-return m
+return M

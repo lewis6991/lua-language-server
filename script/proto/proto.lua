@@ -8,7 +8,6 @@ local inspect = require('inspect')
 local platform = require('bee.platform')
 local fs = require('bee.filesystem')
 local net = require('service.net')
-local timer = require('timer')
 
 local reqCounter = util.counter()
 
@@ -27,15 +26,15 @@ local function logRecieve(proto)
 end
 
 --- @class proto
-local m = {}
+local M = {
+  ability = {},
+  waiting = {},
+  holdon = {},
+  mode = 'stdio',
+  client = nil,
+}
 
-m.ability = {}
-m.waiting = {}
-m.holdon = {}
-m.mode = 'stdio'
-m.client = nil
-
-function m.getMethodName(proto)
+function M.getMethodName(proto)
   if proto.method:sub(1, 2) == '$/' then
     return proto.method, true
   else
@@ -44,47 +43,47 @@ function m.getMethodName(proto)
 end
 
 --- @param callback async fun()
-function m.on(method, callback)
-  m.ability[method] = callback
+function M.on(method, callback)
+  M.ability[method] = callback
 end
 
-function m.send(data)
+function M.send(data)
   local buf = jsonrpc.encode(data)
   logSend(buf)
-  if m.mode == 'stdio' then
+  if M.mode == 'stdio' then
     io.write(buf)
-  elseif m.mode == 'socket' then
-    m.client:write(buf)
+  elseif M.mode == 'socket' then
+    M.client:write(buf)
   end
 end
 
-function m.response(id, res)
+function M.response(id, res)
   if id == nil then
     log.error('Response id is nil!', inspect(res))
     return
   end
-  if not m.holdon[id] then
+  if not M.holdon[id] then
     log.error('Unknown response id!', id)
     return
   end
-  m.holdon[id] = nil
+  M.holdon[id] = nil
   local data = {}
   data.id = id
   data.result = res == nil and json.null or res
-  m.send(data)
+  M.send(data)
 end
 
-function m.responseErr(id, code, message)
+function M.responseErr(id, code, message)
   if id == nil then
     log.error('Response id is nil!', inspect(message))
     return
   end
-  if not m.holdon[id] then
+  if not M.holdon[id] then
     log.error('Unknown response id!', id)
     return
   end
-  m.holdon[id] = nil
-  m.send({
+  M.holdon[id] = nil
+  M.send({
     id = id,
     error = {
       code = code,
@@ -93,23 +92,23 @@ function m.responseErr(id, code, message)
   })
 end
 
-function m.notify(name, params)
-  m.send({
+function M.notify(name, params)
+  M.send({
     method = name,
     params = params,
   })
 end
 
 --- @async
-function m.awaitRequest(name, params)
+function M.awaitRequest(name, params)
   local id = reqCounter()
-  m.send({
+  M.send({
     id = id,
     method = name,
     params = params,
   })
   local result, error = await.wait(function(resume)
-    m.waiting[id] = {
+    M.waiting[id] = {
       id = id,
       method = name,
       params = params,
@@ -122,14 +121,14 @@ function m.awaitRequest(name, params)
   return result
 end
 
-function m.request(name, params, callback)
+function M.request(name, params, callback)
   local id = reqCounter()
-  m.send({
+  M.send({
     id = id,
     method = name,
     params = params,
   })
-  m.waiting[id] = {
+  M.waiting[id] = {
     id = id,
     method = name,
     params = params,
@@ -158,19 +157,19 @@ local secretOption = {
   end,
 }
 
-function m.doMethod(proto)
+function M.doMethod(proto)
   logRecieve(proto)
-  local method, optional = m.getMethodName(proto)
-  local abil = m.ability[method]
+  local method, optional = M.getMethodName(proto)
+  local abil = M.ability[method]
   if proto.id then
-    m.holdon[proto.id] = proto
+    M.holdon[proto.id] = proto
   end
   if not abil then
     if not optional then
       log.warn('Recieved unknown proto: ' .. method)
     end
     if proto.id then
-      m.responseErr(proto.id, define.ErrorCodes.MethodNotFound, method)
+      M.responseErr(proto.id, define.ErrorCodes.MethodNotFound, method)
     end
     return
   end
@@ -196,9 +195,9 @@ function m.doMethod(proto)
       end
       await.close('proto:' .. proto.id)
       if ok then
-        m.response(proto.id, res)
+        M.response(proto.id, res)
       else
-        m.responseErr(
+        M.responseErr(
           proto.id,
           proto._closeReason or define.ErrorCodes.InternalError,
           proto._closeMessage or res
@@ -210,8 +209,8 @@ function m.doMethod(proto)
   end)
 end
 
-function m.close(id, reason, message)
-  local proto = m.holdon[id]
+function M.close(id, reason, message)
+  local proto = M.holdon[id]
   if not proto then
     return
   end
@@ -220,15 +219,15 @@ function m.close(id, reason, message)
   await.close('proto:' .. id)
 end
 
-function m.doResponse(proto)
+function M.doResponse(proto)
   logRecieve(proto)
   local id = proto.id
-  local waiting = m.waiting[id]
+  local waiting = M.waiting[id]
   if not waiting then
     log.warn('Response id not found: ' .. inspect(proto))
     return
   end
-  m.waiting[id] = nil
+  M.waiting[id] = nil
   if proto.error then
     waiting.resume(nil, proto.error)
     return
@@ -236,8 +235,8 @@ function m.doResponse(proto)
   waiting.resume(proto.result)
 end
 
-function m.listen(mode, socketPort)
-  m.mode = mode
+function M.listen(mode, socketPort)
+  M.mode = mode
   if mode == 'stdio' then
     log.info('Listen Mode: stdio')
     if platform.os == 'windows' then
@@ -268,10 +267,10 @@ function m.listen(mode, socketPort)
       end,
       update = function() end,
     }
-    m.client = dummyClient
+    M.client = dummyClient
 
     function server:on_accepted(client)
-      m.client = client
+      M.client = client
       client:write(dummyClient.buf)
       return true
     end
@@ -287,4 +286,4 @@ function m.listen(mode, socketPort)
   end
 end
 
-return m
+return M

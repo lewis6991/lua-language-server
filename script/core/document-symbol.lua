@@ -44,14 +44,11 @@ local function buildFunctionParams(func)
   local params = {}
   for _, arg in ipairs(func.args) do
     if arg.type == 'self' then
-      goto CONTINUE
-    end
-    if arg.type == '...' then
+    elseif arg.type == '...' then
       params[#params + 1] = '...'
     else
       params[#params + 1] = arg[1] or ''
     end
-    ::CONTINUE::
   end
   return table.concat(params, ', ')
 end

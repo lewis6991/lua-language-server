@@ -1,7 +1,7 @@
-local m = {}
+local M = {}
 
 local function tableLenEqual(t, len)
-  for key, value in pairs(t) do
+  for _ in pairs(t) do
     len = len - 1
     if len < 0 then
       return false
@@ -18,11 +18,11 @@ local function isSingleNode(ast)
   return len == 1 and tableLenEqual(ast, len)
 end
 
-function m.expandSingle(ast)
+function M.expandSingle(ast)
   if isSingleNode(ast) then
     return ast[1]
   end
   return ast
 end
 
-return m
+return M

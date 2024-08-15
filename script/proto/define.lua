@@ -1,57 +1,57 @@
 local diag = require('proto.diagnostic')
 
-local m = {}
+local M = {}
 
 --- 诊断等级
-m.DiagnosticSeverity = {
+M.DiagnosticSeverity = {
   Error = 1,
   Warning = 2,
   Information = 3,
   Hint = 4,
 }
 
-m.DiagnosticFileStatus = {
+M.DiagnosticFileStatus = {
   Any = 1,
   Opened = 2,
   None = 3,
 }
 
 --- 诊断类型与默认等级
-m.DiagnosticDefaultSeverity = diag.getDefaultSeverity()
+M.DiagnosticDefaultSeverity = diag.getDefaultSeverity()
 
 --- 诊断类型与需要的文件状态(可以控制只分析打开的文件、还是所有文件)
-m.DiagnosticDefaultNeededFileStatus = diag.getDefaultStatus()
+M.DiagnosticDefaultNeededFileStatus = diag.getDefaultStatus()
 
-m.DiagnosticDefaultGroupSeverity = diag.getGroupSeverity()
+M.DiagnosticDefaultGroupSeverity = diag.getGroupSeverity()
 
-m.DiagnosticDefaultGroupFileStatus = diag.getGroupStatus()
+M.DiagnosticDefaultGroupFileStatus = diag.getGroupStatus()
 
 --- 诊断报告标签
-m.DiagnosticTag = {
+M.DiagnosticTag = {
   Unnecessary = 1,
   Deprecated = 2,
 }
 
-m.DocumentHighlightKind = {
+M.DocumentHighlightKind = {
   Text = 1,
   Read = 2,
   Write = 3,
 }
 
-m.MessageType = {
+M.MessageType = {
   Error = 1,
   Warning = 2,
   Info = 3,
   Log = 4,
 }
 
-m.FileChangeType = {
+M.FileChangeType = {
   Created = 1,
   Changed = 2,
   Deleted = 3,
 }
 
-m.CompletionItemKind = {
+M.CompletionItemKind = {
   Text = 1,
   Method = 2,
   Function = 3,
@@ -79,7 +79,7 @@ m.CompletionItemKind = {
   TypeParameter = 25,
 }
 
-m.ErrorCodes = {
+M.ErrorCodes = {
   -- Defined by JSON RPC
   ParseError = -32700,
   InvalidRequest = -32600,
@@ -96,7 +96,7 @@ m.ErrorCodes = {
   RequestCancelled = -32800,
 }
 
-m.SymbolKind = {
+M.SymbolKind = {
   File = 1,
   Module = 2,
   Namespace = 3,
@@ -125,7 +125,7 @@ m.SymbolKind = {
   TypeParameter = 26,
 }
 
-m.TokenModifiers = {
+M.TokenModifiers = {
   ['declaration'] = 1 << 0,
   ['definition'] = 1 << 1,
   ['readonly'] = 1 << 2,
@@ -139,7 +139,7 @@ m.TokenModifiers = {
   ['global'] = 1 << 10,
 }
 
-m.TokenTypes = {
+M.TokenTypes = {
   ['namespace'] = 00,
   ['type'] = 01,
   ['class'] = 02,
@@ -165,7 +165,7 @@ m.TokenTypes = {
   ['decorator'] = 22,
 }
 
-m.BuiltIn = {
+M.BuiltIn = {
   ['basic'] = 'default',
   ['bit'] = 'default',
   ['bit32'] = 'default',
@@ -188,10 +188,10 @@ m.BuiltIn = {
   ['string.buffer'] = 'default',
 }
 
-m.InlayHintKind = {
+M.InlayHintKind = {
   Other = 0,
   Type = 1,
   Parameter = 2,
 }
 
-return m
+return M

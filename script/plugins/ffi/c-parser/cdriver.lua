@@ -13,12 +13,12 @@ function cdriver.process_file(filename)
 
   local srccode = table.concat(ctx.output, '\n') .. ' $EOF$'
 
-  local res, err, line, col, fragment = c99.match_language_grammar(srccode)
+  local res, _, line, col, fragment = c99.match_language_grammar(srccode)
   if not res then
     return nil, ('failed parsing: %s:%d:%d: %s\n%s'):format(filename, line, col, err, fragment)
   end
 
-  local ffi_types, err = ctypes.register_types(res)
+  local ffi_types, _ = ctypes.register_types(res)
   if not ffi_types then
     return nil, err
   end
@@ -36,12 +36,12 @@ function cdriver.process_context(context)
 
   local srccode = table.concat(ctx.output, '\n') .. ' $EOF$'
 
-  local res, err, line, col, fragment = c99.match_language_grammar(srccode)
+  local res, _, line, col, fragment = c99.match_language_grammar(srccode)
   if not res then
     return nil, ('failed parsing: %s:%d:%d: %s\n%s'):format(context, line, col, err, fragment)
   end
 
-  local ffi_types, err = ctypes.register_types(res)
+  local ffi_types = ctypes.register_types(res)
   if not ffi_types then
     return nil, err
   end

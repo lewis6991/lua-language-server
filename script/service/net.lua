@@ -6,14 +6,6 @@ local selector = select.create()
 local SELECT_READ <const> = select.SELECT_READ
 local SELECT_WRITE <const> = select.SELECT_WRITE
 
-local function fd_set_read(s)
-  if s._flags & SELECT_READ ~= 0 then
-    return
-  end
-  s._flags = s._flags | SELECT_READ
-  selector:event_mod(s._fd, s._flags)
-end
-
 local function fd_clr_read(s)
   if s._flags & SELECT_READ == 0 then
     return
@@ -155,9 +147,9 @@ function connect:close()
   close(self)
 end
 
-local m = {}
+local M = {}
 
-function m.listen(protocol, address, port)
+function M.listen(protocol, address, port)
   local fd
   do
     local err
@@ -218,7 +210,7 @@ function m.listen(protocol, address, port)
   return setmetatable(s, listen_mt)
 end
 
-function m.connect(protocol, address, port)
+function M.connect(protocol, address, port)
   local fd
   do
     local err
@@ -268,10 +260,10 @@ function m.connect(protocol, address, port)
   return setmetatable(s, connect_mt)
 end
 
-function m.update(timeout)
+function M.update(timeout)
   for func, event in selector:wait(timeout or 0) do
     func(event)
   end
 end
 
-return m
+return M

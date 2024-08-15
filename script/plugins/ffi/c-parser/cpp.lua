@@ -307,7 +307,7 @@ local function find_file(ctx, filename, mode, is_next)
   end
   for _, path in ipairs(paths) do
     local pathname = path .. SEP .. filename
-    local fd, err = io.open(pathname, 'r')
+    local fd = io.open(pathname, 'r')
     if fd then
       return pathname, fd
     end
@@ -581,7 +581,7 @@ macro_expand = typed(
             local args, j = consume_parentheses(tokens, i + 1, linelist, cur)
             debug('args:', #args, args)
             local named_args = {}
-            for i = 1, #define.args do
+            for _ = 1, #define.args do
               named_args[define.args[i]] = args[i] or {}
             end
             local expansion = array_copy(repl)
@@ -711,7 +711,7 @@ cpp.parse_file = typed('string, FILE*?, Ctx? -> Ctx?, string?', function(filenam
         local name = tk.exp[1]
         local mode = tk.exp.mode
         local is_next = (tk.directive == 'include_next')
-        local inc_filename, inc_fd, err = find_file(ctx, name, mode, is_next)
+        local inc_filename, inc_fd = find_file(ctx, name, mode, is_next)
         if not inc_filename then
           -- fall back to trying to load an #include "..." as #include <...>;
           -- this is necessary for Mac system headers
