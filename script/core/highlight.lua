@@ -25,7 +25,7 @@ local function eachLocal(source, callback)
 end
 
 --- @async
-local function find(source, uri, callback)
+local function find(source, callback)
   if source.type == 'local' then
     eachLocal(source, callback)
   elseif source.type == 'getlocal' or source.type == 'setlocal' then
@@ -143,7 +143,7 @@ local function isEndRegion(str)
   return false
 end
 
-local function checkRegion(ast, text, offset, callback)
+local function checkRegion(ast, offset, callback)
   local count
   local start, finish
   local selected
@@ -250,7 +250,7 @@ return function(uri, offset)
   if source then
     local isGlobal = guide.isGlobal(source)
     local isLiteral = isLiteralValue(source)
-    find(source, uri, function(target)
+    find(source, function(target)
       if not target then
         return
       end
@@ -349,7 +349,7 @@ return function(uri, offset)
     }
   end)
 
-  checkRegion(state, text, offset, function(start, finish)
+  checkRegion(state, offset, function(start, finish)
     results[#results + 1] = {
       start = start,
       finish = finish,

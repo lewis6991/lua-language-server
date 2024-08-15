@@ -79,9 +79,9 @@ local function getVisualizeVisitor(writer)
   return visitNode
 end
 
-local export = {}
+local M = {}
 
-function export.visualizeAst(code, writer)
+function M.visualizeAst(code, writer)
   local state = parser.compile(code, 'Lua', _G['LUA_VER'] or 'Lua 5.4')
   writer:write('digraph AST {\n')
   writer:write('\tnode [shape = rect]\n')
@@ -89,7 +89,7 @@ function export.visualizeAst(code, writer)
   writer:write('}\n')
 end
 
-function export.runCLI()
+function M.runCLI()
   lang(LOCALE)
   local file = _G['VISUALIZE']
   local code, err = io.open(file)
@@ -98,7 +98,7 @@ function export.runCLI()
     return 1
   end
   code = code:read('a')
-  return export.visualizeAst(code, io.stdout)
+  return M.visualizeAst(code, io.stdout)
 end
 
-return export
+return M

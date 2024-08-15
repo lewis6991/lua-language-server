@@ -5,8 +5,6 @@ local next = next
 local load = load
 local setmt = setmetatable
 local rawset = rawset
-local sdump = string.dump
-local sbyte = string.byte
 local smatch = string.match
 local sformat = string.format
 local tconcat = table.concat
@@ -321,13 +319,13 @@ function mt:entry()
 end
 
 --- @class lazytable
-local m = {}
+local M = {}
 
 --- @param t table
 --- @param writter? fun(id: integer, code: string): boolean
 --- @param reader?  fun(id: integer): string?
 --- @return lazytable.builder
-function m.build(t, writter, reader)
+function M.build(t, writter, reader)
   local builder = setmt({
     source = t,
     codeMap = {},
@@ -344,4 +342,4 @@ function m.build(t, writter, reader)
   return builder
 end
 
-return m
+return M

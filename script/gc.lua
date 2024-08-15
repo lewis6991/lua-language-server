@@ -29,7 +29,7 @@ local function isRemoved(obj)
       local n, v = debug.getupvalue(obj, i)
       if not n then
         if i > 1 then
-          log.warn('函数式析构器没有 removed 上值！', util.dump(debug.getinfo(obj)))
+          log.warn('Functional destructor has no removed upper value!', util.dump(debug.getinfo(obj)))
         end
         break
       end
@@ -51,7 +51,7 @@ end
 local function zip(self)
   local list = self._list
   local index = 1
-  for i = 1, #list do
+  for _ = 1, #list do
     local obj = list[index]
     if not obj then
       break
@@ -83,9 +83,9 @@ function mt:remove()
   end
 end
 
---- 标记`obj`在buff移除时自动移除。如果`obj`是个`function`,
---- 则直接调用；如果`obj`是个`table`，则调用内部的`remove`方法。
---- 其他情况不做处理
+--- Flag `obj` is automatically removed when the buff is removed.
+--- If `obj` is a `function`, --- call it directly; if `obj` is a `table`, call the internal `remove` method.
+--- Other situations will not be processed.
 --- @param obj any
 --- @return any
 function mt:add(obj)
@@ -100,19 +100,19 @@ function mt:add(obj)
   return obj
 end
 
---- 创建一个gc容器，使用 `gc:add(obj)` 将析构器放入gc容器。
+--- Create a gc container and use `gc:add(obj)` to put the destructor into the gc container.
 ---
---- 当gc容器被销毁时，会调用内部的析构器（不保证调用顺序）
+--- When the gc container is destroyed, the internal destructor will be called (the calling order is not guaranteed)
 ---
---- 析构器必须是以下格式中的一种：
---- 1. 一个对象，使用 `obj:remove()` 方法来析构，使用 `obj._removed` 属性来标记已被析构。
---- 2. 一个析构函数，使用上值 `removed` 来标记已被析构。
+--- The destructor must be in one of the following formats:
+--- 1. For an object, use the `obj:remove()` method to destroy it, and use the `obj._removed` attribute to mark it as being destroyed.
+--- 2. A destructor, using the upper value `removed` to mark it as being destructed.
 ---
 --- ```lua
---- local gc = ac.gc() -- 创建gc容器
---- gc:add(obj1)       -- 将obj1放入gc容器
---- gc:add(obj2)       -- 将obj2放入gc容器
---- gc:remove()        -- 移除gc容器，同时也会移除obj1与obj2
+--- local gc = ac.gc() -- Create a gc container
+--- gc:add(obj1)       -- Put obj1 into the gc container
+--- gc:add(obj2)       -- Put obj2 into the gc container
+--- gc:remove()        -- Remove the gc container and also remove obj1 and obj2
 --- ```
 return function()
   return setmetatable({

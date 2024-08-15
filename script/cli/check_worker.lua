@@ -86,14 +86,14 @@ xpcall(lclient.start, errorhandler, lclient, function(client)
 
   -- Downgrade file opened status to Opened for everything to avoid reporting during compilation on files that do not belong to this thread
   local diagStatus = config.get(rootUri, 'Lua.diagnostics.neededFileStatus')
-  for diag, status in pairs(diagStatus) do
+  for diag0, status in pairs(diagStatus) do
     if status == 'Any' or status == 'Any!' then
-      diagStatus[diag] = 'Opened!'
+      diagStatus[diag0] = 'Opened!'
     end
   end
-  for diag, status in pairs(protoDiag.getDefaultStatus()) do
+  for diag0, status in pairs(protoDiag.getDefaultStatus()) do
     if status == 'Any' or status == 'Any!' then
-      diagStatus[diag] = 'Opened!'
+      diagStatus[diag0] = 'Opened!'
     end
   end
   config.set(rootUri, 'Lua.diagnostics.neededFileStatus', diagStatus)

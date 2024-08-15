@@ -16,9 +16,9 @@ local inspect = require('inspect')
 local jsonb = require('json-beautify')
 local jsonc = require('jsonc')
 
-local m = {}
+local M = {}
 
-m.metaPaths = {}
+M.metaPaths = {}
 
 local function getDocFormater(uri)
   local version = config.get(uri, 'Lua.runtime.version')
@@ -264,7 +264,7 @@ local function initBuiltIn(uri)
       end
 
       local outputPath = metaPath / outputLibName
-      m.metaPaths[outputPath:string()] = true
+      M.metaPaths[outputPath:string()] = true
       log.debug('Meta path:', outputPath:string())
 
       if include then
@@ -319,8 +319,8 @@ local function loadSingle3rdConfigFromLua(libraryDir)
     return nil
   end
 
-  local suc = xpcall(f, function(err)
-    log.error('Load config.lua failed at:', libraryDir:string(), err)
+  local suc = xpcall(f, function(err0)
+    log.error('Load config.lua failed at:', libraryDir:string(), err0)
   end)
 
   if not suc then
@@ -346,7 +346,7 @@ local function loadSingle3rdConfig(libraryDir)
     local jsonbuf = jsonb.beautify(cfg)
     client.requestMessage('Info', lang.script.WINDOW_CONFIG_LUA_DEPRECATED, {
       lang.script.WINDOW_CONVERT_CONFIG_LUA,
-    }, function(action, index)
+    }, function(_action, index)
       if index == 1 and jsonbuf then
         fsu.saveFile(libraryDir / 'config.json', jsonbuf)
         fsu.fileRemove(libraryDir / 'config.lua')
@@ -654,7 +654,7 @@ local function check3rdOfWorkspace(suri)
   end, id)
 end
 
-config.watch(function(uri, key, value, oldValue)
+config.watch(function(uri, key, _value, _oldValue)
   if key:find('^Lua.runtime') then
     initBuiltIn(uri)
   end
@@ -681,4 +681,4 @@ ws.watch(function(ev, uri)
   end
 end)
 
-return m
+return M

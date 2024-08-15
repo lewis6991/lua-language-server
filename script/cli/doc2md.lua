@@ -5,9 +5,9 @@ local jsonc = require('jsonc')
 local util = require('utility')
 local markdown = require('provider.markdown')
 
-local export = {}
+local M = {}
 
-function export.buildMD(outputPath)
+function M.buildMD(outputPath)
   local doc = jsonc.decode_jsonc(util.loadFile(outputPath .. '/doc.json'))
   local md = markdown()
 
@@ -50,4 +50,4 @@ function export.buildMD(outputPath)
   return mdPath
 end
 
-return export
+return M

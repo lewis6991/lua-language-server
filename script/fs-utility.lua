@@ -1,5 +1,4 @@
 local fs = require('bee.filesystem')
-local platform = require('bee.platform')
 
 local type = type
 local ioOpen = io.open
@@ -7,17 +6,16 @@ local pcall = pcall
 local pairs = pairs
 local setmetatable = setmetatable
 local next = next
-local ipairs = ipairs
 local tostring = tostring
 local tableSort = table.sort
 
 _ENV = nil
 
 --- @class fs-utility
-local m = {}
---- 读取文件
+local M = {}
+--- Read files
 --- @param path string|fs.path
-function m.loadFile(path, keepBom)
+function M.loadFile(path, keepBom)
   if type(path) ~= 'string' then
     ---@diagnostic disable-next-line: undefined-field
     path = path:string()
@@ -39,10 +37,10 @@ function m.loadFile(path, keepBom)
   return text
 end
 
---- 写入文件
+--- Write to file
 --- @param path any
 --- @param content string
-function m.saveFile(path, content)
+function M.saveFile(path, content)
   if type(path) ~= 'string' then
     ---@diagnostic disable-next-line: undefined-field
     path = path:string()
@@ -58,7 +56,7 @@ function m.saveFile(path, content)
   end
 end
 
-function m.relative(path, base)
+function M.relative(path, base)
   local sPath = fs.absolute(path):string()
   local sBase = fs.absolute(base):string()
   --TODO 先只支持最简单的情况
@@ -97,27 +95,27 @@ end
 --- @class dummyfs
 --- @operator div(string|fs.path|dummyfs): dummyfs
 --- @field files table
-local dfs = {}
-dfs.__index = dfs
-dfs.type = 'dummy'
-dfs.path = ''
+local DFS = {}
+DFS.__index = DFS
+DFS.type = 'dummy'
+DFS.path = ''
 
 --- @return dummyfs
-function m.dummyFS(t)
+function M.dummyFS(t)
   return setmetatable({
     files = t or {},
-  }, dfs)
+  }, DFS)
 end
 
-function dfs:__tostring()
+function DFS:__tostring()
   return 'dummy:' .. tostring(self.path)
 end
 
-function dfs:__div(filename)
+function DFS:__div(filename)
   if type(filename) ~= 'string' then
     filename = filename:string()
   end
-  local new = m.dummyFS(self.files)
+  local new = M.dummyFS(self.files)
   if self.path:sub(-1):match('[^/\\]') then
     new.path = self.path .. '\\' .. filename
   else
@@ -127,7 +125,7 @@ function dfs:__div(filename)
 end
 
 --- @package
-function dfs:_open(index)
+function DFS:_open(index)
   local paths = split(self.path, '[/\\]')
   local current = self.files
   if not index then
@@ -147,12 +145,12 @@ function dfs:_open(index)
 end
 
 --- @package
-function dfs:_filename()
+function DFS:_filename()
   return self.path:match('[^/\\]+$')
 end
 
-function dfs:parent_path()
-  local new = m.dummyFS(self.files)
+function DFS:parent_path()
+  local new = M.dummyFS(self.files)
   if self.path:find('[/\\]') then
     new.path = self.path:gsub('[/\\]+[^/\\]*$', '')
   else
@@ -161,18 +159,18 @@ function dfs:parent_path()
   return new
 end
 
-function dfs:filename()
-  local new = m.dummyFS(self.files)
+function DFS:filename()
+  local new = M.dummyFS(self.files)
   new.path = self:_filename()
   return new
 end
 
-function dfs:string()
+function DFS:string()
   return self.path
 end
 
 --- @return fun(): dummyfs?
-function dfs:listDirectory()
+function DFS:listDirectory()
   local dir = self:_open()
   if type(dir) ~= 'table' then
     return function() end
@@ -193,7 +191,7 @@ function dfs:listDirectory()
   end
 end
 
-function dfs:isDirectory()
+function DFS:isDirectory()
   local target = self:_open()
   if type(target) == 'table' then
     return true
@@ -201,7 +199,7 @@ function dfs:isDirectory()
   return false
 end
 
-function dfs:remove()
+function DFS:remove()
   local dir = self:_open(-2)
   local filename = self:_filename()
   if not filename then
@@ -210,12 +208,12 @@ function dfs:remove()
   dir[filename] = nil
 end
 
-function dfs:exists()
+function DFS:exists()
   local target = self:_open()
   return target ~= nil
 end
 
-function dfs:createDirectories(path)
+function DFS:createDirectories(path)
   if not path then
     return false
   end
@@ -238,14 +236,14 @@ function dfs:createDirectories(path)
   return true
 end
 
-function dfs:saveFile(path, text)
+function DFS:saveFile(path, text)
   if not path then
     return false, 'no path'
   end
   if type(path) ~= 'string' then
     path = path:string()
   end
-  local temp = m.dummyFS(self.files)
+  local temp = M.dummyFS(self.files)
   temp.path = path
   local dir = temp:_open(-2)
   if not dir then
@@ -284,7 +282,7 @@ local function fsAbsolute(path, option)
   return res
 end
 
-local function fsIsDirectory(path, option)
+local function fsIsDirectory(path)
   if not path then
     return false
   end
@@ -365,7 +363,7 @@ local function fsSave(path, text, option)
     end
     dir[filename] = text
   else
-    local suc, err = m.saveFile(path, text)
+    local suc, err = M.saveFile(path, text)
     if suc then
       return true
     end
@@ -388,7 +386,7 @@ local function fsLoad(path, option)
     end
   else
     ---@cast path -dummyfs
-    local text, err = m.loadFile(path)
+    local text, err = M.loadFile(path)
     if text then
       return text
     else
@@ -412,7 +410,7 @@ local function fsCopy(source, target, option)
   else
     ---@cast source -dummyfs
     if target.type == 'dummy' then
-      local sourceText, err = m.loadFile(source)
+      local sourceText, err = M.loadFile(source)
       if not sourceText then
         option.err[#option.err + 1] = err
         return false
@@ -453,7 +451,7 @@ local function fileRemove(path, option)
   if option.onRemove and option.onRemove(path) == false then
     return
   end
-  if fsIsDirectory(path, option) then
+  if fsIsDirectory(path) then
     for child in fsPairs(path, option) do
       fileRemove(child, option)
     end
@@ -470,8 +468,8 @@ local function fileCopy(source, target, option)
   if not source or not target then
     return
   end
-  local isDir1 = fsIsDirectory(source, option)
-  local isDir2 = fsIsDirectory(target, option)
+  local isDir1 = fsIsDirectory(source)
+  local isDir2 = fsIsDirectory(target)
   local isExists = fsExists(target, option)
   if isDir1 then
     if isDir2 or fsCreateDirectories(target, option) then
@@ -506,12 +504,12 @@ local function fileSync(source, target, option)
   if not source or not target then
     return
   end
-  local isDir1 = fsIsDirectory(source, option)
-  local isDir2 = fsIsDirectory(target, option)
+  local isDir1 = fsIsDirectory(source)
+  local isDir2 = fsIsDirectory(target)
   local isExists = fsExists(target, option)
   if isDir1 then
     if isDir2 then
-      local fileList = m.fileList()
+      local fileList = M.fileList()
       if type(target) == 'table' then
         ---@cast target dummyfs
         for filePath in target:listDirectory() do
@@ -566,7 +564,7 @@ local function fileSync(source, target, option)
 end
 
 --- 文件列表
-function m.fileList(option)
+function M.fileList(option)
   option = option or buildOption(option)
   local keyMap = {}
   local fileList = {}
@@ -605,7 +603,7 @@ function m.fileList(option)
 end
 
 --- 删除文件（夹）
-function m.fileRemove(path, option)
+function M.fileRemove(path, option)
   option = buildOption(option)
   path = fsAbsolute(path, option)
 
@@ -618,7 +616,7 @@ end
 --- @param source string|fs.path|dummyfs
 --- @param target string|fs.path|dummyfs
 --- @return table
-function m.fileCopy(source, target, option)
+function M.fileCopy(source, target, option)
   option = buildOption(option)
   local fsSource = fsAbsolute(source, option)
   local fsTarget = fsAbsolute(target, option)
@@ -632,7 +630,7 @@ end
 --- @param source string|fs.path|dummyfs
 --- @param target string|fs.path|dummyfs
 --- @return table
-function m.fileSync(source, target, option)
+function M.fileSync(source, target, option)
   option = buildOption(option)
   local fsSource = fsAbsolute(source, option)
   local fsTarget = fsAbsolute(target, option)
@@ -644,18 +642,18 @@ end
 
 --- @param dir fs.path
 --- @param callback fun(fullPath: fs.path)
-function m.scanDirectory(dir, callback)
+function M.scanDirectory(dir, callback)
   for fullpath in fs.pairs(dir) do
     local status = fs.symlink_status(fullpath):type()
     if status == 'directory' then
-      m.scanDirectory(fullpath, callback)
+      M.scanDirectory(fullpath, callback)
     elseif status == 'regular' then
       callback(fullpath)
     end
   end
 end
 
-function m.listDirectory(dir)
+function M.listDirectory(dir)
   if dir.type == 'dummy' then
     return dir:listDirectory()
   else
@@ -663,4 +661,4 @@ function m.listDirectory(dir)
   end
 end
 
-return m
+return M

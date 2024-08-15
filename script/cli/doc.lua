@@ -5,7 +5,6 @@ local files    = require 'files'
 local util     = require 'utility'
 local jsonb    = require 'json-beautify'
 local lang     = require 'language'
-local define   = require 'proto.define'
 local config   = require 'config.config'
 local await    = require 'await'
 local vm       = require 'vm'
@@ -16,7 +15,7 @@ local doc2md   = require 'cli.doc2md'
 local progress = require 'progress'
 local fs       = require 'bee.filesystem'
 
-local export = {}
+local M = {}
 
 --- @async
 local function packObject(source, mark)
@@ -293,7 +292,7 @@ end
 
 --- @async
 --- @param callback fun(i, max)
-function export.export(outputPath, callback)
+function M.export(outputPath, callback)
     local results = {}
     local globals = vm.getAllGlobals()
 
@@ -325,7 +324,7 @@ function export.export(outputPath, callback)
     return docPath, mdPath
 end
 
-function export.getDocOutputPath()
+function M.getDocOutputPath()
     local doc_output_path = ''
     if type(DOC_OUT_PATH) == 'string' then
         doc_output_path = fs.absolute(fs.path(DOC_OUT_PATH)):string()
@@ -339,7 +338,7 @@ end
 
 --- @async
 --- @param outputPath string
-function export.makeDoc(outputPath)
+function M.makeDoc(outputPath)
     ws.awaitReady(ws.rootUri)
 
     local expandAlias = config.get(ws.rootUri, 'Lua.hover.expandAlias')
@@ -351,7 +350,7 @@ function export.makeDoc(outputPath)
     await.sleep(0.1)
 
     local prog <close> = progress.create(ws.rootUri, '正在生成文档...', 0)
-    local docPath, mdPath = export.export(outputPath, function (i, max)
+    local docPath, mdPath = M.export(outputPath, function (i, max)
         prog:setMessage(('%d/%d'):format(i, max))
         prog:setPercentage((i) / max * 100)
     end)
@@ -399,7 +398,7 @@ local function getPathDocUpdate()
     end
 end
 
-function export.runCLI()
+function M.runCLI()
     lang(LOCALE)
 
     if DOC_UPDATE then
@@ -439,7 +438,7 @@ function export.runCLI()
         ws.awaitReady(rootUri)
         await.sleep(0.1)
 
-        local docPath, mdPath = export.export(export.getDocOutputPath(), function (i, max)
+        local docPath, mdPath = M.export(M.getDocOutputPath(), function (i, max)
             if os.clock() - lastClock > 0.2 then
                 lastClock = os.clock()
                 local output = '\x0D'
@@ -461,4 +460,4 @@ function export.runCLI()
     end)
 end
 
-return export
+return M

@@ -30,26 +30,26 @@ local function pushLog(level, ...)
   return str
 end
 
-local m = {}
+local M = {}
 
-function m.info(...)
+function M.info(...)
   pushLog('info', ...)
 end
 
-function m.debug(...)
+function M.debug(...)
   pushLog('debug', ...)
 end
 
-function m.trace(...)
+function M.trace(...)
   pushLog('trace', ...)
 end
 
-function m.warn(...)
+function M.warn(...)
   pushLog('warn', ...)
 end
 
-function m.error(...)
+function M.error(...)
   pushLog('error', ...)
 end
 
-return m
+return M

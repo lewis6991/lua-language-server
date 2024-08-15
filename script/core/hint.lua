@@ -270,7 +270,7 @@ local blockTypes = {
 }
 
 --- @async
-local function semicolonHint(uri, results, start, finish)
+local function semicolonHint(uri, results)
   local state = files.getState(uri)
   if not state then
     return
@@ -333,6 +333,6 @@ return function(uri, start, finish)
   paramName(uri, results, start, finish)
   awaitHint(uri, results, start, finish)
   arrayIndex(uri, results, start, finish)
-  semicolonHint(uri, results, start, finish)
+  semicolonHint(uri, results)
   return results
 end

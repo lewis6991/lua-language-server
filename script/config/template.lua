@@ -68,31 +68,31 @@ local Type = setmetatable({}, {
   end,
 })
 
-register('Boolean', false, function(self, v)
+register('Boolean', false, function(_self, v)
   return type(v) == 'boolean'
-end, function(self, v)
+end, function(_self, v)
   return v
 end)
 
-register('Integer', 0, function(self, v)
+register('Integer', 0, function(_self, v)
   return type(v) == 'number'
-end, function(self, v)
+end, function(_self, v)
   return math.floor(v)
 end)
 
-register('String', '', function(self, v)
+register('String', '', function(_self, v)
   return type(v) == 'string'
-end, function(self, v)
+end, function(_self, v)
   return tostring(v)
 end)
 
-register('Nil', nil, function(self, v)
+register('Nil', nil, function(_self, v)
   return type(v) == 'nil'
-end, function(self, v)
+end, function(_self, v)
   return nil
 end)
 
-register('Array', {}, function(self, value)
+register('Array', {}, function(_self, value)
   return type(value) == 'table'
 end, function(self, value)
   local t = {}
