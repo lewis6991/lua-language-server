@@ -181,7 +181,7 @@ function M.doMethod(proto)
     local clock = os.clock()
     local ok = false
     local res
-    -- 任务可能在执行过程中被中断，通过close来捕获
+    -- The task may be interrupted during execution and captured by close
     local response <close> = function()
       local passed = os.clock() - clock
       if passed > 0.5 then

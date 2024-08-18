@@ -11,20 +11,20 @@ require('provider')
 
 local counter = util.counter()
 
---- @class languageClient
+--- @class LanguageClient
 --- @field _outs table
 --- @field _gc   gc
 --- @field _waiting table
 --- @field _methods table
 --- @field onSend function
-local mt = {}
-mt.__index = mt
+local LanguageClient = {}
+LanguageClient.__index = LanguageClient
 
-function mt:__close()
+function LanguageClient:__close()
   self:remove()
 end
 
-function mt:_fakeProto()
+function LanguageClient:_fakeProto()
   ---@diagnostic disable-next-line: duplicate-set-field
   proto.send = function(data)
     self._outs[#self._outs + 1] = data
@@ -34,7 +34,7 @@ function mt:_fakeProto()
   end
 end
 
-function mt:_flushServer()
+function LanguageClient:_flushServer()
   -- reset scopes
   local ws = require('workspace')
   local scope = require('workspace.scope')
@@ -44,7 +44,7 @@ function mt:_flushServer()
   files.reset()
 end
 
-function mt:_localLoadFile()
+function LanguageClient:_localLoadFile()
   local awaitTask = pub.awaitTask
   ---@async
   ---@param name   string
@@ -86,13 +86,13 @@ local defaultClientOptions = {
 }
 
 --- @async
-function mt:initialize(params)
+function LanguageClient:initialize(params)
   local initParams = util.tableMerge(params or {}, defaultClientOptions)
   self:awaitRequest('initialize', initParams)
   self:notify('initialized')
 end
 
-function mt:reportHangs()
+function LanguageClient:reportHangs()
   local hangs = {}
   hangs[#hangs + 1] = '====== C -> S ======'
   for _, waiting in util.sortPairs(self._waiting) do
@@ -106,8 +106,8 @@ function mt:reportHangs()
   return table.concat(hangs, '\n')
 end
 
---- @param callback async fun(client: languageClient)
-function mt:start(callback)
+--- @param callback async fun(client: LanguageClient)
+function LanguageClient:start(callback)
   CLI = true
 
   self:_fakeProto()
@@ -134,18 +134,13 @@ function mt:start(callback)
       break
     end
     timer.update()
-    if await.step() then
-      goto CONTINUE
+    if not await.step() and not self:update() then
+      timer.timeJump(1.0)
+      jumpedTime = jumpedTime + 1.0
+      if jumpedTime > 2 * 60 * 60 then
+        error('two hours later ...\n' .. self:reportHangs())
+      end
     end
-    if self:update() then
-      goto CONTINUE
-    end
-    timer.timeJump(1.0)
-    jumpedTime = jumpedTime + 1.0
-    if jumpedTime > 2 * 60 * 60 then
-      error('two hours later ...\n' .. self:reportHangs())
-    end
-    ::CONTINUE::
   end
 
   self:remove()
@@ -153,22 +148,22 @@ function mt:start(callback)
   CLI = false
 end
 
-function mt:gc(obj)
+function LanguageClient:gc(obj)
   return self._gc:add(obj)
 end
 
-function mt:remove()
+function LanguageClient:remove()
   self._gc:remove()
 end
 
-function mt:notify(method, params)
+function LanguageClient:notify(method, params)
   proto.doMethod({
     method = method,
     params = params,
   })
 end
 
-function mt:request(method, params, callback)
+function LanguageClient:request(method, params, callback)
   local id = counter()
   self._waiting[id] = {
     id = id,
@@ -183,7 +178,7 @@ function mt:request(method, params, callback)
 end
 
 --- @async
-function mt:awaitRequest(method, params)
+function LanguageClient:awaitRequest(method, params)
   return await.wait(function(waker)
     self:request(method, params, function(result)
       if result == json.null then
@@ -194,7 +189,7 @@ function mt:awaitRequest(method, params)
   end)
 end
 
-function mt:update()
+function LanguageClient:update()
   local outs = self._outs
   if #outs == 0 then
     return false
@@ -225,11 +220,11 @@ function mt:update()
   return true
 end
 
-function mt:register(method, callback)
+function LanguageClient:register(method, callback)
   self._methods[method] = callback
 end
 
-function mt:registerFakers()
+function LanguageClient:registerFakers()
   for _, method in ipairs({
     'textDocument/publishDiagnostics',
     'workspace/configuration',
@@ -246,13 +241,12 @@ function mt:registerFakers()
   end
 end
 
---- @return languageClient
+--- @return LanguageClient
 return function()
-  local self = setmetatable({
+  return setmetatable({
     _gc = gc(),
     _outs = {},
     _waiting = {},
     _methods = {},
-  }, mt)
-  return self
+  }, LanguageClient)
 end
