@@ -6,11 +6,11 @@ local Char = 1 - Symbol
 local Path = (1 - m.S([[\/*?"<>|]])) ^ 1 * Slash
 local NoWord = #(m.P(-1) + Symbol)
 
-local mt = {}
-mt.__index = mt
-mt.__name = 'matcher'
+local Marcher = {}
+Marcher.__index = Marcher
+Marcher.__name = 'matcher'
 
-function mt:exp(state, index)
+function Marcher:exp(state, index)
   local exp = state[index]
   if not exp then
     return
@@ -32,7 +32,7 @@ function mt:exp(state, index)
   end
 end
 
-function mt:word(exp, state, index)
+function Marcher:word(exp, state, index)
   local current = self:exp(exp.value, 1)
   local after = self:exp(state, index)
   if after then
@@ -42,7 +42,7 @@ function mt:word(exp, state, index)
   end
 end
 
-function mt:char(exp, state, index)
+function Marcher:char(exp, state, index)
   local current = m.P(exp.value)
   local after = self:exp(state, index)
   if after then
@@ -52,7 +52,7 @@ function mt:char(exp, state, index)
   end
 end
 
-function mt:anyPath(_, state, index)
+function Marcher:anyPath(_, state, index)
   local after = self:exp(state, index)
   if after then
     return m.P({
@@ -64,7 +64,7 @@ function mt:anyPath(_, state, index)
   end
 end
 
-function mt:anyChar(_, state, index)
+function Marcher:anyChar(_, state, index)
   local after = self:exp(state, index)
   if after then
     return m.P({
@@ -76,7 +76,7 @@ function mt:anyChar(_, state, index)
   end
 end
 
-function mt:oneChar(_, state, index)
+function Marcher:oneChar(_, state, index)
   local after = self:exp(state, index)
   if after then
     return Char * after
@@ -85,7 +85,7 @@ function mt:oneChar(_, state, index)
   end
 end
 
-function mt:range(exp, state, index)
+function Marcher:range(exp, state, index)
   local after = self:exp(state, index)
   local ranges = {}
   local selects = {}
@@ -104,7 +104,7 @@ function mt:range(exp, state, index)
   end
 end
 
-function mt:slash(_, state, index)
+function Marcher:slash(_, state, index)
   local after = self:exp(state, index)
   if after then
     return after
@@ -114,7 +114,7 @@ function mt:slash(_, state, index)
   end
 end
 
-function mt:pattern(state)
+function Marcher:pattern(state)
   if state.root then
     local after = self:exp(state, 1)
     if after then
@@ -127,15 +127,15 @@ function mt:pattern(state)
   end
 end
 
-function mt:isNeedDirectory()
+function Marcher:isNeedDirectory()
   return self.needDirectory == true
 end
 
-function mt:isNegative()
+function Marcher:isNegative()
   return self.state.neg == true
 end
 
-function mt:__call(path)
+function Marcher:__call(path)
   return self.matcher:match(path)
 end
 
@@ -143,7 +143,7 @@ return function(state, options)
   local self = setmetatable({
     options = options,
     state = state,
-  }, mt)
+  }, Marcher)
   self.matcher = self:pattern(state)
   if not self.matcher then
     return nil

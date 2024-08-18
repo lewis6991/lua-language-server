@@ -10,10 +10,9 @@ local M = {}
 M.ID_SPLITE = '\x1F'
 
 function M.getSpecial(source)
-  if not source then
-    return nil
+  if source then
+    return source.special
   end
-  return source.special
 end
 
 --- @param source parser.object
@@ -65,8 +64,7 @@ function M.getObjectFunctionValue(source)
   end
   if value.type == 'function' or value.type == 'doc.type.function' then
     return value
-  end
-  if value.type == 'getlocal' then
+  elseif value.type == 'getlocal' then
     return M.getObjectFunctionValue(value.node)
   end
   return value
