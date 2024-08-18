@@ -1,6 +1,3 @@
-local sfind = string.find
-local ssub = string.sub
-
 --- @param text string
 return function(text)
   local current = 1
@@ -9,12 +6,12 @@ return function(text)
   lines.size = #text
   local i = 0
   while true do
-    local pos = sfind(text, '[\r\n]', current)
+    local pos = text:find('[\r\n]', current)
     if not pos then
       break
     end
     i = i + 1
-    if ssub(text, pos, pos + 1) == '\r\n' then
+    if text:sub(pos, pos + 1) == '\r\n' then
       current = pos + 2
     else
       current = pos + 1

@@ -1,23 +1,6 @@
 local tokens = require('parser.tokens')
 local guide = require('parser.guide')
 
-local sbyte = string.byte
-local sfind = string.find
-local smatch = string.match
-local sgsub = string.gsub
-local ssub = string.sub
-local schar = string.char
-local supper = string.upper
-local uchar = utf8.char
-local tconcat = table.concat
-local tinsert = table.insert
-local tointeger = math.tointeger
-local tonumber = tonumber
-local maxinteger = math.maxinteger
-local assert = assert
-
-_ENV = nil
-
 --- @alias parser.position integer
 
 --- @param str string
@@ -26,15 +9,15 @@ local function stringToCharMap(str)
   local map = {}
   local pos = 1
   while pos <= #str do
-    local byte = sbyte(str, pos, pos)
-    map[schar(byte)] = true
+    local byte = string.byte(str, pos, pos)
+    map[string.char(byte)] = true
     pos = pos + 1
-    if ssub(str, pos, pos) == '-' and pos < #str then
+    if str:sub(pos, pos) == '-' and pos < #str then
       pos = pos + 1
-      local byte2 = sbyte(str, pos, pos)
+      local byte2 = string.byte(str, pos, pos)
       assert(byte < byte2)
       for b = byte + 1, byte2 do
-        map[schar(b)] = true
+        map[string.char(b)] = true
       end
       pos = pos + 1
     end
@@ -282,7 +265,7 @@ local function peekWord()
   if not word then
     return nil
   end
-  if not CharMapWord[ssub(word, 1, 1)] then
+  if not CharMapWord[word:sub(1, 1)] then
     return nil
   end
   local startPos = getPosition(Tokens[Index], 'left')
@@ -428,19 +411,19 @@ local function resolveLongString(finishMark)
   skipNL()
   local miss
   local start = Tokens[Index]
-  local finishOffset = sfind(Lua, finishMark, start, true)
+  local finishOffset = string.find(Lua, finishMark, start, true)
   if not finishOffset then
     finishOffset = #Lua + 1
     miss = true
   end
-  local stringResult = start and ssub(Lua, start, finishOffset - 1) or ''
+  local stringResult = start and Lua:sub(start, finishOffset - 1) or ''
   local lastLN = stringResult:find('[\r\n][^\r\n]*$')
   if lastLN then
     local result = stringResult:gsub('\r\n?', '\n')
     stringResult = result
   end
   if finishMark == ']]' and State.version == 'Lua 5.1' then
-    local nestOffset = sfind(Lua, '[[', start, true)
+    local nestOffset = string.find(Lua, '[[', start, true)
     if nestOffset and nestOffset < finishOffset then
       fastForwardToken(nestOffset)
       local nestStartPos = getPosition(nestOffset, 'left')
@@ -476,13 +459,13 @@ local function resolveLongString(finishMark)
 end
 
 local function parseLongString()
-  local start, finish, mark = sfind(Lua, '^(%[%=*%[)', Tokens[Index])
+  local start, finish, mark = string.find(Lua, '^(%[%=*%[)', Tokens[Index])
   if not start then
     return nil
   end
   fastForwardToken(finish + 1)
   local startPos = getPosition(start, 'left')
-  local finishMark = sgsub(mark, '%[', ']')
+  local finishMark = string.gsub(mark, '%[', ']')
   local stringResult, finishPos = resolveLongString(finishMark)
   return {
     type = 'string',
@@ -569,7 +552,7 @@ local function skipComment(isAction)
       type = chead and 'comment.cshort' or 'comment.short',
       start = left,
       finish = getPosition(right, 'right'),
-      text = ssub(Lua, start + 2, right),
+      text = Lua:sub(start + 2, right),
     }
     return true
   end
@@ -875,16 +858,16 @@ end
 
 local function parseStringUnicode()
   local offset = Tokens[Index] + 1
-  if ssub(Lua, offset, offset) ~= '{' then
+  if Lua:sub(offset, offset) ~= '{' then
     local pos = getPosition(offset, 'left')
     missSymbol('{', pos)
     return nil, offset
   end
   local leftPos = getPosition(offset, 'left')
-  local x16 = smatch(Lua, '^%w*', offset + 1)
+  local x16 = string.match(Lua, '^%w*', offset + 1)
   local rightPos = getPosition(offset + #x16, 'right')
   offset = offset + #x16 + 1
-  if ssub(Lua, offset, offset) == '}' then
+  if Lua:sub(offset, offset) == '}' then
     offset = offset + 1
     rightPos = rightPos + 1
   else
@@ -914,7 +897,7 @@ local function parseStringUnicode()
   local byte = tonumber(x16, 16)
   if not byte then
     for i = 1, #x16 do
-      if not tonumber(ssub(x16, i, i), 16) then
+      if not tonumber(x16:sub(i, i), 16) then
         pushError({
           type = 'MUST_X16',
           start = leftPos + i,
@@ -952,7 +935,7 @@ local function parseStringUnicode()
     end
   end
   if byte >= 0 and byte <= 0x10FFFF then
-    return uchar(byte), offset
+    return utf8.char(byte), offset
   end
   return '', offset
 end
@@ -972,25 +955,25 @@ local function parseShortString()
         local token = Tokens[Index + 1]
         if token == mark then
           stringIndex = stringIndex + 1
-          stringPool[stringIndex] = ssub(Lua, currentOffset, Tokens[Index] - 1)
+          stringPool[stringIndex] = Lua:sub(currentOffset, Tokens[Index] - 1)
           Index = Index + 2
           return true
         end
         if NLMap[token] then
           stringIndex = stringIndex + 1
-          stringPool[stringIndex] = ssub(Lua, currentOffset, Tokens[Index] - 1)
+          stringPool[stringIndex] = Lua:sub(currentOffset, Tokens[Index] - 1)
           missSymbol(mark)
           return true
         end
         if not token then
           stringIndex = stringIndex + 1
-          stringPool[stringIndex] = ssub(Lua, currentOffset or -1)
+          stringPool[stringIndex] = Lua:sub(currentOffset or -1)
           missSymbol(mark)
           return true
         end
         if token == '\\' then
           stringIndex = stringIndex + 1
-          stringPool[stringIndex] = ssub(Lua, currentOffset, Tokens[Index] - 1)
+          stringPool[stringIndex] = Lua:sub(currentOffset, Tokens[Index] - 1)
           currentOffset = Tokens[Index]
           Index = Index + 2
           if not Tokens[Index] then
@@ -1010,7 +993,7 @@ local function parseShortString()
             escs[#escs + 1] = 'err'
             return
           end
-          local nextToken = ssub(Tokens[Index + 1], 1, 1)
+          local nextToken = string.sub(Tokens[Index + 1], 1, 1)
           if EscMap[nextToken] then
             stringIndex = stringIndex + 1
             stringPool[stringIndex] = EscMap[nextToken]
@@ -1042,17 +1025,17 @@ local function parseShortString()
             return
           end
           if CharMapNumber[nextToken] then
-            local numbers = smatch(Tokens[Index + 1], '^%d+')
+            local numbers = string.match(Tokens[Index + 1], '^%d+')
             if #numbers > 3 then
-              numbers = ssub(numbers, 1, 3)
+              numbers = string.sub(numbers, 1, 3)
             end
             currentOffset = Tokens[Index] + #numbers
             fastForwardToken(currentOffset)
             local right = getPosition(currentOffset - 1, 'right')
-            local byte = tointeger(numbers)
+            local byte = math.tointeger(numbers)
             if byte and byte <= 255 then
               stringIndex = stringIndex + 1
-              stringPool[stringIndex] = schar(byte)
+              stringPool[stringIndex] = string.char(byte)
             else
               pushError({
                 type = 'ERR_ESC',
@@ -1067,12 +1050,12 @@ local function parseShortString()
           end
           if nextToken == 'x' then
             local left = getPosition(Tokens[Index] - 1, 'left')
-            local x16 = ssub(Tokens[Index + 1], 2, 3)
+            local x16 = string.sub(Tokens[Index + 1], 2, 3)
             local byte = tonumber(x16, 16)
             if byte then
               currentOffset = Tokens[Index] + 3
               stringIndex = stringIndex + 1
-              stringPool[stringIndex] = schar(byte)
+              stringPool[stringIndex] = string.char(byte)
             else
               currentOffset = Tokens[Index] + 1
               pushError({
@@ -1139,7 +1122,7 @@ local function parseShortString()
       break
     end
   end
-  local stringResult = tconcat(stringPool, '', 1, stringIndex)
+  local stringResult = table.concat(stringPool, '', 1, stringIndex)
   local str = {
     type = 'string',
     start = startPos,
@@ -1190,24 +1173,24 @@ end
 
 local function parseNumber10(start)
   local integer = true
-  local integerPart = smatch(Lua, '^%d*', start)
+  local integerPart = string.match(Lua, '^%d*', start)
   local offset = start + #integerPart
   -- float part
-  if ssub(Lua, offset, offset) == '.' then
-    local floatPart = smatch(Lua, '^%d*', offset + 1)
+  if string.sub(Lua, offset, offset) == '.' then
+    local floatPart = string.match(Lua, '^%d*', offset + 1)
     integer = false
     offset = offset + #floatPart + 1
   end
   -- exp part
-  local echar = ssub(Lua, offset, offset)
+  local echar = string.sub(Lua, offset, offset)
   if CharMapE10[echar] then
     integer = false
     offset = offset + 1
-    local nextChar = ssub(Lua, offset, offset)
+    local nextChar = string.sub(Lua, offset, offset)
     if CharMapSign[nextChar] then
       offset = offset + 1
     end
-    local exp = smatch(Lua, '^%d*', offset)
+    local exp = string.match(Lua, '^%d*', offset)
     offset = offset + #exp
     if #exp == 0 then
       pushError({
@@ -1217,16 +1200,16 @@ local function parseNumber10(start)
       })
     end
   end
-  return tonumber(ssub(Lua, start, offset - 1)), offset, integer
+  return tonumber(string.sub(Lua, start, offset - 1)), offset, integer
 end
 
 local function parseNumber16(start)
-  local integerPart = smatch(Lua, '^[%da-fA-F]*', start)
+  local integerPart = string.match(Lua, '^[%da-fA-F]*', start)
   local offset = start + #integerPart
   local integer = true
   -- float part
-  if ssub(Lua, offset, offset) == '.' then
-    local floatPart = smatch(Lua, '^[%da-fA-F]*', offset + 1)
+  if string.sub(Lua, offset, offset) == '.' then
+    local floatPart = string.match(Lua, '^[%da-fA-F]*', offset + 1)
     integer = false
     offset = offset + #floatPart + 1
     if #integerPart == 0 and #floatPart == 0 then
@@ -1247,23 +1230,23 @@ local function parseNumber16(start)
     end
   end
   -- exp part
-  local echar = ssub(Lua, offset, offset)
+  local echar = string.sub(Lua, offset, offset)
   if CharMapE16[echar] then
     integer = false
     offset = offset + 1
-    local nextChar = ssub(Lua, offset, offset)
+    local nextChar = string.sub(Lua, offset, offset)
     if CharMapSign[nextChar] then
       offset = offset + 1
     end
-    local exp = smatch(Lua, '^%d*', offset)
+    local exp = string.match(Lua, '^%d*', offset)
     offset = offset + #exp
   end
-  local n = tonumber(ssub(Lua, start - 2, offset - 1))
+  local n = tonumber(string.sub(Lua, start - 2, offset - 1))
   return n, offset, integer
 end
 
 local function parseNumber2(start)
-  local bins = smatch(Lua, '^[01]*', start)
+  local bins = string.match(Lua, '^[01]*', start)
   local offset = start + #bins
   if State.version ~= 'LuaJIT' then
     pushError({
@@ -1280,12 +1263,12 @@ local function parseNumber2(start)
 end
 
 local function dropNumberTail(offset, integer)
-  local _, finish, word = sfind(Lua, '^([%.%w_\x80-\xff]+)', offset)
+  local _, finish, word = string.find(Lua, '^([%.%w_\x80-\xff]+)', offset)
   if not finish then
     return offset
   end
   if integer then
-    if supper(ssub(word, 1, 2)) == 'LL' then
+    if string.upper(string.sub(word, 1, 2)) == 'LL' then
       if State.version ~= 'LuaJIT' then
         pushError({
           type = 'UNSUPPORT_SYMBOL',
@@ -1298,8 +1281,8 @@ local function dropNumberTail(offset, integer)
         })
       end
       offset = offset + 2
-      word = ssub(word, offset)
-    elseif supper(ssub(word, 1, 3)) == 'ULL' then
+      word = string.sub(word, offset)
+    elseif string.upper(string.sub(word, 1, 3)) == 'ULL' then
       if State.version ~= 'LuaJIT' then
         pushError({
           type = 'UNSUPPORT_SYMBOL',
@@ -1312,10 +1295,10 @@ local function dropNumberTail(offset, integer)
         })
       end
       offset = offset + 3
-      word = ssub(word, offset)
+      word = string.sub(word, offset)
     end
   end
-  if supper(ssub(word, 1, 1)) == 'I' then
+  if string.upper(string.sub(word, 1, 1)) == 'I' then
     if State.version ~= 'LuaJIT' then
       pushError({
         type = 'UNSUPPORT_SYMBOL',
@@ -1328,7 +1311,7 @@ local function dropNumberTail(offset, integer)
       })
     end
     offset = offset + 1
-    word = ssub(word, offset)
+    word = string.sub(word, offset)
   end
   if #word > 0 then
     pushError({
@@ -1347,17 +1330,17 @@ local function parseNumber()
   end
   local startPos = getPosition(offset, 'left')
   local neg
-  if ssub(Lua, offset, offset) == '-' then
+  if string.sub(Lua, offset, offset) == '-' then
     neg = true
     offset = offset + 1
   end
   local number, integer
-  local firstChar = ssub(Lua, offset, offset)
+  local firstChar = string.sub(Lua, offset, offset)
   if firstChar == '.' then
     number, offset = parseNumber10(offset)
     integer = false
   elseif firstChar == '0' then
-    local nextChar = ssub(Lua, offset + 1, offset + 1)
+    local nextChar = string.sub(Lua, offset + 1, offset + 1)
     if CharMapN16[nextChar] then
       number, offset, integer = parseNumber16(offset + 2)
     elseif CharMapN2[nextChar] then
@@ -1400,7 +1383,7 @@ local function isKeyWord(word, nextToken)
       if not nextToken then
         return false
       end
-      if CharMapWord[ssub(nextToken, 1, 1)] then
+      if CharMapWord[string.sub(nextToken, 1, 1)] then
         return true
       end
       return false
@@ -1744,7 +1727,7 @@ local function addDummySelf(node, call)
     parent = call.args,
     [1] = 'self',
   }
-  tinsert(call.args, 1, self)
+  table.insert(call.args, 1, self)
 end
 
 local function checkAmbiguityCall(call, parenPos)
@@ -2220,7 +2203,7 @@ local function parseParams(params, isLambda)
       end
       hasDots = true
       Index = Index + 2
-    elseif CharMapWord[ssub(token, 1, 1)] then
+    elseif CharMapWord[string.sub(token, 1, 1)] then
       if lastSep == false then
         missSymbol(',')
       end
@@ -2981,7 +2964,7 @@ local function compileExpAsAction(exp)
       LocalCount = LocalCount - 1
       local loc = createLocal(exp, parseLocalAttrs())
       loc.locPos = exp.start
-      loc.effect = maxinteger
+      loc.effect = math.maxinteger
       isLocal = true
       skipSpace()
     end
@@ -3076,7 +3059,7 @@ local function parseLocal()
   end
   local loc = createLocal(name, parseLocalAttrs())
   loc.locPos = locPos
-  loc.effect = maxinteger
+  loc.effect = math.maxinteger
   pushActionIntoCurrentChunk(loc)
   skipSpace()
   parseMultiVars(loc, parseName, true)
