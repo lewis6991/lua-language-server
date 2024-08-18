@@ -17,7 +17,7 @@ local nodeCache = setmetatable({}, { __mode = 'k' })
 --- @field fields? table<vm.node|string, vm.node>
 --- @field undefinedGlobal boolean?
 --- @field lastInfer? vm.infer
-local mt = {
+local Node = {
   id = 0,
   type = 'vm.node',
   optional = nil,
@@ -25,11 +25,11 @@ local mt = {
   hasDefined = nil,
   originNode = nil,
 }
-mt.__index = mt
+Node.__index = Node
 
 --- @param node vm.node | vm.node.object
 --- @return vm.node
-function mt:merge(node)
+function Node:merge(node)
   if not node then
     return self
   end
@@ -58,12 +58,12 @@ function mt:merge(node)
 end
 
 --- @return boolean
-function mt:isEmpty()
+function Node:isEmpty()
   return #self == 0
 end
 
 --- @return boolean
-function mt:isTyped()
+function Node:isTyped()
   for _, c in ipairs(self) do
     if c.type == 'global' and c.cate == 'type' then
       return true
@@ -75,7 +75,7 @@ function mt:isTyped()
   return false
 end
 
-function mt:clear()
+function Node:clear()
   self.optional = nil
   for i, c in ipairs(self) do
     self[i] = nil
@@ -85,26 +85,26 @@ end
 
 --- @param n integer
 --- @return vm.node.object?
-function mt:get(n)
+function Node:get(n)
   return self[n]
 end
 
-function mt:addOptional()
+function Node:addOptional()
   self.optional = true
 end
 
-function mt:removeOptional()
+function Node:removeOptional()
   self:remove('nil')
   return self
 end
 
 --- @return boolean
-function mt:isOptional()
+function Node:isOptional()
   return self.optional == true
 end
 
 --- @return boolean
-function mt:hasFalsy()
+function Node:hasFalsy()
   if self.optional then
     return true
   end
@@ -123,7 +123,7 @@ function mt:hasFalsy()
 end
 
 --- @return boolean
-function mt:hasKnownType()
+function Node:hasKnownType()
   for _, c in ipairs(self) do
     if c.type == 'global' and c.cate == 'type' then
       return true
@@ -136,7 +136,7 @@ function mt:hasKnownType()
 end
 
 --- @return boolean
-function mt:isNullable()
+function Node:isNullable()
   if self.optional then
     return true
   end
@@ -157,7 +157,7 @@ function mt:isNullable()
 end
 
 --- @return vm.node
-function mt:setTruthy()
+function Node:setTruthy()
   if self.optional == true then
     self.optional = nil
   end
@@ -191,7 +191,7 @@ function mt:setTruthy()
 end
 
 --- @return vm.node
-function mt:setFalsy()
+function Node:setFalsy()
   if self.optional == false then
     self.optional = nil
   end
@@ -228,7 +228,7 @@ function mt:setFalsy()
 end
 
 --- @param name string
-function mt:remove(name)
+function Node:remove(name)
   if name == 'nil' and self.optional == true then
     self.optional = nil
   end
@@ -256,7 +256,7 @@ end
 
 --- @param uri string
 --- @param name string
-function mt:narrow(uri, name)
+function Node:narrow(uri, name)
   if self.optional == true then
     self.optional = nil
   end
@@ -291,7 +291,7 @@ function mt:narrow(uri, name)
 end
 
 --- @param obj vm.object | vm.variable
-function mt:removeObject(obj)
+function Node:removeObject(obj)
   for index, c in ipairs(self) do
     if c == obj then
       table.remove(self, index)
@@ -302,7 +302,7 @@ function mt:removeObject(obj)
 end
 
 --- @param node vm.node
-function mt:removeNode(node)
+function Node:removeNode(node)
   for _, c in ipairs(node) do
     if c.type == 'global' and c.cate == 'type' then
       ---@cast c vm.global
@@ -324,7 +324,7 @@ end
 
 --- @param name string
 --- @return boolean
-function mt:hasType(name)
+function Node:hasType(name)
   for _, c in ipairs(self) do
     if c.type == 'global' and c.cate == 'type' and c.name == name then
       return true
@@ -335,7 +335,7 @@ end
 
 --- @param name string
 --- @return boolean
-function mt:hasName(name)
+function Node:hasName(name)
   if name == 'nil' and self.optional == true then
     return true
   end
@@ -352,7 +352,7 @@ function mt:hasName(name)
 end
 
 --- @return vm.node
-function mt:asTable()
+function Node:asTable()
   self.optional = nil
   for index = #self, 1, -1 do
     local c = self[index]
@@ -374,7 +374,7 @@ function mt:asTable()
 end
 
 --- @return fun():vm.node.object
-function mt:eachObject()
+function Node:eachObject()
   local i = 0
   return function()
     i = i + 1
@@ -383,7 +383,7 @@ function mt:eachObject()
 end
 
 --- @return vm.node
-function mt:copy()
+function Node:copy()
   return vm.createNode(self)
 end
 
@@ -460,7 +460,7 @@ local ID = 0
 --- @return vm.node
 function vm.createNode(a, b)
   ID = ID + 1
-  local node = setmetatable({ id = ID }, mt)
+  local node = setmetatable({ id = ID }, Node)
   if a then
     node:merge(a)
   end

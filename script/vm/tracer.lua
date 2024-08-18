@@ -23,12 +23,12 @@ local util = require('utility')
 --- @field main      parser.object
 --- @field uri       string
 --- @field castIndex integer?
-local mt = {}
-mt.__index = mt
-mt.fastCalc = true
+local Tracer = {}
+Tracer.__index = Tracer
+Tracer.fastCalc = true
 
 --- @return parser.object[]
-function mt:getCasts()
+function Tracer:getCasts()
   local root = guide.getRoot(self.main)
   if not root._casts then
     root._casts = {}
@@ -43,7 +43,7 @@ function mt:getCasts()
 end
 
 --- @param obj parser.object
-function mt:collectAssign(obj)
+function Tracer:collectAssign(obj)
   while true do
     local block = guide.getParentBlock(obj)
     if not block then
@@ -62,7 +62,7 @@ function mt:collectAssign(obj)
 end
 
 --- @param obj parser.object
-function mt:collectCare(obj)
+function Tracer:collectCare(obj)
   while true do
     if self.careMap[obj] then
       return
@@ -90,7 +90,7 @@ function mt:collectCare(obj)
   end
 end
 
-function mt:collectLocal()
+function Tracer:collectLocal()
   local startPos = self.source.base.start
   local finishPos = 0
 
@@ -135,7 +135,7 @@ function mt:collectLocal()
   end
 end
 
-function mt:collectGlobal()
+function Tracer:collectGlobal()
   self.assigns[#self.assigns + 1] = self.source
   self.assignMap[self.source] = true
 
@@ -172,7 +172,7 @@ end
 --- @param start  integer
 --- @param finish integer
 --- @return parser.object?
-function mt:getLastAssign(start, finish)
+function Tracer:getLastAssign(start, finish)
   local lastAssign
   for _, assign in ipairs(self.assigns) do
     local obj
@@ -200,7 +200,7 @@ function mt:getLastAssign(start, finish)
 end
 
 --- @param pos integer
-function mt:resetCastsIndex(pos)
+function Tracer:resetCastsIndex(pos)
   for i = 1, #self.casts do
     local cast = self.casts[i]
     if cast.start > pos then
@@ -214,7 +214,7 @@ end
 --- @param pos integer
 --- @param node vm.node
 --- @return vm.node
-function mt:fastWardCasts(pos, node)
+function Tracer:fastWardCasts(pos, node)
   if not self.castIndex then
     return node
   end
@@ -748,7 +748,7 @@ local lookIntoChild = util
 --- @param outNode? vm.node
 --- @return vm.node topNode
 --- @return vm.node outNode
-function mt:lookIntoChild(action, topNode, outNode)
+function Tracer:lookIntoChild(action, topNode, outNode)
   if not self.careMap[action] or self.mark[action] then
     return topNode, outNode or topNode
   end
@@ -761,7 +761,7 @@ end
 --- @param block parser.object
 --- @param start integer
 --- @param node  vm.node
-function mt:lookIntoBlock(block, start, node)
+function Tracer:lookIntoBlock(block, start, node)
   self:resetCastsIndex(start)
   for _, action in ipairs(block) do
     if (action.effect or action.start) >= start then
@@ -791,7 +791,7 @@ function mt:lookIntoBlock(block, start, node)
 end
 
 --- @param source parser.object
-function mt:calcNode(source)
+function Tracer:calcNode(source)
   if self.getMap[source] then
     local lastAssign = self:getLastAssign(0, source.finish)
     if not lastAssign then
@@ -817,7 +817,7 @@ end
 
 --- @param source parser.object
 --- @return vm.node?
-function mt:getNode(source)
+function Tracer:getNode(source)
   local cache = self.nodes[source]
   if cache ~= nil then
     return cache or nil
@@ -868,7 +868,7 @@ local function createTracer(mode, source, name)
     nodes = {},
     main = main,
     uri = guide.getUri(main),
-  }, mt)
+  }, Tracer)
   node._tracer = tracer
 
   if tracer.mode == 'local' then

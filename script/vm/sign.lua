@@ -77,8 +77,7 @@ function mt:resolve(uri, args)
         end
       end
       return
-    end
-    if object.type == 'doc.type.array' then
+    elseif object.type == 'doc.type.array' then
       for n in node:eachObject() do
         if n.type == 'doc.type.array' then
           -- number[] -> T[]
@@ -104,8 +103,7 @@ function mt:resolve(uri, args)
         end
       end
       return
-    end
-    if object.type == 'doc.type.table' then
+    elseif object.type == 'doc.type.table' then
       for _, ufield in ipairs(object.fields) do
         local ufieldNode = vm.compileNode(ufield.name)
         local uvalueNode = vm.compileNode(ufield.extends)
@@ -140,8 +138,7 @@ function mt:resolve(uri, args)
         end
       end
       return
-    end
-    if object.type == 'doc.type.function' then
+    elseif object.type == 'doc.type.function' then
       for i, arg in ipairs(object.args) do
         if arg.extends then
           for n in node:eachObject() do

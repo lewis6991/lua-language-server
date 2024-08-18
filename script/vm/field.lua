@@ -1,20 +1,6 @@
 --- @class vm
 local vm = require('vm.vm')
-local util = require('utility')
 local guide = require('parser.guide')
-
-local searchByNodeSwitch = util
-  .switch()
-  :case('global')
-  ---@param global vm.global
-  :call(function(suri, global, pushResult)
-    for _, set in ipairs(global:getSets(suri)) do
-      pushResult(set)
-    end
-  end)
-  :default(function(_suri, source, pushResult)
-    pushResult(source)
-  end)
 
 local function searchByLocalID(source, pushResult)
   local fields = vm.getVariableFields(source, true)
@@ -33,7 +19,14 @@ local function searchByNode(source, pushResult, mark)
   mark[source] = true
   local uri = guide.getUri(source)
   vm.compileByParentNode(source, vm.ANY, function(field)
-    searchByNodeSwitch(field.type, uri, field, pushResult)
+    if field.type == 'global' then
+      --- @cast field vm.global
+      for _, set in ipairs(field:getSets(uri)) do
+        pushResult(set)
+      end
+    else
+      pushResult(field)
+    end
   end)
   vm.compileByNodeChain(source, function(src)
     searchByNode(src, pushResult, mark)

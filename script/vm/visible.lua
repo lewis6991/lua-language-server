@@ -39,12 +39,10 @@ local function getVisibleType(source)
       if doc.type == 'doc.private' then
         source._visibleType = 'private'
         return 'private'
-      end
-      if doc.type == 'doc.protected' then
+      elseif doc.type == 'doc.protected' then
         source._visibleType = 'protected'
         return 'protected'
-      end
-      if doc.type == 'doc.package' then
+      elseif doc.type == 'doc.package' then
         source._visibleType = 'package'
         return 'package'
       end
@@ -106,17 +104,14 @@ end
 function vm.getParentClass(source)
   if source.type == 'doc.field' then
     return vm.getGlobalNode(source.class)
-  end
-  if
+  elseif
     source.type == 'setfield'
     or source.type == 'setindex'
     or source.type == 'setmethod'
     or source.type == 'tableindex'
   then
     return vm.getDefinedClass(guide.getUri(source), source.node)
-  end
-
-  if source.type == 'tablefield' then
+  elseif source.type == 'tablefield' then
     return vm.getDefinedClass(guide.getUri(source), source.node)
       or vm.getDefinedClass(guide.getUri(source), source.parent.parent)
   end
@@ -175,8 +170,7 @@ function vm.isVisible(parent, field)
   local visible = vm.getVisibleType(field)
   if visible == 'public' then
     return true
-  end
-  if visible == 'package' then
+  elseif visible == 'package' then
     return guide.getUri(parent) == guide.getUri(field)
   end
   local class = vm.getParentClass(field)

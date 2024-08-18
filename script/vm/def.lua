@@ -1,34 +1,22 @@
 --- @class vm
 local vm = require('vm.vm')
-local util = require('utility')
 local guide = require('parser.guide')
-
-local simpleSwitch
-
-simpleSwitch = util
-  .switch()
-  :case('goto')
-  :call(function(source, pushResult)
-    if source.node then
-      pushResult(source.node)
-    end
-  end)
-  :case('doc.cast.name')
-  :call(function(source, pushResult)
-    local loc = guide.getLocal(source, source[1], source.start)
-    if loc then
-      pushResult(loc)
-    end
-  end)
-  :case('doc.field')
-  :call(function(source, pushResult)
-    pushResult(source)
-  end)
 
 --- @param source  parser.object
 --- @param pushResult fun(src: parser.object)
 local function searchBySimple(source, pushResult)
-  simpleSwitch(source.type, source, pushResult)
+  if source.type == 'goto' then
+    if source.node then
+      pushResult(source.node)
+    end
+  elseif source.type == 'doc.cast.name' then
+    local loc = guide.getLocal(source, source[1], source.start)
+    if loc then
+      pushResult(loc)
+    end
+  elseif source.type == 'doc.field' then
+    pushResult(source)
+  end
 end
 
 --- @param source  parser.object

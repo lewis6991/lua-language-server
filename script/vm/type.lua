@@ -187,9 +187,7 @@ local function checkValue(parent, child, mark, errs)
       end
     end
     return true
-  end
-
-  if parent.type == 'doc.type.string' or parent.type == 'doc.field.name' then
+  elseif parent.type == 'doc.type.string' or parent.type == 'doc.field.name' then
     if
       child.type == 'string'
       or child.type == 'doc.type.string'
@@ -205,9 +203,7 @@ local function checkValue(parent, child, mark, errs)
       end
     end
     return true
-  end
-
-  if parent.type == 'doc.type.boolean' then
+  elseif parent.type == 'doc.type.boolean' then
     if child.type == 'boolean' or child.type == 'doc.type.boolean' then
       if parent[1] ~= child[1] then
         if errs then
@@ -219,9 +215,7 @@ local function checkValue(parent, child, mark, errs)
       end
     end
     return true
-  end
-
-  if parent.type == 'doc.type.table' then
+  elseif parent.type == 'doc.type.table' then
     if child.type == 'doc.type.table' then
       if child == parent then
         return true
@@ -471,52 +465,48 @@ function vm.isSubType(uri, child, parent, mark, errs)
     local failedCheck
     local myKeys
     for _, def in ipairs(set) do
-      if not def.fields or #def.fields == 0 then
-        goto continue
-      end
-      if not myKeys then
-        myKeys = {}
-        for _, field in ipairs(child) do
-          local key = vm.getKeyName(field) or field.tindex
+      if def.fields and #def.fields > 0 then
+        if not myKeys then
+          myKeys = {}
+          for _, field in ipairs(child) do
+            local key = vm.getKeyName(field) or field.tindex
+            if key then
+              myKeys[key] = vm.compileNode(field)
+            end
+          end
+        end
+
+        for _, field in ipairs(def.fields) do
+          local key = vm.getKeyName(field)
+          if not key then
+            local fieldnode = vm.compileNode(field.field)[1]
+            if fieldnode and fieldnode.type == 'doc.type.integer' then
+              ---@cast fieldnode parser.object
+              key = vm.getKeyName(fieldnode)
+            end
+          end
           if key then
-            myKeys[key] = vm.compileNode(field)
+            local ok
+            local nodeField = vm.compileNode(field)
+            if myKeys[key] then
+              ok = vm.isSubType(uri, myKeys[key], nodeField, mark, errs)
+              if ok == false then
+                errs[#errs + 1] = 'TYPE_ERROR_PARENT_ALL_DISMATCH' -- error display can be greatly improved
+                errs[#errs + 1] = myKeys[key]
+                errs[#errs + 1] = nodeField
+                failedCheck = true
+              end
+            elseif not nodeField:isNullable() then
+              if type(key) == 'number' then
+                missedKeys[#missedKeys + 1] = ('`[%s]`'):format(key)
+              else
+                missedKeys[#missedKeys + 1] = ('`%s`'):format(key)
+              end
+              failedCheck = true
+            end
           end
         end
       end
-
-      for _, field in ipairs(def.fields) do
-        local key = vm.getKeyName(field)
-        if not key then
-          local fieldnode = vm.compileNode(field.field)[1]
-          if fieldnode and fieldnode.type == 'doc.type.integer' then
-            ---@cast fieldnode parser.object
-            key = vm.getKeyName(fieldnode)
-          end
-        end
-        if not key then
-          goto continue
-        end
-
-        local ok
-        local nodeField = vm.compileNode(field)
-        if myKeys[key] then
-          ok = vm.isSubType(uri, myKeys[key], nodeField, mark, errs)
-          if ok == false then
-            errs[#errs + 1] = 'TYPE_ERROR_PARENT_ALL_DISMATCH' -- error display can be greatly improved
-            errs[#errs + 1] = myKeys[key]
-            errs[#errs + 1] = nodeField
-            failedCheck = true
-          end
-        elseif not nodeField:isNullable() then
-          if type(key) == 'number' then
-            missedKeys[#missedKeys + 1] = ('`[%s]`'):format(key)
-          else
-            missedKeys[#missedKeys + 1] = ('`%s`'):format(key)
-          end
-          failedCheck = true
-        end
-      end
-      ::continue::
     end
     if #missedKeys > 0 then
       errs[#errs + 1] = 'DIAG_MISSING_FIELDS'

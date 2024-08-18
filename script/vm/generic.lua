@@ -160,9 +160,8 @@ end
 --- @param sign  vm.sign
 --- @return vm.generic
 function vm.createGeneric(proto, sign)
-  local generic = setmetatable({
+  return setmetatable({
     sign = sign,
     proto = proto,
   }, mt)
-  return generic
 end

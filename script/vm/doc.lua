@@ -160,31 +160,27 @@ end
 --- @param deep boolean?
 --- @return parser.object?
 function vm.getDeprecated(value, deep)
-  if deep then
-    local defs = vm.getDefs(value)
-    if #defs == 0 then
-      return nil
-    end
-    local deprecated
-    for _, def in ipairs(defs) do
-      if
-        def.type == 'setglobal'
-        or def.type == 'setfield'
-        or def.type == 'setmethod'
-        or def.type == 'setindex'
-        or def.type == 'tablefield'
-        or def.type == 'tableindex'
-      then
-        deprecated = getDeprecated(def)
-        if not deprecated then
-          return nil
-        end
-      end
-    end
-    return deprecated
-  else
+  if not deep then
     return getDeprecated(value)
   end
+
+  local deprecated
+  for _, def in ipairs(vm.getDefs(value) or {}) do
+    if
+      def.type == 'setglobal'
+      or def.type == 'setfield'
+      or def.type == 'setmethod'
+      or def.type == 'setindex'
+      or def.type == 'tablefield'
+      or def.type == 'tableindex'
+    then
+      deprecated = getDeprecated(def)
+      if not deprecated then
+        return
+      end
+    end
+  end
+  return deprecated
 end
 
 --- @param  value parser.object
@@ -220,11 +216,7 @@ function vm.isAsync(value, deep)
     return true
   end
   if deep then
-    local defs = vm.getDefs(value)
-    if #defs == 0 then
-      return false
-    end
-    for _, def in ipairs(defs) do
+    for _, def in ipairs(vm.getDefs(value) or {}) do
       if isAsync(def) then
         return true
       end
@@ -263,11 +255,7 @@ function vm.isNoDiscard(value, deep)
     return true
   end
   if deep then
-    local defs = vm.getDefs(value)
-    if #defs == 0 then
-      return false
-    end
-    for _, def in ipairs(defs) do
+    for _, def in ipairs(vm.getDefs(value) or {}) do
       if isNoDiscard(def) then
         return true
       end
@@ -287,8 +275,7 @@ local function isCalledInFunction(param)
     if ref.type == 'getlocal' then
       if ref.parent.type == 'call' and guide.getParentFunction(ref) == func then
         return true
-      end
-      if
+      elseif
         ref.parent.type == 'callargs'
         and ref.parent[1] == ref
         and guide.getParentFunction(ref) == func

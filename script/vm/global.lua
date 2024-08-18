@@ -20,6 +20,7 @@ local globalSubs = util.multiTable(2)
 --- @field gets parser.object[]
 
 --- @class vm.global
+--- @field type 'global'
 --- @field links table<string, vm.global.link>
 --- @field setsCache? table<string, parser.object[]>
 --- @field cate vm.global.cate
@@ -535,10 +536,7 @@ function vm.hasGlobalSets(suri, cate, name)
     return false
   end
   local sets = global:getSets(suri)
-  if #sets == 0 then
-    return false
-  end
-  return true
+  return #sets ~= 0
 end
 
 --- @param uri string

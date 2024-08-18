@@ -42,8 +42,7 @@ function vm.countParamsOfFunction(func)
         end
       end
     end
-  end
-  if func.type == 'doc.type.function' then
+  elseif func.type == 'doc.type.function' then
     if func.args then
       max = #func.args
       def = max

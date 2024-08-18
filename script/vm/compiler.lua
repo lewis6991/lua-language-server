@@ -1538,6 +1538,7 @@ local nodeCompilers_table = {
   ['function.return'] = function(source)
     local func = source.parent
     local index = source.returnIndex
+
     local hasMarkDoc
     if func.bindDocs then
       local sign = vm.getSign(func)
@@ -1575,6 +1576,7 @@ local nodeCompilers_table = {
         end
       end
     end
+
     local hasReturn
     if func.returns and not hasMarkDoc then
       for _, rtn in ipairs(func.returns) do
@@ -1605,6 +1607,7 @@ local nodeCompilers_table = {
         end
       end
     end
+
     if not hasMarkDoc and not hasReturn then
       vm.setNode(source, vm.declareGlobal('type', 'nil'))
     end
@@ -1614,9 +1617,8 @@ local nodeCompilers_table = {
     if vm.bindAs(source) then
       return
     end
-    local func = source.func
-    local args = source.args
-    local index = source.cindex
+
+    local func, args, index = source.func, source.args, source.cindex
     if func.special == 'setmetatable' then
       if args then
         vm.setNode(source, getReturnOfSetMetaTable(args))
@@ -1810,48 +1812,31 @@ local nodeCompilers_table = {
     vm.setNode(source, vm.compileNode(source.parent))
   end,
 
-  ['doc.field'] = function(source)
-    if not source.extends then
-      return
+  [{ 'doc.field', 'doc.type.field' }] = function(source)
+    if source.extends then
+      local fieldNode = vm.compileNode(source.extends)
+      if source.optional then
+        fieldNode:addOptional()
+      end
+      vm.setNode(source, fieldNode)
     end
-    local fieldNode = vm.compileNode(source.extends)
-    if source.optional then
-      fieldNode:addOptional()
-    end
-    vm.setNode(source, fieldNode)
-  end,
-
-  ['doc.type.field'] = function(source)
-    if not source.extends then
-      return
-    end
-    local fieldNode = vm.compileNode(source.extends)
-    if source.optional then
-      fieldNode:addOptional()
-    end
-    vm.setNode(source, fieldNode)
   end,
 
   ['doc.param'] = function(source)
-    if not source.extends then
-      return
+    if source.extends then
+      vm.setNode(source, vm.compileNode(source.extends))
     end
-    vm.setNode(source, vm.compileNode(source.extends))
   end,
 
   ['doc.vararg'] = function(source)
-    if not source.vararg then
-      return
+    if source.vararg then
+      vm.setNode(source, vm.compileNode(source.vararg))
     end
-    vm.setNode(source, vm.compileNode(source.vararg))
   end,
 
   ['...'] = function(source)
     for _, doc in ipairs(source.bindDocs or {}) do
-      if doc.type == 'doc.vararg' then
-        vm.setNode(source, vm.compileNode(doc))
-      end
-      if doc.type == 'doc.param' then
+      if doc.type == 'doc.vararg' or doc.type == 'doc.param' then
         vm.setNode(source, vm.compileNode(doc))
       end
     end
@@ -1932,11 +1917,10 @@ local nodeCompilers_table = {
     end
   end,
 
+  --- @param source vm.variable
   ['variable'] = function(source)
-    --- @cast source vm.variable
     if source == vm.getVariable(source.base) then
       vm.setNode(source, vm.compileNode(source.base))
-      return
     end
   end,
 }

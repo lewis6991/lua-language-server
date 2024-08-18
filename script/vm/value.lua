@@ -54,24 +54,20 @@ local function getUnique(v)
       return false
     end
     return ('%s'):format(v[1])
-  end
-  if v.type == 'number' then
+  elseif v.type == 'number' then
     if not v[1] then
       return false
     end
     return ('num:%s'):format(v[1])
-  end
-  if v.type == 'integer' then
+  elseif v.type == 'integer' then
     if not v[1] then
       return false
     end
     return ('num:%s'):format(v[1])
-  end
-  if v.type == 'table' then
+  elseif v.type == 'table' then
     ---@cast v parser.object
     return ('table:%s@%d'):format(guide.getUri(v), v.start)
-  end
-  if v.type == 'function' then
+  elseif v.type == 'function' then
     ---@cast v parser.object
     return ('func:%s@%d'):format(guide.getUri(v), v.start)
   end
@@ -119,17 +115,15 @@ function vm.getInteger(v)
     if n.type == 'integer' then
       if result then
         return nil
-      else
-        result = n[1]
       end
+      result = n[1]
     elseif n.type == 'number' then
       if result then
         return nil
       elseif not math.tointeger(n[1]) then
         return nil
-      else
-        result = math.tointeger(n[1])
       end
+      result = math.tointeger(n[1])
     elseif n.type ~= 'local' and n.type ~= 'global' then
       return nil
     end
@@ -149,9 +143,8 @@ function vm.getString(v)
     if n.type == 'string' then
       if result then
         return nil
-      else
-        result = n[1]
       end
+      result = n[1]
     elseif n.type ~= 'local' and n.type ~= 'global' then
       return nil
     end
@@ -171,9 +164,8 @@ function vm.getNumber(v)
     if n.type == 'number' or n.type == 'integer' then
       if result then
         return nil
-      else
-        result = n[1]
       end
+      result = n[1]
     elseif n.type ~= 'local' and n.type ~= 'global' then
       return nil
     end
@@ -213,11 +205,12 @@ function vm.getLiterals(v)
   local node = vm.compileNode(v)
   for n in node:eachObject() do
     local literal
-    if n.type == 'boolean' or n.type == 'string' or n.type == 'number' or n.type == 'integer' then
-      literal = n[1]
-    end
     if
-      n.type == 'doc.type.string'
+      n.type == 'boolean'
+      or n.type == 'string'
+      or n.type == 'number'
+      or n.type == 'integer'
+      or n.type == 'doc.type.string'
       or n.type == 'doc.type.integer'
       or n.type == 'doc.type.boolean'
     then
