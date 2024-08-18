@@ -1,16 +1,3 @@
-local type = type
-local pairs = pairs
-local error = error
-local next = next
-local load = load
-local setmt = setmetatable
-local rawset = rawset
-local smatch = string.match
-local sformat = string.format
-local tconcat = table.concat
-
-_ENV = nil
-
 --- @class lazytable.builder
 --- @field source     table
 --- @field codeMap    table<integer, string>
@@ -54,21 +41,21 @@ local RESERVED = {
 --- @return string
 local function formatKey(k)
   if type(k) == 'string' then
-    if not RESERVED[k] and smatch(k, '^[%a_][%w_]*$') then
+    if not RESERVED[k] and k:match('^[%a_][%w_]*$') then
       return k
     else
-      return sformat('[%q]', k)
+      return string.format('[%q]', k)
     end
   end
   if type(k) == 'number' then
-    return sformat('[%q]', k)
+    return string.format('[%q]', k)
   end
   error('invalid key type: ' .. type(k))
 end
 
 --- @param v string|number|boolean
 local function formatValue(v)
-  return sformat('%q', v)
+  return string.format('%q', v)
 end
 
 --- @param info {[1]: table, [2]: integer, [3]: table?}
@@ -84,11 +71,11 @@ local function dump(info)
     else
       hasFields = true
     end
-    codeBuf[#codeBuf + 1] = sformat('%s=%s', formatKey(k), formatValue(v))
+    codeBuf[#codeBuf + 1] = string.format('%s=%s', formatKey(k), formatValue(v))
   end
   codeBuf[#codeBuf + 1] = '}'
 
-  codeBuf[#codeBuf + 1] = sformat(',%d', formatValue(info[2]))
+  codeBuf[#codeBuf + 1] = string.format(',%d', formatValue(info[2]))
 
   if info[3] then
     codeBuf[#codeBuf + 1] = ',{'
@@ -99,14 +86,14 @@ local function dump(info)
       else
         hasFields = true
       end
-      codeBuf[#codeBuf + 1] = sformat('%s=%s', formatKey(k), formatValue(v))
+      codeBuf[#codeBuf + 1] = string.format('%s=%s', formatKey(k), formatValue(v))
     end
     codeBuf[#codeBuf + 1] = '}'
   end
 
   codeBuf[#codeBuf + 1] = '}'
 
-  return tconcat(codeBuf)
+  return table.concat(codeBuf)
 end
 
 --- @param obj table|function|userdata|thread
@@ -152,7 +139,7 @@ end
 --- @param writter fun(id: integer, code: string): boolean
 --- @param reader  fun(id: integer): string?
 function mt:bind(writter, reader)
-  setmt(self.codeMap, {
+  setmetatable(self.codeMap, {
     __newindex = function(t, id, code)
       local suc = writter(id, code)
       if not suc then
@@ -182,7 +169,7 @@ function mt:entry()
   ---@type table<table, integer>
   local idMap = {}
   ---@type table<table, table[]>
-  local infoMap = setmt({}, {
+  local infoMap = setmetatable({}, {
     __mode = 'v',
     __index = function(map, t)
       local id = idMap[t]
@@ -297,16 +284,16 @@ function mt:entry()
     end,
   }
 
-  setmt(idMap, { __mode = 'k' })
+  setmetatable(idMap, { __mode = 'k' })
 
-  setmt(instMap, {
+  setmetatable(instMap, {
     __mode = 'v',
     __index = function(map, id)
       local inst = {}
       idMap[inst] = id
       map[id] = inst
 
-      return setmt(inst, lazyload)
+      return setmetatable(inst, lazyload)
     end,
   })
 
@@ -326,13 +313,13 @@ local M = {}
 --- @param reader?  fun(id: integer): string?
 --- @return lazytable.builder
 function M.build(t, writter, reader)
-  local builder = setmt({
+  local builder = setmetatable({
     source = t,
     codeMap = {},
     refMap = {},
     instMap = {},
     dumpMark = {},
-    excludes = setmt({}, { __mode = 'k' }),
+    excludes = setmetatable({}, { __mode = 'k' }),
   }, mt)
 
   if writter and reader then

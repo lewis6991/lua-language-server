@@ -1,11 +1,5 @@
 -- $Id: re.lua,v 1.44 2013/03/26 20:11:40 roberto Exp $
 
--- imported functions and modules
-local tonumber, type, print, error = tonumber, type, print, error
-local pcall = pcall
-local setmetatable = setmetatable
-local tinsert, concat = table.insert, table.concat
-local rep = string.rep
 local m = require('lpeglabel')
 
 -- 'm' will be used to parse expressions, and 'mm' will be used to
@@ -15,9 +9,6 @@ local mm = m
 
 -- pattern's metatable
 local mt = getmetatable(mm.P(0))
-
--- No more global accesses after this point
-_ENV = nil
 
 local any = m.P(1)
 local dummy = mm.P(false)
@@ -308,7 +299,7 @@ end
 local function splitlines(str)
   local t = {}
   local function helper(line)
-    tinsert(t, line)
+    table.insert(t, line)
     return ''
   end
   helper((str:gsub('(.-)\r?\n', helper)))
@@ -333,10 +324,10 @@ local function compile(p, defs)
     local lines = splitlines(p)
     local line, col = lineno(p, poserr)
     local err = {}
-    tinsert(err, 'L' .. line .. ':C' .. col .. ': ' .. errinfo[label])
-    tinsert(err, lines[line])
-    tinsert(err, rep(' ', col - 1) .. '^')
-    error('syntax error(s) in pattern\n' .. concat(err, '\n'), 3)
+    table.insert(err, 'L' .. line .. ':C' .. col .. ': ' .. errinfo[label])
+    table.insert(err, lines[line])
+    table.insert(err, string.rep(' ', col - 1) .. '^')
+    error('syntax error(s) in pattern\n' .. table.concat(err, '\n'), 3)
   end
   return cp
 end

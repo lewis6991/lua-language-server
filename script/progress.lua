@@ -6,9 +6,9 @@ local time = require('bee.time')
 
 local nextToken = util.counter()
 
-local m = {}
+local M = {}
 
-m.map = {}
+M.map = {}
 
 --- @class progress
 --- @field _uri   string
@@ -33,7 +33,7 @@ function mt:remove()
   end
   self._removed = true
   local token = self._token
-  m.map[token] = nil
+  M.map[token] = nil
   if self._showed then
     self._showed = false
     proto.notify('$/progress', {
@@ -136,9 +136,9 @@ function mt:__close()
   self:remove()
 end
 
-function m.update()
+function M.update()
   ---@param prog progress
-  for _, prog in pairs(m.map) do
+  for _, prog in pairs(M.map) do
     if prog:isRemoved() then
       goto CONTINUE
     end
@@ -151,7 +151,7 @@ end
 --- @param uri?  string
 --- @param title string # 标题
 --- @param delay number # 至少经过这么久之后才会显示出来
-function m.create(uri, title, delay)
+function M.create(uri, title, delay)
   local token = nextToken()
   local prog = setmetatable({
     _token = token,
@@ -161,14 +161,14 @@ function m.create(uri, title, delay)
     _uri = uri,
   }, mt)
 
-  m.map[token] = prog
+  M.map[token] = prog
 
   return prog
 end
 
 ---取消一个进度条
-function m.cancel(token)
-  local prog = m.map[token]
+function M.cancel(token)
+  local prog = M.map[token]
   if not prog then
     return
   end
@@ -176,6 +176,6 @@ function m.cancel(token)
   prog:remove()
 end
 
-timer.loop(0.1, m.update)
+timer.loop(0.1, M.update)
 
-return m
+return M

@@ -1,13 +1,11 @@
 local json     = require 'json'
 local inspect  = require 'inspect'
-local pcall    = pcall
-local tonumber = tonumber
 
 --- @class jsonrpc
-local m = {}
-m.type = 'jsonrpc'
+local M = {}
+M.type = 'jsonrpc'
 
-function m.encode(pack)
+function M.encode(pack)
     pack.jsonrpc = '2.0'
     local content = json.encode(pack)
     local buf = ('Content-Length: %d\r\n\r\n%s'):format(#content, content)
@@ -46,7 +44,7 @@ local function readProtoHead(reader)
 end
 
 --- @param reader fun(arg: integer):string
-function m.decode(reader)
+function M.decode(reader)
     local head, err = readProtoHead(reader)
     if not head then
         return nil, err
@@ -70,4 +68,4 @@ function m.decode(reader)
     return res
 end
 
-return m
+return M

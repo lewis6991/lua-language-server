@@ -16,20 +16,20 @@ local pluginConfigs = {
 }
 
 --- @class plugin
-local m = {}
+local M = {}
 
-function m.showError(scp, err)
-  if m._hasShowedError then
+function M.showError(scp, err)
+  if M._hasShowedError then
     return
   end
-  m._hasShowedError = true
+  M._hasShowedError = true
   client.showMessage('Error', lang.script('PLUGIN_RUNTIME_ERROR', scp:get('pluginPath'), err))
 end
 
 --- @alias plugin.event 'OnSetText' | 'OnTransformAst' | 'ResolveRequire'
 
 --- @param event plugin.event
-function m.dispatch(event, uri, ...)
+function M.dispatch(event, uri, ...)
   local scp = scope.getScope(uri)
   local interfaces = scp:get('pluginInterfaces')
   if not interfaces then
@@ -52,14 +52,14 @@ function m.dispatch(event, uri, ...)
       log.warn(('Call plugin event [%s] takes [%.3f] sec'):format(event, passed))
     end
     if not suc then
-      m.showError(scp, res1)
+      M.showError(scp, res1)
       failed = failed + 1
     end
   end
   return failed == 0, res1, res2
 end
 
-function m.getVmPlugin(uri)
+function M.getVmPlugin(uri)
   local scp = scope.getScope(uri)
   ---@type pluginInterfaces
   local interfaces = scp:get('pluginInterfaces')
@@ -194,7 +194,7 @@ local function initPlugin(uri)
       local f, err = load(pluginLua, '@' .. pluginPath, 't', interface)
       if not f then
         log.error(err)
-        m.showError(scp, err)
+        M.showError(scp, err)
         return
       end
       if not client.getOption('trustByClient') and not checkTrustLoad(scp) then
@@ -202,7 +202,7 @@ local function initPlugin(uri)
       end
       local suc, err = xpcall(f, log.error, f, uri, myArgs)
       if not suc then
-        m.showError(scp, err)
+        M.showError(scp, err)
         return
       end
       interfaces[#interfaces + 1] = interface
@@ -223,4 +223,4 @@ ws.watch(function(ev, uri)
   end
 end)
 
-return m
+return M

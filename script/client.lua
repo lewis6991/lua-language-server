@@ -12,44 +12,44 @@ local inspect = require('inspect')
 local jsone = require('json-edit')
 local jsonc = require('jsonc')
 
-local m = {}
-m._eventList = {}
+local M = {}
+M._eventList = {}
 
-function m.client(newClient)
+function M.client(newClient)
   if newClient then
-    m._client = newClient
+    M._client = newClient
   else
-    return m._client
+    return M._client
   end
 end
 
-function m.isVSCode()
-  if not m._client then
+function M.isVSCode()
+  if not M._client then
     return false
   end
-  if m._isvscode == nil then
-    local lname = m._client:lower()
+  if M._isvscode == nil then
+    local lname = M._client:lower()
     if lname:find('vscode') or lname:find('visual studio code') then
-      m._isvscode = true
+      M._isvscode = true
     else
-      m._isvscode = false
+      M._isvscode = false
     end
   end
-  return m._isvscode
+  return M._isvscode
 end
 
-function m.getOption(name)
+function M.getOption(name)
   nonil.enable()
-  local option = m.info.initializationOptions[name]
+  local option = M.info.initializationOptions[name]
   nonil.disable()
   return option
 end
 
-function m.getAbility(name)
-  if not m.info or not m.info.capabilities then
+function M.getAbility(name)
+  if not M.info or not M.info.capabilities then
     return nil
   end
-  local current = m.info.capabilities
+  local current = M.info.capabilities
   while true do
     local parent, nextPos = name:match('^([^%.]+)()')
     if not parent then
@@ -68,21 +68,21 @@ function m.getAbility(name)
   return current
 end
 
-function m.getOffsetEncoding()
-  if m._offsetEncoding then
-    return m._offsetEncoding
+function M.getOffsetEncoding()
+  if M._offsetEncoding then
+    return M._offsetEncoding
   end
-  local clientEncodings = m.getAbility('offsetEncoding')
+  local clientEncodings = M.getAbility('offsetEncoding')
   if type(clientEncodings) == 'table' then
     for _, encoding in ipairs(clientEncodings) do
       if encoding == 'utf-8' then
-        m._offsetEncoding = 'utf-8'
-        return m._offsetEncoding
+        M._offsetEncoding = 'utf-8'
+        return M._offsetEncoding
       end
     end
   end
-  m._offsetEncoding = 'utf-16'
-  return m._offsetEncoding
+  M._offsetEncoding = 'utf-16'
+  return M._offsetEncoding
 end
 
 local function packMessage(...)
@@ -97,7 +97,7 @@ end
 
 ---show message to client
 --- @param type message.type
-function m.showMessage(type, ...)
+function M.showMessage(type, ...)
   local message = packMessage(...)
   proto.notify('window/showMessage', {
     type = define.MessageType[type] or 3,
@@ -114,7 +114,7 @@ end
 --- @param message string
 --- @param titles  string[]
 --- @param callback fun(action?: string, index?: integer)
-function m.requestMessage(type, message, titles, callback)
+function M.requestMessage(type, message, titles, callback)
   proto.notify('window/logMessage', {
     type = define.MessageType[type] or 3,
     message = message,
@@ -148,14 +148,14 @@ end
 --- @return string action
 --- @return integer index
 --- @async
-function m.awaitRequestMessage(type, message, titles)
+function M.awaitRequestMessage(type, message, titles)
   return await.wait(function(waker)
-    m.requestMessage(type, message, titles, waker)
+    M.requestMessage(type, message, titles, waker)
   end)
 end
 
 --- @param type message.type
-function m.logMessage(type, ...)
+function M.logMessage(type, ...)
   local message = packMessage(...)
   proto.notify('window/logMessage', {
     type = define.MessageType[type] or 4,
@@ -163,7 +163,7 @@ function m.logMessage(type, ...)
   })
 end
 
-function m.watchFiles(path)
+function M.watchFiles(path)
   path = path:gsub('\\', '/'):gsub('[%[%]%{%}%*%?]', '\\%1')
   local registration = {
     id = path,
@@ -332,12 +332,12 @@ end
 local function editConfigJson(uri, path, changes)
   local text = util.loadFile(path)
   if not text then
-    m.showMessage('Error', lang.script('CONFIG_LOAD_FAILED', path))
+    M.showMessage('Error', lang.script('CONFIG_LOAD_FAILED', path))
     return nil
   end
   local suc, res = pcall(jsonc.decode_jsonc, text)
   if not suc then
-    m.showMessage(
+    M.showMessage(
       'Error',
       lang.script('CONFIG_MODIFY_FAIL_SYNTAX_ERROR', path .. res:match('ERROR(.+)$'))
     )
@@ -447,7 +447,7 @@ local function tryModifyClient(uri, finalChanges)
     return false
   end
   log.info('tryModifyClient', uri, inspect(finalChanges))
-  if not m.getOption('changeConfiguration') then
+  if not M.getOption('changeConfiguration') then
     return false
   end
   local scp = scope.getScope(uri)
@@ -476,7 +476,7 @@ local function tryModifyClientGlobal(finalChanges)
     return
   end
   log.info('tryModifyClientGlobal', inspect(finalChanges))
-  if not m.getOption('changeConfiguration') then
+  if not M.getOption('changeConfiguration') then
     log.info('Client dose not support modifying config')
     return
   end
@@ -519,7 +519,7 @@ end
 
 --- @param changes config.change[]
 --- @param onlyMemory? boolean
-function m.setConfig(changes, onlyMemory)
+function M.setConfig(changes, onlyMemory)
   local finalChanges = {}
   for _, change in ipairs(changes) do
     if change.action == 'add' then
@@ -554,7 +554,7 @@ function m.setConfig(changes, onlyMemory)
       tryModifyClient(nil, finalChanges)
       if #finalChanges > 0 then
         local manuallyModifyConfig = buildMaunuallyMessage(finalChanges)
-        m.showMessage(
+        M.showMessage(
           'Warning',
           lang.script('CONFIG_MODIFY_FAIL_NO_WORKSPACE', manuallyModifyConfig)
         )
@@ -567,7 +567,7 @@ function m.setConfig(changes, onlyMemory)
         tryModifyRC(scp.uri, finalChanges, true)
       end
       if #finalChanges > 0 then
-        m.showMessage(
+        M.showMessage(
           'Warning',
           lang.script('CONFIG_MODIFY_FAIL', buildMaunuallyMessage(finalChanges))
         )
@@ -581,7 +581,7 @@ end
 
 --- @param uri   string
 --- @param edits textEditor[]
-function m.editText(uri, edits)
+function M.editText(uri, edits)
   local files = require('files')
   local state = files.getState(uri)
   if not state then
@@ -606,7 +606,7 @@ end
 --- @alias textMultiEditor {uri: string, start: integer, finish: integer, text: string}
 
 --- @param editors textMultiEditor[]
-function m.editMultiText(editors)
+function M.editMultiText(editors)
   local files = require('files')
   local changes = {}
   for _, editor in ipairs(editors) do
@@ -631,25 +631,25 @@ function m.editMultiText(editors)
 end
 
 --- @param callback async fun(ev: string)
-function m.event(callback)
-  m._eventList[#m._eventList + 1] = callback
+function M.event(callback)
+  M._eventList[#M._eventList + 1] = callback
 end
 
-function m._callEvent(ev)
-  for _, callback in ipairs(m._eventList) do
+function M._callEvent(ev)
+  for _, callback in ipairs(M._eventList) do
     await.call(function()
       callback(ev)
     end)
   end
 end
 
-function m.setReady()
-  m._ready = true
-  m._callEvent('ready')
+function M.setReady()
+  M._ready = true
+  M._callEvent('ready')
 end
 
-function m.isReady()
-  return m._ready == true
+function M.isReady()
+  return M._ready == true
 end
 
 local function hookPrint()
@@ -657,20 +657,20 @@ local function hookPrint()
     return
   end
   print = function(...)
-    m.logMessage('Log', ...)
+    M.logMessage('Log', ...)
   end
 end
 
-function m.init(t)
+function M.init(t)
   log.info('Client init', inspect(t))
-  m.info = t
+  M.info = t
   nonil.enable()
-  m.client(t.clientInfo.name)
+  M.client(t.clientInfo.name)
   nonil.disable()
   lang(LOCALE or t.locale)
-  converter.setOffsetEncoding(m.getOffsetEncoding())
+  converter.setOffsetEncoding(M.getOffsetEncoding())
   hookPrint()
-  m._callEvent('init')
+  M._callEvent('init')
 end
 
-return m
+return M
