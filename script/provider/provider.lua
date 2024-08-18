@@ -23,12 +23,12 @@ local fs = require('bee.filesystem')
 require('library')
 
 --- @class provider
-local m = {}
+local M = {}
 
-m.attributes = {}
+M.attributes = {}
 
 --- @async
-function m.updateConfig(uri)
+function M.updateConfig(uri)
   config.addNullSymbol(json.null)
   local specified = cfgLoader.loadLocalConfig(uri, CONFIGPATH)
   if specified then
@@ -62,9 +62,9 @@ function m.updateConfig(uri)
   config.update(scope.fallback, global)
 end
 
-function m.register(method)
+function M.register(method)
   return function(attrs)
-    m.attributes[method] = attrs
+    M.attributes[method] = attrs
     if attrs.preview and not PREVIEW then
       return
     end
@@ -80,7 +80,7 @@ filewatch.event(function(_ev, path) ---@async
     for _, scp in ipairs(workspace.folders) do
       local configPath = workspace.getAbsolutePath(scp.uri, CONFIGPATH)
       if path == configPath then
-        m.updateConfig(scp.uri)
+        M.updateConfig(scp.uri)
       end
     end
   end
@@ -88,7 +88,7 @@ filewatch.event(function(_ev, path) ---@async
     for _, scp in ipairs(workspace.folders) do
       local rcPath = workspace.getAbsolutePath(scp.uri, '.luarc.json')
       if path == rcPath then
-        m.updateConfig(scp.uri)
+        M.updateConfig(scp.uri)
       end
     end
   end
@@ -96,13 +96,13 @@ filewatch.event(function(_ev, path) ---@async
     for _, scp in ipairs(workspace.folders) do
       local rcPath = workspace.getAbsolutePath(scp.uri, '.luarc.jsonc')
       if path == rcPath then
-        m.updateConfig(scp.uri)
+        M.updateConfig(scp.uri)
       end
     end
   end
 end)
 
-m.register('initialize')({
+M.register('initialize')({
   function(params)
     client.init(params)
 
@@ -130,12 +130,12 @@ m.register('initialize')({
   end,
 })
 
-m.register('initialized')({
+M.register('initialized')({
   ---@async
   function(_params)
     local _ <close> =
       progress.create(workspace.getFirstScope().uri, lang.script.WINDOW_INITIALIZING, 0.5)
-    m.updateConfig()
+    M.updateConfig()
     local registrations = {}
 
     if client.getAbility('workspace.didChangeConfiguration.dynamicRegistration') then
@@ -157,30 +157,30 @@ m.register('initialized')({
   end,
 })
 
-m.register('exit')({
+M.register('exit')({
   function()
     log.info('Server exited.')
     os.exit(0, true)
   end,
 })
 
-m.register('shutdown')({
+M.register('shutdown')({
   function()
     log.info('Server shutdown.')
     return true
   end,
 })
 
-m.register('workspace/didChangeConfiguration')({
+M.register('workspace/didChangeConfiguration')({
   function() ---@async
     if CONFIGPATH then
       return
     end
-    m.updateConfig()
+    M.updateConfig()
   end,
 })
 
-m.register('workspace/didRenameFiles')({
+M.register('workspace/didRenameFiles')({
   capability = {
     workspace = {
       fileOperations = {
@@ -235,7 +235,7 @@ m.register('workspace/didRenameFiles')({
   end,
 })
 
-m.register('workspace/didChangeWorkspaceFolders')({
+M.register('workspace/didChangeWorkspaceFolders')({
   capability = {
     workspace = {
       workspaceFolders = {
@@ -250,7 +250,7 @@ m.register('workspace/didChangeWorkspaceFolders')({
     for _, folder in ipairs(params.event.added) do
       local uri = files.getRealUri(folder.uri)
       workspace.create(uri)
-      m.updateConfig()
+      M.updateConfig()
       workspace.reload(scope.getScope(uri))
     end
     for _, folder in ipairs(params.event.removed) do
@@ -260,7 +260,7 @@ m.register('workspace/didChangeWorkspaceFolders')({
   end,
 })
 
-m.register('textDocument/didOpen')({
+M.register('textDocument/didOpen')({
   ---@async
   function(params)
     local doc = params.textDocument
@@ -276,7 +276,7 @@ m.register('textDocument/didOpen')({
   end,
 })
 
-m.register('textDocument/didClose')({
+M.register('textDocument/didClose')({
   function(params)
     local doc = params.textDocument
     local uri = files.getRealUri(doc.uri)
@@ -288,7 +288,7 @@ m.register('textDocument/didClose')({
   end,
 })
 
-m.register('textDocument/didChange')({
+M.register('textDocument/didChange')({
   ---@async
   function(params)
     local fixIndent = require('core.fix-indent')
@@ -313,7 +313,7 @@ m.register('textDocument/didChange')({
   end,
 })
 
-m.register('textDocument/didSave')({
+M.register('textDocument/didSave')({
   capability = {
     textDocumentSync = {
       save = {
@@ -329,7 +329,7 @@ m.register('textDocument/didSave')({
   end,
 })
 
-m.register('textDocument/hover')({
+M.register('textDocument/hover')({
   capability = {
     hoverProvider = true,
   },
@@ -406,7 +406,7 @@ local function convertDefinitionResult(state, result)
   return response
 end
 
-m.register('textDocument/definition')({
+M.register('textDocument/definition')({
   capability = {
     definitionProvider = true,
   },
@@ -431,7 +431,7 @@ m.register('textDocument/definition')({
   end,
 })
 
-m.register('textDocument/typeDefinition')({
+M.register('textDocument/typeDefinition')({
   capability = {
     typeDefinitionProvider = true,
   },
@@ -456,7 +456,7 @@ m.register('textDocument/typeDefinition')({
   end,
 })
 
-m.register('textDocument/implementation')({
+M.register('textDocument/implementation')({
   capability = {
     implementationProvider = true,
   },
@@ -481,7 +481,7 @@ m.register('textDocument/implementation')({
   end,
 })
 
-m.register('textDocument/references')({
+M.register('textDocument/references')({
   capability = {
     referencesProvider = true,
   },
@@ -517,7 +517,7 @@ m.register('textDocument/references')({
   end,
 })
 
-m.register('textDocument/documentHighlight')({
+M.register('textDocument/documentHighlight')({
   capability = {
     documentHighlightProvider = true,
   },
@@ -546,7 +546,7 @@ m.register('textDocument/documentHighlight')({
   end,
 })
 
-m.register('textDocument/rename')({
+M.register('textDocument/rename')({
   capability = {
     renameProvider = {
       prepareProvider = true,
@@ -560,13 +560,12 @@ m.register('textDocument/rename')({
     local _ <close> = progress.create(uri, lang.script.WINDOW_PROCESSING_RENAME, 0.5)
     local state = files.getState(uri)
     if not state then
-      return nil
+      return
     end
-    local core = require('core.rename')
     local pos = converter.unpackPosition(state, params.position)
-    local result = core.rename(uri, pos, params.newName)
+    local result = require('core.rename').rename(uri, pos, params.newName)
     if not result then
-      return nil
+      return
     end
     local workspaceEdit = {
       changes = {},
@@ -588,28 +587,26 @@ m.register('textDocument/rename')({
   end,
 })
 
-m.register('textDocument/prepareRename')({
+M.register('textDocument/prepareRename')({
   abortByFileUpdate = true,
   function(params)
-    local core = require('core.rename')
     local uri = files.getRealUri(params.textDocument.uri)
     local state = files.getState(uri)
     if not state then
-      return nil
+      return
     end
     local pos = converter.unpackPosition(state, params.position)
-    local result = core.prepareRename(uri, pos)
-    if not result then
-      return nil
+    local result = require('core.rename').prepareRename(uri, pos)
+    if result then
+      return {
+        range = converter.packRange(state, result.start, result.finish),
+        placeholder = result.text,
+      }
     end
-    return {
-      range = converter.packRange(state, result.start, result.finish),
-      placeholder = result.text,
-    }
   end,
 })
 
-m.register('textDocument/completion')({
+M.register('textDocument/completion')({
   ---@async
   function(params)
     local uri = files.getRealUri(params.textDocument.uri)
@@ -709,7 +706,7 @@ m.register('textDocument/completion')({
   end,
 })
 
-m.register('completionItem/resolve')({
+M.register('completionItem/resolve')({
   ---@async
   function(item)
     local core = require('core.completion')
@@ -750,7 +747,7 @@ m.register('completionItem/resolve')({
   end,
 })
 
-m.register('textDocument/signatureHelp')({
+M.register('textDocument/signatureHelp')({
   capability = {
     signatureHelpProvider = {
       triggerCharacters = { '(', ',' },
@@ -802,7 +799,7 @@ m.register('textDocument/signatureHelp')({
   end,
 })
 
-m.register('textDocument/documentSymbol')({
+M.register('textDocument/documentSymbol')({
   capability = {
     documentSymbolProvider = true,
   },
@@ -847,7 +844,7 @@ m.register('textDocument/documentSymbol')({
   end,
 })
 
-m.register('textDocument/codeAction')({
+M.register('textDocument/codeAction')({
   capability = {
     codeActionProvider = {
       codeActionKinds = {
@@ -900,7 +897,7 @@ m.register('textDocument/codeAction')({
   end,
 })
 
-m.register('textDocument/codeLens')({
+M.register('textDocument/codeLens')({
   capability = {
     codeLensProvider = {
       resolveProvider = true,
@@ -937,7 +934,7 @@ m.register('textDocument/codeLens')({
   end,
 })
 
-m.register('codeLens/resolve')({
+M.register('codeLens/resolve')({
   ---@async
   function(codeLen)
     local core = require('core.code-lens')
@@ -947,7 +944,7 @@ m.register('codeLens/resolve')({
   end,
 })
 
-m.register('workspace/executeCommand')({
+M.register('workspace/executeCommand')({
   capability = {
     executeCommandProvider = {
       commands = {
@@ -993,7 +990,7 @@ m.register('workspace/executeCommand')({
   end,
 })
 
-m.register('workspace/symbol')({
+M.register('workspace/symbol')({
   capability = {
     workspaceSymbolProvider = true,
   },
@@ -1049,7 +1046,7 @@ end
 client.event(function(ev)
   if ev == 'init' then
     if not client.getOption('useSemanticByRange') then
-      m.register('textDocument/semanticTokens/full')({
+      M.register('textDocument/semanticTokens/full')({
         capability = {
           semanticTokensProvider = {
             legend = {
@@ -1078,7 +1075,7 @@ client.event(function(ev)
   end
 end)
 
-m.register('textDocument/semanticTokens/range')({
+M.register('textDocument/semanticTokens/range')({
   capability = {
     semanticTokensProvider = {
       legend = {
@@ -1109,7 +1106,7 @@ m.register('textDocument/semanticTokens/range')({
   end,
 })
 
-m.register('textDocument/foldingRange')({
+M.register('textDocument/foldingRange')({
   capability = {
     foldingRangeProvider = true,
   },
@@ -1150,7 +1147,7 @@ m.register('textDocument/foldingRange')({
   end,
 })
 
-m.register('textDocument/documentColor')({
+M.register('textDocument/documentColor')({
   capability = {
     colorProvider = true,
   },
@@ -1178,21 +1175,21 @@ m.register('textDocument/documentColor')({
   end,
 })
 
-m.register('textDocument/colorPresentation')({
+M.register('textDocument/colorPresentation')({
   function(params)
     local color = (require('core.color')).colorToText(params.color)
     return { { label = color } }
   end,
 })
 
-m.register('window/workDoneProgress/cancel')({
+M.register('window/workDoneProgress/cancel')({
   function(params)
     log.debug('close proto(cancel):', params.token)
     progress.cancel(params.token)
   end,
 })
 
-m.register('$/status/click')({
+M.register('$/status/click')({
   ---@async
   function()
     local titleDiagnostic = lang.script.WINDOW_LUA_STATUS_DIAGNOSIS_TITLE
@@ -1226,7 +1223,7 @@ m.register('$/status/click')({
   end,
 })
 
-m.register('textDocument/formatting')({
+M.register('textDocument/formatting')({
   capability = {
     documentFormattingProvider = true,
   },
@@ -1264,7 +1261,7 @@ m.register('textDocument/formatting')({
   end,
 })
 
-m.register('textDocument/rangeFormatting')({
+M.register('textDocument/rangeFormatting')({
   capability = {
     documentRangeFormattingProvider = true,
   },
@@ -1302,7 +1299,7 @@ m.register('textDocument/rangeFormatting')({
   end,
 })
 
-m.register('textDocument/onTypeFormatting')({
+M.register('textDocument/onTypeFormatting')({
   capability = {
     documentOnTypeFormattingProvider = {
       firstTriggerCharacter = '\n',
@@ -1341,13 +1338,13 @@ m.register('textDocument/onTypeFormatting')({
   end,
 })
 
-m.register('$/cancelRequest')({
+M.register('$/cancelRequest')({
   function(params)
     proto.close(params.id, define.ErrorCodes.RequestCancelled, 'Request cancelled.')
   end,
 })
 
-m.register('$/requestHint')({
+M.register('$/requestHint')({
   ---@async
   function(params)
     local uri = files.getRealUri(params.textDocument.uri)
@@ -1374,7 +1371,7 @@ m.register('$/requestHint')({
   end,
 })
 
-m.register('textDocument/inlayHint')({
+M.register('textDocument/inlayHint')({
   capability = {
     inlayHintProvider = {
       resolveProvider = true,
@@ -1419,7 +1416,7 @@ m.register('textDocument/inlayHint')({
   end,
 })
 
-m.register('inlayHint/resolve')({
+M.register('inlayHint/resolve')({
   capability = {
     inlayHintProvider = {
       resolveProvider = true,
@@ -1431,7 +1428,7 @@ m.register('inlayHint/resolve')({
   end,
 })
 
-m.register('textDocument/diagnostic')({
+M.register('textDocument/diagnostic')({
   preview = true,
   capability = {
     diagnosticProvider = {
@@ -1472,7 +1469,7 @@ m.register('textDocument/diagnostic')({
   end,
 })
 
-m.register('workspace/diagnostic')({
+M.register('workspace/diagnostic')({
   --preview = true,
   --capability = {
   --    diagnosticProvider = {
@@ -1519,7 +1516,7 @@ m.register('workspace/diagnostic')({
   end,
 })
 
-m.register('$/api/report')({
+M.register('$/api/report')({
   ---@async
   function(params)
     local buildMeta = require('provider.build-meta')
@@ -1548,7 +1545,7 @@ m.register('$/api/report')({
   end,
 })
 
-m.register('$/psi/view')({
+M.register('$/psi/view')({
   ---@async
   function(params)
     local uri = files.getRealUri(params.uri)
@@ -1563,7 +1560,7 @@ m.register('$/psi/view')({
   end,
 })
 
-m.register('$/psi/select')({
+M.register('$/psi/select')({
   ---@async
   function(params)
     local uri = files.getRealUri(params.uri)
@@ -1615,7 +1612,7 @@ config.watch(function(_uri, key, _value)
   end
 end)
 
-m.register('$/status/refresh')({ refreshStatusBar })
+M.register('$/status/refresh')({ refreshStatusBar })
 
 files.watch(function(ev, uri)
   if not workspace.isReady(uri) then
@@ -1623,7 +1620,7 @@ files.watch(function(ev, uri)
   end
   if ev == 'update' or ev == 'remove' then
     for id, p in pairs(proto.holdon) do
-      if m.attributes[p.method].abortByFileUpdate then
+      if M.attributes[p.method].abortByFileUpdate then
         log.debug('close proto(ContentModified):', id, p.method)
         proto.close(id, define.ErrorCodes.ContentModified, 'Content modified.')
       end
@@ -1631,4 +1628,4 @@ files.watch(function(ev, uri)
   end
 end)
 
-return m
+return M

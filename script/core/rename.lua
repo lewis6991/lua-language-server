@@ -5,7 +5,7 @@ local findSource = require('core.find-source')
 local guide = require('parser.guide')
 local config = require('config')
 
-local Forcing
+local forcing
 
 --- @param str string
 --- @return string
@@ -151,6 +151,7 @@ local function ofFieldThen(key, src, newname, callback)
   if vm.getKeyName(src) ~= key then
     return
   end
+
   if src.type == 'tablefield' or src.type == 'getfield' or src.type == 'setfield' then
     src = src.field
   elseif src.type == 'tableindex' or src.type == 'getindex' or src.type == 'setindex' then
@@ -158,26 +159,17 @@ local function ofFieldThen(key, src, newname, callback)
   elseif src.type == 'getmethod' or src.type == 'setmethod' then
     src = src.method
   end
+
   if src.type == 'string' then
     local quo = src[2]
     local text = util.viewString(newname, quo)
     callback(src, src.start, src.finish, text)
-    return
   elseif src.type == 'field' or src.type == 'method' then
-    local suc = renameField(src, newname, callback)
-    if not suc then
-      return
-    end
+    renameField(src, newname, callback)
   elseif src.type == 'setglobal' or src.type == 'getglobal' then
-    local suc = renameGlobal(src, newname, callback)
-    if not suc then
-      return
-    end
+    renameGlobal(src, newname, callback)
   elseif src.type == 'doc.field' then
-    local suc = renameField(src.field, newname, callback)
-    if not suc then
-      return
-    end
+    renameField(src.field, newname, callback)
   end
 end
 
@@ -257,34 +249,39 @@ local function ofDocParamName(source, newname, callback)
 end
 
 --- @async
+--- @param source parser.object
+--- @param newname string
+--- @param callback function
+--- @return table?
 local function rename(source, newname, callback)
-  if source.type == 'label' or source.type == 'goto' then
+  local ty = source.type
+  if ty == 'label' or ty == 'goto' then
     return ofLabel(source, newname, callback)
-  elseif source.type == 'local' then
+  elseif ty == 'local' then
     return ofLocal(source, newname, callback)
-  elseif source.type == 'setlocal' or source.type == 'getlocal' then
+  elseif ty == 'setlocal' or ty == 'getlocal' then
     return ofLocal(source.node, newname, callback)
-  elseif source.type == 'field' or source.type == 'method' or source.type == 'index' then
+  elseif ty == 'field' or ty == 'method' or ty == 'index' then
     return ofField(source.parent, newname, callback)
-  elseif source.type == 'setglobal' or source.type == 'getglobal' then
+  elseif ty == 'setglobal' or ty == 'getglobal' then
     return ofGlobal(source, newname, callback)
   elseif
-    source.type == 'doc.class.name'
-    or source.type == 'doc.type.name'
-    or source.type == 'doc.alias.name'
-    or source.type == 'doc.enum.name'
-    or source.type == 'doc.extends.name'
+    ty == 'doc.class.name'
+    or ty == 'doc.type.name'
+    or ty == 'doc.alias.name'
+    or ty == 'doc.enum.name'
+    or ty == 'doc.extends.name'
   then
     return ofDocTypeName(source, newname, callback)
-  elseif source.type == 'doc.param.name' then
+  elseif ty == 'doc.param.name' then
     return ofDocParamName(source, newname, callback)
-  elseif source.type == 'doc.field.name' then
+  elseif ty == 'doc.field.name' then
     return ofField(source, newname, callback)
   elseif
-    source.type == 'string'
-    or source.type == 'number'
-    or source.type == 'integer'
-    or source.type == 'boolean'
+    ty == 'string'
+    or ty == 'number'
+    or ty == 'integer'
+    or ty == 'boolean'
   then
     local parent = source.parent
     if not parent then
@@ -297,42 +294,38 @@ local function rename(source, newname, callback)
 end
 
 local function prepareRename(source)
+  local ty = source.type
   if
-    source.type == 'label'
-    or source.type == 'goto'
-    or source.type == 'local'
-    or source.type == 'setlocal'
-    or source.type == 'getlocal'
-    or source.type == 'field'
-    or source.type == 'method'
-    or source.type == 'tablefield'
-    or source.type == 'setglobal'
-    or source.type == 'getglobal'
-    or source.type == 'doc.class.name'
-    or source.type == 'doc.type.name'
-    or source.type == 'doc.alias.name'
-    or source.type == 'doc.enum.name'
-    or source.type == 'doc.param.name'
-    or source.type == 'doc.field.name'
-    or source.type == 'doc.extends.name'
+    ty == 'label'
+    or ty == 'goto'
+    or ty == 'local'
+    or ty == 'setlocal'
+    or ty == 'getlocal'
+    or ty == 'field'
+    or ty == 'method'
+    or ty == 'tablefield'
+    or ty == 'setglobal'
+    or ty == 'getglobal'
+    or ty == 'doc.class.name'
+    or ty == 'doc.type.name'
+    or ty == 'doc.alias.name'
+    or ty == 'doc.enum.name'
+    or ty == 'doc.param.name'
+    or ty == 'doc.field.name'
+    or ty == 'doc.extends.name'
   then
     return source, source[1]
   elseif
-    source.type == 'string'
-    or source.type == 'number'
-    or source.type == 'integer'
-    or source.type == 'boolean'
+    ty == 'string'
+    or ty == 'number'
+    or ty == 'integer'
+    or ty == 'boolean'
   then
     local parent = source.parent
-    if not parent then
-      return nil
-    end
-    if parent.type == 'setindex' or parent.type == 'getindex' or parent.type == 'tableindex' then
+    if parent and parent.type == 'setindex' or parent.type == 'getindex' or parent.type == 'tableindex' then
       return source, source[1]
     end
-    return nil
   end
-  return nil
 end
 
 local accept = {
@@ -360,20 +353,24 @@ local accept = {
   ['doc.extends.name'] = true,
 }
 
-local m = {}
+local M = {}
 
 --- @async
-function m.rename(uri, pos, newname)
+--- @param uri string
+--- @param pos integer
+--- @param newname string
+--- @return table?
+function M.rename(uri, pos, newname)
   if not newname then
-    return nil
+    return
   end
   local ast = files.getState(uri)
   if not ast then
-    return nil
+    return
   end
   local source = findSource(ast, pos, accept)
   if not source then
-    return nil
+    return
   end
   local results = {}
   local mark = {}
@@ -402,23 +399,27 @@ function m.rename(uri, pos, newname)
     }
   end)
 
-  if Forcing == false then
-    Forcing = nil
-    return nil
+  if forcing == false then
+    forcing = nil
+    return
   end
 
   if #results == 0 then
-    return nil
+    return
   end
 
   return results
 end
 
-function m.prepareRename(uri, pos)
+--- @param uri string
+--- @param pos integer
+--- @return table?
+function M.prepareRename(uri, pos)
   local ast = files.getState(uri)
   if not ast then
-    return nil
+    return
   end
+
   local source = findSource(ast, pos, accept)
   if not source then
     return
@@ -426,7 +427,7 @@ function m.prepareRename(uri, pos)
 
   local res, text = prepareRename(source)
   if not res then
-    return nil
+    return
   end
 
   return {
@@ -436,4 +437,4 @@ function m.prepareRename(uri, pos)
   }
 end
 
-return m
+return M

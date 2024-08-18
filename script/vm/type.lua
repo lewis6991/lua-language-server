@@ -602,8 +602,7 @@ function vm.getTableValue(uri, tnode, knode, inversion)
     end
     if tn.type == 'doc.type.array' then
       result:merge(vm.compileNode(tn.node))
-    end
-    if tn.type == 'table' then
+    elseif tn.type == 'table' then
       if not vm.isUnknown(knode) then
         for _, field in ipairs(tn) do
           if field.type == 'tableindex' and field.value then

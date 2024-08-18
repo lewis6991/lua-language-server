@@ -61,8 +61,7 @@ function M.getObjectFunctionValue(source)
   local value = M.getObjectValue(source)
   if value == nil then
     return
-  end
-  if value.type == 'function' or value.type == 'doc.type.function' then
+  elseif value.type == 'function' or value.type == 'doc.type.function' then
     return value
   elseif value.type == 'getlocal' then
     return M.getObjectFunctionValue(value.node)
