@@ -226,7 +226,13 @@ local Mode
 local Tokens --- @type integer[]
 local Chunk, LastTokenFinish, LocalCount, LocalLimited
 
-local parseAction
+--- @alias parser.object.union
+--- | parser.object.main
+--- | parser.object.name
+--- | parser.object.forlist
+--- | parser.object.expr
+--- | parser.object.block
+--- | parser.object.local
 
 --- @alias parser.object.expr
 --- | parser.object.binop
@@ -236,68 +242,119 @@ local parseAction
 --- | parser.object.number
 --- | parser.object.varargs
 --- | parser.object.paren
+--- | parser.object.label
+--- | parser.object.explist
 
---- @class parser.object.common
+--- @alias parser.object.block
+--- | parser.object.if
+--- | parser.object.ifblock
+--- | parser.object.for
+--- | parser.object.loop
+
+--- @class parser.object.base
 --- @field start integer
 --- @field finish integer
+--- @field parent? parser.object.union
 --- @field special? string
+--- @field state? parser.state
 
 --- @class parser.binop
 --- @field type 'or' | 'and' | '<=' | '>=' | '<' | '>' | '~=' | '==' | '|' | '~' | '&' | '<<' | '>>' | '..' | '+' | '-' | '*' | '//' | '/' | '%' | '^'
 --- @field start integer
 --- @field finish integer
 
---- @class parser.object.name : parser.object.common
+--- @class parser.object.name : parser.object.base
 --- @field type 'name'
 --- @field [1] string value
 
---- @class parser.object.boolean : parser.object.expr.common
+--- @class parser.object.forlist : parser.object.base
+--- @field type 'list'
+--- @field parent parser.object.for
+--- @field [integer] parser.object.name
+
+--- @class parser.object.explist : parser.object.base
+--- @field type 'list'
+--- @field [integer] parser.object.expr
+
+--- @class parser.object.localattrs : parser.object.base
+--- @field type 'localattrs'
+--- @field parent? parser.object.union
+--- @field [integer] parser.object.localattr
+
+--- @class parser.object.localattr : parser.object.base
+--- @field type 'localattr'
+--- @field parent parser.object.localattrs
+--- @field [1]? string
+
+--- @class parser.object.local : parser.object.base
+--- @field type 'local'
+--- @field effect integer
+--- @field attrs parser.object.localattrs
+--- @field [1] string
+
+--- @class parser.object.label : parser.object.base
+--- @field type 'label'
+--- @field [1] string value
+
+--- @class parser.object.boolean : parser.object.base
 --- @field type 'boolean'
 --- @field [1] boolean value
 
---- @class parser.object.string : parser.object.expr.common
+--- @class parser.object.string : parser.object.base
 --- @field type 'string'
 --- @field escs? (string|integer)[] [int, int, string, int, int, string, ...]
 --- @field [1] string value
 --- @field [2] integer string delimiter
 
---- @class parser.object.number : parser.object.expr.common
+--- @class parser.object.number : parser.object.base
 --- @field type 'number'|'integer'
 
---- @class parser.object.unary : parser.object.expr.common
+--- @class parser.object.unary : parser.object.base
 --- @field type 'unary'
 --- @field [1] parser.object.expr?
 
---- @class parser.object.varargs : parser.object.expr.common
+--- @class parser.object.varargs : parser.object.base
 --- @field type 'varargs'
 --- @field node? unknown
 
---- @class parser.object.expr.common : parser.object.common
+--- @class parser.object.block.common : parser.object.base
 --- @field parent? parser.object.expr
+--- @field labels? table<string,parser.object.label>
 
---- @class parser.object.paren : parser.object.expr.common
+--- @class parser.object.paren : parser.object.base
 --- @field type 'paren'
 --- @field exp? parser.object.expr
 
---- @class parser.object.ifblock : parser.object.common
+--- @class parser.object.if : parser.object.block.common
+--- @field type 'if'
+
+--- @class parser.object.for : parser.object.block.common
+--- @field type 'for'
+--- @field keyword [integer,integer]
+--- @field bstart integer Block start
+
+--- @class parser.object.loop : parser.object.block.common
+--- @field type 'loop'
+--- @field keyword [integer,integer]
+--- @field bstart integer Block start
+--- @field loc? parser.object.local
+--- @field init? parser.object.expr
+--- @field max? parser.object.expr
+--- @field step? parser.object.expr
+
+--- @class parser.object.ifblock : parser.object.block.common
 --- @field type 'ifblock'
 --- @field parent parser.object.if
 --- @field start integer
 --- @field filter? parser.object? Condition of if block
 --- @field keyword [integer,integer]
 
---- @class parser.object.binop : parser.object.expr.common
+--- @class parser.object.binop : parser.object.base
 --- @field type 'binary
 --- @field op parser.binop
 --- @field [1] parser.object.expr
 --- @field [2] parser.object.expr
 
---- @alias parser.object.union
---- | parser.object.main
---- | parser.object.if
---- | parser.object.ifblock
---- | parser.object.name
---- | parser.object.expr
 
 --- @class parser.state.err
 --- @field type string
@@ -316,14 +373,14 @@ local parseAction
 --- @field options table
 --- @field ENVMode '@fenv' | '_ENV'
 --- @field errs parser.state.err[]
---- @field specials? table<string,parser.object.common[]>
+--- @field specials? table<string,parser.object.base[]>
 --- @field ast? parser.object.union
 
---- @type fun(err:parser.state.err):parser.state.err|nil
+--- @type fun(err:parser.state.err):parser.state.err?
 local pushError
 
 --- @param name string
---- @param obj parser.object.common
+--- @param obj parser.object.base
 local function addSpecial(name, obj)
   State.specials = State.specials or {}
   State.specials[name] = State.specials[name] or {}
@@ -716,7 +773,9 @@ local function expectAssign(isAction)
   return false
 end
 
+--- @return parser.object.localattrs?
 local function parseLocalAttrs()
+  --- @type parser.object.localattrs?
   local attrs
   while true do
     skipSpace()
@@ -738,6 +797,7 @@ local function parseLocalAttrs()
     attrs[#attrs + 1] = attr
     Index = Index + 2
     skipSpace()
+
     local word, wstart, wfinish = peekWord()
     if word then
       attr[1] = word
@@ -753,8 +813,10 @@ local function parseLocalAttrs()
     else
       missName()
     end
+
     attr.finish = lastRightPosition()
     skipSpace()
+
     if Tokens[Index + 1] == '>' then
       attr.finish = getPosition(Tokens[Index], 'right')
       Index = Index + 2
@@ -769,6 +831,7 @@ local function parseLocalAttrs()
     else
       missSymbol('>')
     end
+
     if State.version ~= 'Lua 5.4' then
       pushError({
         type = 'UNSUPPORT_SYMBOL',
@@ -781,38 +844,41 @@ local function parseLocalAttrs()
       })
     end
   end
+
   return attrs
 end
 
---- @param obj table
+--- @param obj parser.object.base
+--- @param attrs? parser.object.localattrs
+--- @return parser.object.local
 local function createLocal(obj, attrs)
-  obj.type = 'local'
-  obj.effect = obj.finish
+  local obj1 = obj --[[@as parser.object.local]]
+  obj1.type = 'local'
+  obj1.effect = obj1.finish
 
   if attrs then
-    obj.attrs = attrs
-    attrs.parent = obj
+    obj1.attrs = attrs
+    attrs.parent = obj1
   end
 
+  -- Add local to current chunk
   local chunk = Chunk[#Chunk]
   if chunk then
+    chunk.locals = chunk.locals or {}
     local locals = chunk.locals
-    if not locals then
-      locals = {}
-      chunk.locals = locals
-    end
-    locals[#locals + 1] = obj
+    locals[#locals + 1] = obj1
     LocalCount = LocalCount + 1
     if not LocalLimited and LocalCount > LocalLimit then
       LocalLimited = true
       pushError({
         type = 'LOCAL_LIMIT',
-        start = obj.start,
-        finish = obj.finish,
+        start = obj1.start,
+        finish = obj1.finish,
       })
     end
   end
-  return obj
+
+  return obj1
 end
 
 local function pushChunk(chunk)
@@ -1517,6 +1583,8 @@ local function parseName(asAction)
   }
 end
 
+--- @param parent parser.object.for
+--- @return parser.object.forlist|parser.object.name?
 local function parseNameOrList(parent)
   local first = parseName()
   if not first then
@@ -1552,7 +1620,10 @@ end
 
 local parseExp
 
+--- @param mini? boolean
+--- @return parser.object.explist?
 local function parseExpList(mini)
+  --- @type parser.object.explist?
   local list
   local wantSep = false
   while true do
@@ -1600,6 +1671,7 @@ local function parseExpList(mini)
         break
       end
       if wantSep then
+        assert(list)
         missSymbol(',', list[#list].finish, exp.start)
       end
       wantSep = true
@@ -2216,6 +2288,8 @@ local function isChunkFinishToken(token)
   return true
 end
 
+local parseAction
+
 local function parseActions()
   local rtn, last
   while true do
@@ -2749,10 +2823,11 @@ function parseExp(asAction, level)
       end
     end
   else
-    exp = parseExpUnit()
-    if not exp then
+    local e = parseExpUnit()
+    if not e then
       return
     end
+    exp = e
   end
 
   while true do
@@ -2762,7 +2837,7 @@ function parseExp(asAction, level)
       break
     end
 
-    local child
+    local child --- @type parser.object.expr
     while true do
       skipSpace()
       local isForward = SymbolForward[bopLevel]
@@ -3143,7 +3218,7 @@ local function parseLocal()
   local name = parseName(true)
   if not name then
     missName()
-    return nil
+    return
   end
   local loc = createLocal(name, parseLocalAttrs())
   loc.locPos = locPos
@@ -3231,37 +3306,36 @@ local function parseReturn()
   return rtn
 end
 
+--- @return parser.object.label?
 local function parseLabel()
   local left = getPosition(Tokens[Index], 'left')
   Index = Index + 2
   skipSpace()
-  local label = parseName()
+  local name = parseName()
   skipSpace()
 
-  if not label then
+  if not name then
     missName()
   end
 
   if Tokens[Index + 1] == '::' then
     Index = Index + 2
-  else
-    if label then
-      missSymbol('::')
-    end
+  elseif name then
+    missSymbol('::')
   end
 
-  if not label then
-    return nil
+  if not name then
+    return
   end
 
+  label = name --[[@as parser.object.label]]
   label.type = 'label'
+
   pushActionIntoCurrentChunk(label)
 
   local block = guide.getBlock(label)
   if block then
-    if not block.labels then
-      block.labels = {}
-    end
+    block.labels = block.labels or {}
     local name = label[1]
     local olabel = guide.getLabel(block, name)
     if olabel then
@@ -3485,9 +3559,6 @@ local function parseElseBlock(parent)
   return elseblock
 end
 
---- @class parser.object.if : parser.object.common
---- @field type 'if'
-
 local function parseIf()
   local token = Tokens[Index + 1]
   local left = getPosition(Tokens[Index], 'left')
@@ -3539,16 +3610,19 @@ local function parseIf()
   return obj
 end
 
+--- @return parser.object.for|parser.object.loop
 local function parseFor()
+  local start = getPosition(Tokens[Index], 'left')
+  local finish = getPosition(Tokens[Index] + 2, 'right')
+  --- @type parser.object.for
   local action = {
     type = 'for',
-    start = getPosition(Tokens[Index], 'left'),
-    finish = getPosition(Tokens[Index] + 2, 'right'),
-    keyword = {},
+    start = start,
+    finish = finish,
+    keyword = {start, finish},
+    bstart = finish,
   }
-  action.bstart = action.finish
-  action.keyword[1] = action.start
-  action.keyword[2] = action.finish
+
   Index = Index + 2
   pushActionIntoCurrentChunk(action)
   pushChunk(action)
@@ -3561,15 +3635,18 @@ local function parseFor()
   local forStateVars
   -- for i =
   if expectAssign() then
-    action.type = 'loop'
+    local loop = action --[[@as parser.object.loop]]
+    loop.type = 'loop'
 
     skipSpace()
     local expList = parseExpList()
     local name
     if nameOrList then
       if nameOrList.type == 'name' then
+        --- @cast nameOrList parser.object.name
         name = nameOrList
       else
+        --- @cast nameOrList -parser.object.name
         name = nameOrList[1]
       end
     end
@@ -3577,28 +3654,27 @@ local function parseFor()
     forStateVars = 3
     LocalCount = LocalCount + forStateVars
     if name then
-      ---@cast name parser.object
       local loc = createLocal(name)
-      loc.parent = action
-      action.finish = name.finish
-      action.bstart = action.finish
-      action.loc = loc
+      loc.parent = loop
+      loop.finish = name.finish
+      loop.bstart = loop.finish
+      loop.loc = loc
     end
     if expList then
-      expList.parent = action
+      expList.parent = loop
       local value = expList[1]
       if value then
         value.parent = expList
-        action.init = value
-        action.finish = expList[#expList].finish
-        action.bstart = action.finish
+        loop.init = value
+        loop.finish = expList[#expList].finish
+        loop.bstart = loop.finish
       end
       local max = expList[2]
       if max then
         max.parent = expList
-        action.max = max
-        action.finish = max.finish
-        action.bstart = action.finish
+        loop.max = max
+        loop.finish = max.finish
+        loop.bstart = loop.finish
       else
         pushError({
           type = 'MISS_LOOP_MAX',
@@ -3609,9 +3685,9 @@ local function parseFor()
       local step = expList[3]
       if step then
         step.parent = expList
-        action.step = step
-        action.finish = step.finish
-        action.bstart = action.finish
+        loop.step = step
+        loop.finish = step.finish
+        loop.bstart = loop.finish
       end
     else
       pushError({
@@ -3621,8 +3697,8 @@ local function parseFor()
       })
     end
 
-    if action.loc then
-      action.loc.effect = action.finish
+    if loop.loc then
+      loop.loc.effect = loop.finish
     end
   elseif Tokens[Index + 1] == 'in' then
     action.type = 'in'
@@ -3918,54 +3994,34 @@ local function parseBreak()
   return action
 end
 
+--- @return parser.object.union? action
+--- @return true? err
 function parseAction()
   local token = Tokens[Index + 1]
 
   if token == '::' then
     return parseLabel()
-  end
-
-  if token == 'local' then
+  elseif token == 'local' then
     return parseLocal()
-  end
-
-  if token == 'if' or token == 'elseif' or token == 'else' then
+  elseif token == 'if' or token == 'elseif' or token == 'else' then
     return parseIf()
-  end
-
-  if token == 'for' then
+  elseif token == 'for' then
     return parseFor()
-  end
-
-  if token == 'do' then
+  elseif token == 'do' then
     return parseDo()
-  end
-
-  if token == 'return' then
+  elseif token == 'return' then
     return parseReturn()
-  end
-
-  if token == 'break' then
+  elseif token == 'break' then
     return parseBreak()
-  end
-
-  if token == 'continue' and State.options.nonstandardSymbol['continue'] then
+  elseif token == 'continue' and State.options.nonstandardSymbol['continue'] then
     return parseBreak()
-  end
-
-  if token == 'while' then
+  elseif token == 'while' then
     return parseWhile()
-  end
-
-  if token == 'repeat' then
+  elseif token == 'repeat' then
     return parseRepeat()
-  end
-
-  if token == 'goto' and isKeyWord('goto', Tokens[Index + 3]) then
+  elseif token == 'goto' and isKeyWord('goto', Tokens[Index + 3]) then
     return parseGoTo()
-  end
-
-  if token == 'function' then
+  elseif token == 'function' then
     local exp = parseFunction(false, true)
     local name = exp.name
     if name then
@@ -4021,7 +4077,7 @@ local function skipFirstComment()
   end
 end
 
---- @class parser.object.main : parser.object.common
+--- @class parser.object.main : parser.object.base
 --- @field type 'main'
 
 --- @return parser.object.main

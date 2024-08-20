@@ -328,8 +328,8 @@ function M.getParentFunction(obj)
 end
 
 --- Find the block
---- @param obj parser.object
---- @return parser.object?
+--- @param obj parser.object.union
+--- @return parser.object.block?
 function M.getBlock(obj)
   for _ = 1, 10000 do
     if not obj then
@@ -337,6 +337,7 @@ function M.getBlock(obj)
     end
     local tp = obj.type
     if blockTypes[tp] then
+      --- @cast obj parser.object.block
       return obj
     end
     if obj == obj.parent then
@@ -344,8 +345,11 @@ function M.getBlock(obj)
     end
     obj = obj.parent
   end
+
+  --- @cast obj -?
+
   -- make stack
-  local stack = {}
+  local stack = {} --- @type string[]
   for _ = 1, 10 do
     stack[#stack + 1] = ('%s:%s'):format(obj.type, obj.finish)
     obj = obj.parent
@@ -357,8 +361,8 @@ function M.getBlock(obj)
 end
 
 --- Find the parent block
---- @param obj parser.object
---- @return parser.object?
+--- @param obj parser.object.union
+--- @return parser.object.block?
 function M.getParentBlock(obj)
   for _ = 1, 10000 do
     obj = obj.parent
@@ -556,8 +560,9 @@ function M.getVisibleLocals(block, pos)
 end
 
 --- Get the visible tags in the specified block
---- @param block parser.object
+--- @param block parser.object.block
 --- @param name string
+--- @return parser.object.label?
 function M.getLabel(block, name)
   local current = M.getBlock(block)
   for _ = 1, 10000 do
