@@ -250,6 +250,7 @@ local Chunk, LastTokenFinish, LocalCount, LocalLimited
 --- | parser.object.ifblock
 --- | parser.object.for
 --- | parser.object.loop
+--- | parser.object.in
 
 --- @class parser.object.base
 --- @field start integer
@@ -269,7 +270,6 @@ local Chunk, LastTokenFinish, LocalCount, LocalLimited
 
 --- @class parser.object.forlist : parser.object.base
 --- @field type 'list'
---- @field parent parser.object.for
 --- @field [integer] parser.object.name
 
 --- @class parser.object.explist : parser.object.base
@@ -320,6 +320,9 @@ local Chunk, LastTokenFinish, LocalCount, LocalLimited
 --- @class parser.object.block.common : parser.object.base
 --- @field parent? parser.object.expr
 --- @field labels? table<string,parser.object.label>
+--- @field locals parser.object.local[]
+--- @field gotos
+--- @field bstart integer Block start
 
 --- @class parser.object.paren : parser.object.base
 --- @field type 'paren'
@@ -328,19 +331,7 @@ local Chunk, LastTokenFinish, LocalCount, LocalLimited
 --- @class parser.object.if : parser.object.block.common
 --- @field type 'if'
 
---- @class parser.object.for : parser.object.block.common
---- @field type 'for'
---- @field keyword [integer,integer]
---- @field bstart integer Block start
-
---- @class parser.object.loop : parser.object.block.common
---- @field type 'loop'
---- @field keyword [integer,integer]
---- @field bstart integer Block start
---- @field loc? parser.object.local
---- @field init? parser.object.expr
---- @field max? parser.object.expr
---- @field step? parser.object.expr
+--- If blocks
 
 --- @class parser.object.ifblock : parser.object.block.common
 --- @field type 'ifblock'
@@ -348,6 +339,26 @@ local Chunk, LastTokenFinish, LocalCount, LocalLimited
 --- @field start integer
 --- @field filter? parser.object? Condition of if block
 --- @field keyword [integer,integer]
+
+--- Loops
+
+--- @class parser.object.for : parser.object.block.common
+--- @field type 'for'
+--- @field keyword [integer,integer]
+
+--- @class parser.object.loop : parser.object.block.common
+--- @field type 'loop'
+--- @field keyword [integer,integer]
+--- @field loc? parser.object.local
+--- @field init? parser.object.expr
+--- @field max? parser.object.expr
+--- @field step? parser.object.expr
+
+--- @class parser.object.in : parser.object.block.common
+--- @field type 'in'
+--- @field keyword [integer,integer, integer, integer]
+--- @field exps parser.object.explist
+--- @field keys parser.object.forlist
 
 --- @class parser.object.binop : parser.object.base
 --- @field type 'binary
@@ -835,8 +846,7 @@ local function parseLocalAttrs()
     if State.version ~= 'Lua 5.4' then
       pushError({
         type = 'UNSUPPORT_SYMBOL',
-        start = attr.start,
-        finish = attr.finish,
+        at = attr,
         version = 'Lua 5.4',
         info = {
           version = State.version,
@@ -870,11 +880,7 @@ local function createLocal(obj, attrs)
     LocalCount = LocalCount + 1
     if not LocalLimited and LocalCount > LocalLimit then
       LocalLimited = true
-      pushError({
-        type = 'LOCAL_LIMIT',
-        start = obj1.start,
-        finish = obj1.finish,
-      })
+      pushError({ type = 'LOCAL_LIMIT', at = obj1 })
     end
   end
 
@@ -924,8 +930,7 @@ local function resolveLable(label, obj)
           if ref.finish > label.finish then
             pushError({
               type = 'JUMP_LOCAL_SCOPE',
-              start = obj.start,
-              finish = obj.finish,
+              at = obj,
               info = {
                 loc = loc[1],
               },
@@ -959,8 +964,7 @@ local function resolveGoTo(gotos)
     else
       pushError({
         type = 'NO_VISIBLE_LABEL',
-        start = action.start,
-        finish = action.finish,
+        at = action,
         info = {
           label = action[1],
         },
@@ -2174,8 +2178,7 @@ local function parseVarargs()
     elseif chunk.type == 'function' then
       pushError({
         type = 'UNEXPECT_DOTS',
-        start = varargs.start,
-        finish = varargs.finish,
+        at = varargs,
       })
       break
     end
@@ -2316,11 +2319,7 @@ local function parseActions()
     end
   end
   if rtn and rtn ~= last then
-    pushError({
-      type = 'ACTION_AFTER_RETURN',
-      start = rtn.start,
-      finish = rtn.finish,
-    })
+    pushError({ type = 'ACTION_AFTER_RETURN', at = rtn })
   end
 end
 
@@ -2431,11 +2430,7 @@ local function parseFunction(isLocal, isAction)
           createLocal(name)
         else
           resolveName(name)
-          pushError({
-            type = 'UNEXPECT_LFUNC_NAME',
-            start = simple.start,
-            finish = simple.finish,
-          })
+          pushError({ type = 'UNEXPECT_LFUNC_NAME', at = simple.start })
         end
       else
         resolveName(name)
@@ -2445,11 +2440,7 @@ local function parseFunction(isLocal, isAction)
       func.bstart = simple.finish
       if not isAction then
         simple.parent = func
-        pushError({
-          type = 'UNEXPECT_EFUNC_NAME',
-          start = simple.start,
-          finish = simple.finish,
-        })
+        pushError({ type = 'UNEXPECT_EFUNC_NAME', at = simple })
       end
       skipSpace(true)
       hasLeftParen = Tokens[Index + 1] == '('
@@ -2620,8 +2611,7 @@ local function checkNeedParen(source)
   end
   pushError({
     type = 'NEED_PAREN',
-    start = source.start,
-    finish = source.finish,
+    at = source,
     fix = {
       title = 'FIX_ADD_PAREN',
       {
@@ -2744,8 +2734,7 @@ local function parseBinaryOP(asAction, level)
     if token == '=' then
       pushError({
         type = 'ERR_EQ_AS_ASSIGN',
-        start = op.start,
-        finish = op.finish,
+        at = op,
         fix = {
           title = 'FIX_EQ_AS_ASSIGN',
           {
@@ -2761,8 +2750,7 @@ local function parseBinaryOP(asAction, level)
     if not State.options.nonstandardSymbol[token] then
       pushError({
         type = 'ERR_NONSTANDARD_SYMBOL',
-        start = op.start,
-        finish = op.finish,
+        at = op,
         info = {
           symbol = symbol,
         },
@@ -2783,8 +2771,7 @@ local function parseBinaryOP(asAction, level)
       pushError({
         type = 'UNSUPPORT_SYMBOL',
         version = { 'Lua 5.3', 'Lua 5.4' },
-        start = op.start,
-        finish = op.finish,
+        at = op,
         info = {
           version = State.version,
         },
@@ -3000,11 +2987,7 @@ local function bindValue(n, v, index, lastValue, isLocal, isSet)
     if n.type == 'setlocal' then
       local loc = n.node
       if loc.attrs then
-        pushError({
-          type = 'SET_CONST',
-          start = n.start,
-          finish = n.finish,
-        })
+        pushError({ type = 'SET_CONST', at = n })
       end
     end
   end
@@ -3161,8 +3144,7 @@ local function compileExpAsAction(exp)
       if op.type == '==' then
         pushError({
           type = 'ERR_ASSIGN_AS_EQ',
-          start = op.start,
-          finish = op.finish,
+          at = op,
           fix = {
             title = 'FIX_ASSIGN_AS_EQ',
             {
@@ -3177,11 +3159,7 @@ local function compileExpAsAction(exp)
     end
   end
 
-  pushError({
-    type = 'EXP_IN_ACTION',
-    start = exp.start,
-    finish = exp.finish,
-  })
+  pushError({ type = 'EXP_IN_ACTION', at = exp })
 
   return exp
 end
@@ -3342,8 +3320,7 @@ local function parseLabel()
       if State.version == 'Lua 5.4' or block == guide.getBlock(olabel) then
         pushError({
           type = 'REDEFINED_LABEL',
-          start = label.start,
-          finish = label.finish,
+          at = label,
           relative = {
             {
               olabel.start,
@@ -3586,11 +3563,7 @@ local function parseIf()
       break
     end
     if hasElse then
-      pushError({
-        type = 'BLOCK_AFTER_ELSE',
-        start = child.start,
-        finish = child.finish,
-      })
+      pushError({ type = 'BLOCK_AFTER_ELSE', at = child })
     end
     if word == 'else' then
       hasElse = true
@@ -3610,7 +3583,7 @@ local function parseIf()
   return obj
 end
 
---- @return parser.object.for|parser.object.loop
+--- @return parser.object.for|parser.object.loop|parser.object.in
 local function parseFor()
   local start = getPosition(Tokens[Index], 'left')
   local finish = getPosition(Tokens[Index] + 2, 'right')
@@ -3662,14 +3635,13 @@ local function parseFor()
     end
     if expList then
       expList.parent = loop
-      local value = expList[1]
+      local value, max, step = expList[1], expList[2], expList[3]
       if value then
         value.parent = expList
         loop.init = value
         loop.finish = expList[#expList].finish
         loop.bstart = loop.finish
       end
-      local max = expList[2]
       if max then
         max.parent = expList
         loop.max = max
@@ -3682,7 +3654,6 @@ local function parseFor()
           finish = lastRightPosition(),
         })
       end
-      local step = expList[3]
       if step then
         step.parent = expList
         loop.step = step
@@ -3701,7 +3672,8 @@ local function parseFor()
       loop.loc.effect = loop.finish
     end
   elseif Tokens[Index + 1] == 'in' then
-    action.type = 'in'
+    local forin = action --[[@as parser.object.in]]
+    forin.type = 'in'
     local inLeft = getPosition(Tokens[Index], 'left')
     local inRight = getPosition(Tokens[Index] + 1, 'right')
     Index = Index + 2
@@ -3709,33 +3681,35 @@ local function parseFor()
 
     local exps = parseExpList()
 
-    action.finish = inRight
-    action.bstart = action.finish
-    action.keyword[3] = inLeft
-    action.keyword[4] = inRight
+    forin.finish = inRight
+    forin.bstart = forin.finish
+    forin.keyword[3] = inLeft
+    forin.keyword[4] = inRight
 
-    local list
+    local list --- @type parser.object.forlist?
     if nameOrList and nameOrList.type == 'name' then
+      --- @cast nameOrList parser.object.name
       list = {
         type = 'list',
         start = nameOrList.start,
         finish = nameOrList.finish,
-        parent = action,
+        parent = forin,
         [1] = nameOrList,
       }
     else
+      --- @cast nameOrList -parser.object.name
       list = nameOrList
     end
 
     if exps then
       local lastExp = exps[#exps]
       if lastExp then
-        action.finish = lastExp.finish
-        action.bstart = action.finish
+        forin.finish = lastExp.finish
+        forin.bstart = forin.finish
       end
 
-      action.exps = exps
-      exps.parent = action
+      forin.exps = exps
+      exps.parent = forin
       for i = 1, #exps do
         local exp = exps[i]
         exp.parent = exps
@@ -3754,13 +3728,11 @@ local function parseFor()
     if list then
       local lastName = list[#list]
       list.range = lastName and lastName.range or inRight
-      action.keys = list
-      for i = 1, #list do
-        local obj = list[i]
-        ---@cast obj parser.object
+      forin.keys = list
+      for _, obj in ipairs(list) do
         local loc = createLocal(obj)
-        loc.parent = action
-        loc.effect = action.finish
+        loc.parent = forin
+        loc.effect = forin.finish
       end
     end
   else
@@ -3983,11 +3955,7 @@ local function parseBreak()
     end
   end
   if not ok and Mode == 'Lua' then
-    pushError({
-      type = 'BREAK_OUTSIDE',
-      start = action.start,
-      finish = action.finish,
-    })
+    pushError({ type = 'BREAK_OUTSIDE', at = action })
   end
 
   pushActionIntoCurrentChunk(action)
@@ -4034,11 +4002,7 @@ function parseAction()
       if name.type == 'setlocal' then
         local loc = name.node
         if loc.attrs then
-          pushError({
-            type = 'SET_CONST',
-            start = name.start,
-            finish = name.finish,
-          })
+          pushError({ type = 'SET_CONST', at = name })
         end
       end
       pushActionIntoCurrentChunk(name)
@@ -4130,7 +4094,6 @@ local function initState(lua, version, options)
   local state = {
     version = version,
     lua = lua,
-    ast = {},
     errs = {},
     comms = {},
     lines = {
@@ -4151,6 +4114,9 @@ local function initState(lua, version, options)
   --- @return parser.state.err?
   pushError = function(err)
     local errs = state.errs
+    err.finish = (err.at or err).finish
+    err.start = (err.at or err).start
+
     if err.finish < err.start then
       err.finish = err.start
     end

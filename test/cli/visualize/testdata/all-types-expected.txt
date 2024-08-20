@@ -316,7 +316,7 @@ digraph AST {
 	"loop:90000:140003" -> "integer:90015:90017"
 	"in:100001:130004" [
 		label="in\l\l"
-		tooltip="start: 100001\nfinish: 130004\nexps: <node list>\nlabels: <table>\nlocals: <table>\nkeyword: <table>\nbstart: 100020\nkeys: <node list>\n1: <node goto>\n2: <node label>\n"
+		tooltip="start: 100001\nfinish: 130004\nkeyword: <table>\nexps: <node list>\nlabels: <table>\nlocals: <table>\nbstart: 100020\nkeys: <node list>\n1: <node goto>\n2: <node label>\n"
 	]
 	"loop:90000:140003" -> "in:100001:130004"
 	"list:100005:100006" [
