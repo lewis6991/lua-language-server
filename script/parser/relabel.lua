@@ -369,7 +369,7 @@ local function gsub(s, p, rep)
 end
 
 -- exported names
-local re = {
+return {
   compile = compile,
   match = match,
   find = find,
@@ -377,5 +377,3 @@ local re = {
   updatelocale = updatelocale,
   calcline = calcline,
 }
-
-return re

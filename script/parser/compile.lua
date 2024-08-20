@@ -230,6 +230,16 @@ local parseExp, parseAction
 --- @field version? string[]|string
 --- @field level? string | 'Error' | 'Warning'
 
+
+--- @class parser.state
+--- @field lua? string
+--- @field uri? string
+--- @field lines integer[]
+--- @field version string
+--- @field options table
+--- @field ENVMode '@fenv' | '_ENV'
+--- @field errs parser.state.err[]
+
 --- @type fun(err:parser.state.err):parser.state.err|nil
 local pushError
 
@@ -3970,9 +3980,8 @@ local function initState(lua, version, options)
   Chunk = {}
   Tokens = tokens(lua)
   Index = 1
-  ---@class parser.state
-  ---@field uri string
-  ---@field lines integer[]
+
+  ---@type parser.state
   local state = {
     version = version,
     lua = lua,
@@ -3984,16 +3993,14 @@ local function initState(lua, version, options)
       size = #lua,
     },
     options = options or {},
+    ENVMode = (version == 'Lua 5.1' or version == 'LuaJIT') and '@fenv' or '_ENV',
   }
+
   if not state.options.nonstandardSymbol then
     state.options.nonstandardSymbol = {}
   end
+
   State = state
-  if version == 'Lua 5.1' or version == 'LuaJIT' then
-    state.ENVMode = '@fenv'
-  else
-    state.ENVMode = '_ENV'
-  end
 
   pushError = function(err)
     local errs = state.errs

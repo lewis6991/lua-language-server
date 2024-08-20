@@ -734,7 +734,6 @@ end
 --- @field diffInfo? table[]
 --- @field originLines? integer[]
 --- @field originText? string
---- @field lua? string
 
 --- Get file syntax tree
 --- @param uri string

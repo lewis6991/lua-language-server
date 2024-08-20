@@ -1,48 +1,56 @@
-local m = require('lpeglabel')
+local lpeg = require('lpeglabel')
+local P, S, R = lpeg.P, lpeg.S, lpeg.R
 
-local Sp = m.S(' \t\v\f')
-local Nl = m.P('\r\n') + m.S('\r\n')
-local Number = m.R('09') ^ 1
-local Word = m.R('AZ', 'az', '__', '\x80\xff') * m.R('AZ', 'az', '09', '__', '\x80\xff') ^ 0
-local Symbol = m.P('==')
-  + m.P('~=')
-  + m.P('--')
+local sp = S(' \t\v\f')
+
+local nl = P('\r\n') + S('\r\n')
+
+local number = R('09') ^ 1
+
+local word = R('AZ', 'az', '__', '\x80\xff') * R('AZ', 'az', '09', '__', '\x80\xff') ^ 0
+
+local symbol = P('==')
+  + P('~=')
+  + P('--')
   -- non-standard:
-  + m.P('<<=')
-  + m.P('>>=')
-  + m.P('//=')
+  + P('<<=')
+  + P('>>=')
+  + P('//=')
   -- end non-standard
-  + m.P('<<')
-  + m.P('>>')
-  + m.P('<=')
-  + m.P('>=')
-  + m.P('//')
-  + m.P('...')
-  + m.P('..')
-  + m.P('::')
+  + P('<<')
+  + P('>>')
+  + P('<=')
+  + P('>=')
+  + P('//')
+  + P('...')
+  + P('..')
+  + P('::')
   -- non-standard:
-  + m.P('!=')
-  + m.P('&&')
-  + m.P('||')
-  + m.P('/*')
-  + m.P('*/')
-  + m.P('+=')
-  + m.P('-=')
-  + m.P('*=')
-  + m.P('%=')
-  + m.P('&=')
-  + m.P('|=')
-  + m.P('^=')
-  + m.P('/=')
+  + P('!=')
+  + P('&&')
+  + P('||')
+  + P('/*')
+  + P('*/')
+  + P('+=')
+  + P('-=')
+  + P('*=')
+  + P('%=')
+  + P('&=')
+  + P('|=')
+  + P('^=')
+  + P('/=')
   -- end non-standard
   -- singles
-  + m.S('+-*/!#%^&()={}[]|\\\'":;<>,.?~`')
-local Unknown = (1 - Number - Word - Symbol - Sp - Nl) ^ 1
-local Token = m.Cp() * m.C(Nl + Number + Word + Symbol + Unknown)
+  + S('+-*/!#%^&()={}[]|\\\'":;<>,.?~`')
 
-local Parser = m.Ct((Sp ^ 1 + Token) ^ 0)
+local unknown = (1 - number - word - symbol - sp - nl) ^ 1
 
+local token = lpeg.Cp() * lpeg.C(nl + number + word + symbol + unknown)
+
+local parser = lpeg.Ct((sp ^ 1 + token) ^ 0)
+
+--- Parse a string of Lua code into a table of tokens.
+--- @param lua string
 return function(lua)
-  local results = Parser:match(lua)
-  return results
+  return parser:match(lua)
 end
