@@ -51,6 +51,7 @@ local parser = lpeg.Ct((sp ^ 1 + token) ^ 0)
 
 --- Parse a string of Lua code into a table of tokens.
 --- @param lua string
+--- @return integer[]
 return function(lua)
   return parser:match(lua)
 end
