@@ -12,6 +12,13 @@ The Lua language server provides various language features for Lua to make devel
 
 [See our website for more info](https://luals.github.io).
 
+## Fork Goals
+
+- Port to Lua 5.1 so it can be run under LuaJIT for improved performance.
+- Require type names to be imported and not rely on global scope.
+- Much stronger type checking.
+- First class mode for type-checking a workspace with a CLI.
+
 ## Features
 
 - ⚙️ Supports `Lua 5.4`, `Lua 5.3`, `Lua 5.2`, `Lua 5.1`, and `LuaJIT`
