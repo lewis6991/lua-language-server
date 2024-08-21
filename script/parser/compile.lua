@@ -1,8 +1,6 @@
 local tokens = require('parser.tokens')
 local guide = require('parser.guide')
 
---- @alias parser.position integer
-
 --- @param str string
 --- @return table<integer, boolean>
 local function stringToCharMap(str)
@@ -240,6 +238,7 @@ local ListFinishMap = {
 --- @class parser.object.goto : parser.object.base
 --- @field type 'goto'
 --- @field node? parser.object.label
+--- @field keyStart integer
 
 --- @class parser.object.localattrs : parser.object.base
 --- @field type 'localattrs'
@@ -346,11 +345,13 @@ local ListFinishMap = {
 --- | parser.object.while
 
 --- @class parser.object.block.common : parser.object.base
+--- @field bstart integer Block start
 --- @field parent? parser.object.block
 --- @field labels? table<string,parser.object.label>
 --- @field locals parser.object.local[]
---- @field gotos?
---- @field bstart integer Block start
+--- @field gotos parser.object.goto[]
+--- @field hasGoTo? true
+--- @field hasReturn? true
 --- @field [integer] parser.object.block
 
 --- @class parser.object.do : parser.object.block.common
@@ -398,8 +399,8 @@ local ListFinishMap = {
 --- @class parser.state.err
 --- @field at? parser.object.base
 --- @field type string
---- @field start? parser.position
---- @field finish? parser.position
+--- @field start? integer
+--- @field finish? integer
 --- @field info? parser.info
 --- @field fix? parser.fix
 --- @field version? string[]|string
@@ -425,14 +426,12 @@ local ListFinishMap = {
 --- @field specials? table<string,parser.object.base[]>
 --- @field ast? parser.object.union
 
-local LocalLimit = 200
-
 local State --- @type parser.state
 local Lua --- @type string
 local Line --- @type integer
 local LineOffset --- @type integer
 local Mode
-local LastTokenFinish, LocalCount, LocalLimited
+local LastTokenFinish
 
 --- @param offset integer
 --- @param leftOrRight 'left'|'right'
@@ -975,141 +974,7 @@ local function parseLocalAttrs()
   return attrs
 end
 
---- @class parser.Chunk
---- @field [integer] parser.object.block
-local Chunk = {}
-
-do -- Chunk interface
-  function Chunk.push(chunk)
-    Chunk[#Chunk + 1] = chunk
-  end
-
-  ---@param x parser.object.block
-  function Chunk.pushIntoCurrent(x)
-    local chunk = Chunk[#Chunk]
-    if chunk then
-      chunk[#chunk + 1] = x
-      x.parent = chunk
-    end
-  end
-
-  function Chunk.get()
-    return Chunk[#Chunk]
-  end
-
-  --- @param label parser.object.label
-  --- @param obj parser.object.goto
-  local function resolveLable(label, obj)
-    label.ref = label.ref or {}
-    label.ref[#label.ref + 1] = obj
-    obj.node = label
-
-    -- If there is a local variable declared between goto and label,
-    -- and used after label, it is counted as a syntax error
-
-    -- If label is declared before goto, there will be no local variables declared in the middle
-    if obj.start > label.start then
-      return
-    end
-
-    local block = guide.getBlock(obj)
-    local locals = block and block.locals
-
-    for _, loc in ipairs(locals or {}) do
-      local should_break = (function()
-        -- Check that the local variable declaration position is between goto and label
-        if loc.start < obj.start or loc.finish > label.finish then
-          return
-        end
-        -- Check where local variables are used after label
-        local refs = loc.ref
-        if not refs then
-          return
-        end
-        for j = 1, #refs do
-          local ref = refs[j]
-          if ref.finish > label.finish then
-            pushError({
-              type = 'JUMP_LOCAL_SCOPE',
-              at = obj,
-              info = {
-                loc = loc[1],
-              },
-              relative = {
-                {
-                  start = label.start,
-                  finish = label.finish,
-                },
-                {
-                  start = loc.start,
-                  finish = loc.finish,
-                },
-              },
-            })
-            return true
-          end
-        end
-      end)()
-
-      if should_break then
-        break
-      end
-    end
-  end
-
-  local function resolveGoTo(gotos)
-    for i = 1, #gotos do
-      local action = gotos[i]
-      local label = guide.getLabel(action, action[1])
-      if label then
-        resolveLable(label, action)
-      else
-        pushError({
-          type = 'NO_VISIBLE_LABEL',
-          at = action,
-          info = {
-            label = action[1],
-          },
-        })
-      end
-    end
-  end
-
-  function Chunk.pop()
-    local chunk = Chunk[#Chunk]
-    if chunk.gotos then
-      resolveGoTo(chunk.gotos)
-      chunk.gotos = nil
-    end
-    local lastAction = chunk[#chunk]
-    if lastAction then
-      chunk.finish = lastAction.finish
-    end
-    Chunk[#Chunk] = nil
-  end
-
-  function Chunk.clear()
-    for i = 1, #Chunk do
-      Chunk[i] = nil
-    end
-  end
-
-  --- @param x parser.object.local
-  function Chunk.addLocal(x)
-    -- Add local to current chunk
-    local chunk = Chunk[#Chunk]
-    if chunk then
-      chunk.locals = chunk.locals or {}
-      local locals = chunk.locals
-      locals[#locals + 1] = x
-      LocalCount = LocalCount + 1
-      if not LocalLimited and LocalCount > LocalLimit then
-        LocalLimited = true
-        pushError({ type = 'LOCAL_LIMIT', at = x })
-      end
-    end
-  end
-end
+local Chunk --- @type parser.Chunk
 
 --- @param obj parser.object.base
 --- @param attrs? parser.object.localattrs
@@ -2282,8 +2147,7 @@ end
 --- end
 --- @param varargs parser.object.varargs
 local function checkVarargs(varargs)
-  for i = #Chunk, 1, -1 do
-    local chunk = Chunk[i]
+  for chunk in Chunk.iter_rev() do
     if chunk.vararg then
       chunk.vararg.ref = chunk.vararg.ref or {}
       chunk.vararg.ref[#chunk.vararg.ref + 1] = varargs
@@ -2355,9 +2219,9 @@ end
 --- @param pos integer
 --- @return parser.object.local?
 local function getLocal(name, pos)
-  for i = #Chunk, 1, -1 do
+  for chunk in Chunk.iter_rev() do
     local res
-    for _, loc in ipairs(Chunk[i].locals or {}) do
+    for _, loc in ipairs(chunk.locals or {}) do
       if loc.effect > pos then
         break
       end
@@ -2568,8 +2432,8 @@ local function parseFunction(isLocal, isAction)
       hasLeftParen = Token.get() == '('
     end
   end
-  local LastLocalCount = LocalCount
-  LocalCount = 0
+  local lastLocalCount = Chunk.localCount
+  Chunk.localCount = 0
   Chunk.push(func)
   local params
   if func.name and func.name.type == 'getmethod' then
@@ -2632,7 +2496,7 @@ local function parseFunction(isLocal, isAction)
     func.finish = lastRightPosition()
     Error.missEnd(funcLeft, funcRight)
   end
-  LocalCount = LastLocalCount
+  Chunk.localCount = lastLocalCount
   return func
 end
 
@@ -2655,7 +2519,7 @@ local function parseLambda(isDoublePipe)
   local pipeRight = getPosition(Token.getPos(), 'right')
   skipSpace(true)
   local params
-  local LastLocalCount = LocalCount
+  local LastLocalCount = Chunk.localCount
   -- if nonstandardSymbol for '||' is true it is possible for token to be || when there are no params
   if isDoublePipe then
     params = {
@@ -2666,8 +2530,8 @@ local function parseLambda(isDoublePipe)
     }
   else
     -- fake chunk to store locals
+    Chunk.localCount = 0
     Chunk.push(lambda)
-    LocalCount = 0
     params = parseParams({}, true)
     params.type = 'funcargs'
     params.start = pipeLeft
@@ -2695,8 +2559,8 @@ local function parseLambda(isDoublePipe)
   end
   local child = parseExp()
 
-  -- don't want popChunk logic here as this is not a real chunk
-  Chunk[#Chunk] = nil
+  -- Drop fake chunk
+  Chunk.drop()
 
   if child then
     -- create dummy return
@@ -2717,7 +2581,7 @@ local function parseLambda(isDoublePipe)
     lambda.finish = lastRightPosition()
     Error.missExp()
   end
-  LocalCount = LastLocalCount
+  Chunk.localCount = LastLocalCount
   return lambda
 end
 
@@ -3218,7 +3082,7 @@ local function compileExpAsAction(exp)
     if exp.type == 'getlocal' and exp[1] == State.ENVMode then
       exp.special = nil
       -- TODO: need + 1 at the end
-      LocalCount = LocalCount - 1
+      Chunk.localCount = Chunk.localCount - 1
       local loc = createLocal(exp, parseLocalAttrs())
       loc.locPos = exp.start
       loc.effect = math.maxinteger
@@ -3233,8 +3097,7 @@ local function compileExpAsAction(exp)
 
   if exp.type == 'call' then
     if exp.hasExit then
-      for i = #Chunk, 1, -1 do
-        local block = Chunk[i]
+      for block in Chunk.iter_rev() do
         if
           block.type == 'ifblock'
           or block.type == 'elseifblock'
@@ -3348,7 +3211,7 @@ local function parseDo()
     Error.missEnd(left, right)
   end
 
-  LocalCount = LocalCount - #(obj.locals or {})
+  Chunk.localCount = Chunk.localCount - #(obj.locals or {})
 
   return obj
 end
@@ -3369,18 +3232,14 @@ local function parseReturn()
     }
   end
   Chunk.pushIntoCurrent(rtn)
-  for i = #Chunk, 1, -1 do
-    local block = Chunk[i]
+  for block in Chunk.iter_rev() do
     if block.type == 'function' or block.type == 'main' then
-      if not block.returns then
-        block.returns = {}
-      end
+      block.returns = block.returns or {}
       block.returns[#block.returns + 1] = rtn
       break
     end
   end
-  for i = #Chunk, 1, -1 do
-    local block = Chunk[i]
+  for block in Chunk.iter_rev() do
     if
       block.type == 'ifblock'
       or block.type == 'elseifblock'
@@ -3459,32 +3318,32 @@ local function parseLabel()
   return label
 end
 
+--- @return parser.object.goto?
 local function parseGoTo()
   local start = getPosition(Token.getPos(), 'left')
   Token.next()
   skipSpace()
 
-  local action = parseName()
-  if not action then
+  local name = parseName()
+  if not name then
     Error.missName()
-    return nil
+    return
   end
+
+  local action = name --[[@as parser.object.goto]]
 
   action.type = 'goto'
   action.keyStart = start
 
-  for i = #Chunk, 1, -1 do
-    local chunk = Chunk[i]
+  for chunk in Chunk.iter_rev() do
     if chunk.type == 'function' or chunk.type == 'main' then
-      if not chunk.gotos then
-        chunk.gotos = {}
-      end
+      chunk.gotos = chunk.gotos or {}
       chunk.gotos[#chunk.gotos + 1] = action
       break
     end
   end
-  for i = #Chunk, 1, -1 do
-    local chunk = Chunk[i]
+
+  for chunk in Chunk.iter_rev() do
     if chunk.type == 'ifblock' or chunk.type == 'elseifblock' or chunk.type == 'elseblock' then
       chunk.hasGoTo = true
       break
@@ -3542,9 +3401,7 @@ local function parseIfBlock(parent)
   parseActions()
   Chunk.pop()
   obj.finish = getPosition(Token.getPos(), 'left')
-  if obj.locals then
-    LocalCount = LocalCount - #obj.locals
-  end
+  Chunk.localCount = Chunk.localCount - #(obj.locals or {})
   return obj
 end
 
@@ -3592,9 +3449,7 @@ local function parseElseIfBlock(parent)
   parseActions()
   Chunk.pop()
   elseifblock.finish = getPosition(Token.getPos(), 'left')
-  if elseifblock.locals then
-    LocalCount = LocalCount - #elseifblock.locals
-  end
+  Chunk.localCount = Chunk.localCount - #(elseifblock.locals or {})
   return elseifblock
 end
 
@@ -3617,9 +3472,7 @@ local function parseElseBlock(parent)
   parseActions()
   Chunk.pop()
   elseblock.finish = getPosition(Token.getPos(), 'left')
-  if elseblock.locals then
-    LocalCount = LocalCount - #elseblock.locals
-  end
+  Chunk.localCount = Chunk.localCount - #(elseblock.locals or {})
   return elseblock
 end
 
@@ -3710,7 +3563,7 @@ local function parseFor()
     end
     -- for x in ... uses 4 variables
     forStateVars = 3
-    LocalCount = LocalCount + forStateVars
+    Chunk.localCount = Chunk.localCount + forStateVars
     if name then
       local loc = createLocal(name)
       loc.parent = loop
@@ -3807,7 +3660,7 @@ local function parseFor()
     else
       forStateVars = 3
     end
-    LocalCount = LocalCount + forStateVars
+    Chunk.localCount = Chunk.localCount + forStateVars
 
     if list then
       local lastName = list[#list]
@@ -3856,8 +3709,8 @@ local function parseFor()
     Error.missEnd(action.keyword[1], action.keyword[2])
   end
 
-  LocalCount = LocalCount - #(action.locals or {})
-  LocalCount = LocalCount - (forStateVars or 0)
+  Chunk.localCount = Chunk.localCount - #(action.locals or {})
+  Chunk.localCount = Chunk.localCount - (forStateVars or 0)
 
   return action
 end
@@ -3921,7 +3774,7 @@ local function parseWhile()
     Error.missEnd(action.keyword[1], action.keyword[2])
   end
 
-  LocalCount = LocalCount - #(action.locals or {})
+  Chunk.localCount = Chunk.localCount - #(action.locals or {})
 
   return action
 end
@@ -3969,9 +3822,7 @@ local function parseRepeat()
     action.finish = action.filter.finish
   end
 
-  if action.locals then
-    LocalCount = LocalCount - #action.locals
-  end
+  Chunk.localCount = Chunk.localCount - #(action.locals or {})
 
   return action
 end
@@ -3987,8 +3838,7 @@ local function parseBreak()
   }
 
   local ok
-  for i = #Chunk, 1, -1 do
-    local chunk = Chunk[i]
+  for chunk in Chunk.iter_rev() do
     if chunk.type == 'function' then
       break
     end
@@ -4007,8 +3857,7 @@ local function parseBreak()
       break
     end
   end
-  for i = #Chunk, 1, -1 do
-    local chunk = Chunk[i]
+  for chunk in Chunk.iter_rev() do
     if chunk.type == 'ifblock' or chunk.type == 'elseifblock' or chunk.type == 'elseblock' then
       chunk.hasBreak = true
       break
@@ -4119,7 +3968,7 @@ local function parseLua()
     special = '_G',
     [1] = State.ENVMode,
   })
-  LocalCount = 0
+  Chunk.localCount = 0
   skipFirstComment()
   while true do
     parseActions()
@@ -4144,9 +3993,6 @@ local function initState(lua, version, options)
   Line = 0
   LineOffset = 1
   LastTokenFinish = 0
-  LocalCount = 0
-  LocalLimited = false
-  Chunk.clear()
   Token.Tokens = tokens(lua)
   Token.Index = 1
 
@@ -4190,6 +4036,8 @@ local function initState(lua, version, options)
     errs[#errs + 1] = err
     return err
   end
+  Chunk = require 'parser.chunk'(pushError)
+
 end
 
 --- @param lua string
