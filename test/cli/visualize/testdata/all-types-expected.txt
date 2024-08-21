@@ -181,7 +181,7 @@ digraph AST {
 	"local:40006:40007" -> "integer:40010:40011"
 	"while:50000:70003" [
 		label="while\l\l"
-		tooltip="start: 50000\nfinish: 70003\nfilter: <node binary>\nbstart: 50013\nkeyword: <table>\n1: <node setlocal>\n"
+		tooltip="start: 50000\nfinish: 70003\nfilter: <node binary>\nkeyword: <table>\nbstart: 50013\n1: <node setlocal>\n"
 	]
 	"main:0:300000" -> "while:50000:70003"
 	"binary:50006:50012" [
@@ -291,7 +291,7 @@ digraph AST {
 	"callargs:80005:80008" -> "getlocal:80006:80007"
 	"loop:90000:140003" [
 		label="loop\l\l"
-		tooltip="start: 90000\nfinish: 140003\ninit: <node integer>\nstep: <node integer>\nmax: <node integer>\nlocals: <table>\nkeyword: <table>\nbstart: 90018\nloc: <node local>\n1: <node in>\n"
+		tooltip="start: 90000\nfinish: 140003\ninit: <node integer>\nstep: <node integer>\nmax: <node integer>\nlocals: <table>\nbstart: 90018\nkeyword: <table>\nloc: <node local>\n1: <node in>\n"
 	]
 	"main:0:300000" -> "loop:90000:140003"
 	"local:90004:90005" [
@@ -316,7 +316,7 @@ digraph AST {
 	"loop:90000:140003" -> "integer:90015:90017"
 	"in:100001:130004" [
 		label="in\l\l"
-		tooltip="start: 100001\nfinish: 130004\nkeyword: <table>\nexps: <node list>\nlabels: <table>\nlocals: <table>\nbstart: 100020\nkeys: <node list>\n1: <node goto>\n2: <node label>\n"
+		tooltip="start: 100001\nfinish: 130004\nbstart: 100020\nexps: <node list>\nlabels: <table>\nlocals: <table>\nkeyword: <table>\nkeys: <node list>\n1: <node goto>\n2: <node label>\n"
 	]
 	"loop:90000:140003" -> "in:100001:130004"
 	"list:100005:100006" [
@@ -446,12 +446,12 @@ digraph AST {
 	"binary:190008:190028" -> "integer:190027:190028"
 	"if:230000:290003" [
 		label="if\l\l"
-		tooltip="start: 230000\nfinish: 290003\n1: <node ifblock>\n2: <node elseifblock>\n3: <node elseblock>\n"
+		tooltip="start: 230000\nfinish: 290003\nbstart: 230002\nkeyword: <table>\n1: <node ifblock>\n2: <node elseifblock>\n3: <node elseblock>\n"
 	]
 	"main:0:300000" -> "if:230000:290003"
 	"ifblock:230000:250000" [
 		label="ifblock\l\l"
-		tooltip="start: 230000\nfinish: 250000\nbstart: 230009\nfilter: <node getglobal>\nhasReturn: true\nkeyword: <table>\n1: <node return>\n"
+		tooltip="start: 230000\nfinish: 250000\nkeyword: <table>\nfilter: <node getglobal>\nbstart: 230009\nhasReturn: true\n1: <node return>\n"
 	]
 	"if:230000:290003" -> "ifblock:230000:250000"
 	"getglobal:230003:230004" [
@@ -551,7 +551,7 @@ digraph AST {
 	"binary:240042:240048" -> "integer:240047:240048"
 	"elseifblock:250000:270000" [
 		label="elseifblock\l\l"
-		tooltip="start: 250000\nfinish: 270000\nbstart: 250013\nfilter: <node getglobal>\nhasReturn: true\nkeyword: <table>\n1: <node return>\n"
+		tooltip="start: 250000\nfinish: 270000\nkeyword: <table>\nfilter: <node getglobal>\nbstart: 250013\nhasReturn: true\n1: <node return>\n"
 	]
 	"if:230000:290003" -> "elseifblock:250000:270000"
 	"getglobal:250007:250008" [
@@ -571,7 +571,7 @@ digraph AST {
 	"return:260001:260011" -> "number:260008:260011"
 	"elseblock:270000:290000" [
 		label="elseblock\l\l"
-		tooltip="start: 270000\nfinish: 290000\nkeyword: <table>\nbstart: 270004\nhasReturn: true\n1: <node return>\n"
+		tooltip="start: 270000\nfinish: 290000\nbstart: 270004\nkeyword: <table>\nhasReturn: true\n1: <node return>\n"
 	]
 	"if:230000:290003" -> "elseblock:270000:290000"
 	"return:280001:280091" [

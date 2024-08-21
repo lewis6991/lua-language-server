@@ -224,6 +224,7 @@ local ListFinishMap = {
 --- | parser.object.local
 --- | parser.object.main
 --- | parser.object.name
+--- | parser.object.simple
 --- | parser.object.funcargs
 
 --- @class parser.object.base
@@ -260,6 +261,7 @@ local ListFinishMap = {
 --- @field effect integer
 --- @field attrs parser.object.localattrs
 --- @field ref? parser.object.expr[] References to local
+--- @field locPos? integer Start position of the 'local' keyword
 --- @field [1] string Name of local variable
 
 --- @class parser.object.self : parser.object.local
@@ -271,7 +273,12 @@ local ListFinishMap = {
 --- @class parser.object.name : parser.object.base
 --- @field type 'name'
 --- @field [1] string value
----
+
+--- @alias parser.object.simple
+--- | parser.object.name
+--- | parser.object.getglobal
+--- | parser.object.getlocal
+
 
 --- Expressions
 
@@ -347,6 +354,8 @@ local ListFinishMap = {
 --- | parser.object.do
 --- | parser.object.if
 --- | parser.object.ifblock
+--- | parser.object.elseifblock
+--- | parser.object.elseblock
 --- | parser.object.for
 --- | parser.object.function
 --- | parser.object.lambda
@@ -365,10 +374,12 @@ local ListFinishMap = {
 --- @field hasGoTo? true
 --- @field hasReturn? true
 --- @field hasBreak? true
+--- @field hasExit? true
 --- @field [integer] parser.object.block
 
 --- @class parser.object.do : parser.object.block.common
 --- @field type 'do'
+--- @field keyword [integer,integer]
 
 --- @class parser.object.funcargs : parser.object.base
 --- @field type 'funcargs'
@@ -391,12 +402,23 @@ local ListFinishMap = {
 
 --- @class parser.object.if : parser.object.block.common
 --- @field type 'if'
+--- @field keyword [integer,integer]
 
 --- @class parser.object.ifblock : parser.object.block.common
 --- @field type 'ifblock'
 --- @field parent parser.object.if
---- @field start integer
---- @field filter? parser.object? Condition of if block
+--- @field filter? parser.object.expr? Condition of if block
+--- @field keyword [integer,integer]
+
+--- @class parser.object.elseifblock : parser.object.block.common
+--- @field type 'elseifblock'
+--- @field parent parser.object.if
+--- @field filter? parser.object.expr? Condition of if block
+--- @field keyword [integer,integer]
+
+--- @class parser.object.elseblock : parser.object.block.common
+--- @field type 'elseblock'
+--- @field parent parser.object.if
 --- @field keyword [integer,integer]
 
 --- Blocks: Loops
@@ -1947,6 +1969,7 @@ local function bindSpecial(source, name)
   end
 end
 
+--- @return parser.object.simple
 local function parseSimple(node, funcName)
   local currentName
   if node.type == 'getglobal' or node.type == 'getlocal' then
@@ -2361,13 +2384,17 @@ local function parseActions()
   end
 end
 
---- @param params parser.object.funcargs
---- @param isLambda boolean
+--- @param params parser.object.funcargs?
+--- @param isLambda? boolean
 --- @return parser.object.funcargs
 local function parseParams(params, isLambda)
+  params = params or {}
+  params.type = 'funcargs'
+
   local lastSep
   local hasDots
   local endToken = isLambda and '|' or ')'
+
   while true do
     skipSpace()
     local token = Token.get()
@@ -2388,7 +2415,6 @@ local function parseParams(params, isLambda)
         Error.missSymbol(',')
       end
       lastSep = false
-      params = params or {}
       local _, start, finish = assert(Token.getWithPos())
       --- @type parser.object.vararg
       local vararg = {
@@ -2407,12 +2433,11 @@ local function parseParams(params, isLambda)
       end
       hasDots = true
       Token.next()
-    elseif CharMapWord[string.sub(token, 1, 1)] then
+    elseif CharMapWord[token:sub(1, 1)] then
       if lastSep == false then
         Error.missSymbol(',')
       end
       lastSep = false
-      params = params or {}
       local _, start, finish = assert(Token.getWithPos())
       params[#params + 1] = createLocal({
         start = start,
@@ -2431,24 +2456,27 @@ local function parseParams(params, isLambda)
       skipUnknownSymbol()
     end
   end
+
   return params
+end
+
+--- @return any
+local function initBlock(ty)
+  local _, start, finish = assert(Token.getWithPos())
+  return {
+    type = ty,
+    start = start,
+    finish = finish,
+    bstart = finish,
+    keyword = { start, finish },
+  }
 end
 
 --- @param isLocal? boolean
 --- @param isAction? boolean
 --- @return parser.object.function
 local function parseFunction(isLocal, isAction)
-  local _, start, finish = assert(Token.getWithPos())
-
-  --- @type parser.object.function
-  local func = {
-    type = 'function',
-    start = start,
-    finish = finish,
-    bstart = finish,
-    keyword = { start, finish },
-  }
-
+  local func = initBlock('function') --- @type parser.object.function
   Token.next()
   skipSpace(true)
 
@@ -2486,6 +2514,7 @@ local function parseFunction(isLocal, isAction)
   local params --- @type parser.object.funcargs?
   if func.name and func.name.type == 'getmethod' then
     if func.name.type == 'getmethod' then
+      local finish = func.keyword[2]
       params = {
         type = 'funcargs',
         start = finish,
@@ -2505,8 +2534,7 @@ local function parseFunction(isLocal, isAction)
   if hasLeftParen then
     local parenLeft = getPosition(Token.getPos(), 'left')
     Token.next()
-    params = parseParams(params or {})
-    params.type = 'funcargs'
+    params = parseParams(params)
     params.start = parenLeft
     params.finish = lastRightPosition()
     params.parent = func
@@ -2544,7 +2572,7 @@ local function parseFunction(isLocal, isAction)
     Token.next()
   else
     func.finish = lastRightPosition()
-    Error.missEnd(start, finish)
+    Error.missEnd(func.keyword[1], func.keyword[2])
   end
 
   Chunk.localCount = lastLocalCount
@@ -2586,8 +2614,7 @@ local function parseLambda(isDoublePipe)
     -- fake chunk to store locals
     Chunk.localCount = 0
     Chunk.push(lambda)
-    params = parseParams({}, true)
-    params.type = 'funcargs'
+    params = parseParams(nil, true)
     params.start = pipeLeft
     params.finish = lastRightPosition()
     params.parent = lambda
@@ -3192,6 +3219,7 @@ local function compileExpAsAction(exp)
   return exp
 end
 
+--- @return parser.object.local?
 local function parseLocal()
   local locPos = getPosition(Token.getPos(), 'left')
   Token.next()
@@ -3238,31 +3266,20 @@ end
 
 --- @return parser.object.do
 local function parseDo()
-  local _, left, right = assert(Token.getWithPos())
-  --- @type parser.object.do
-  local obj = {
-    type = 'do',
-    start = left,
-    finish = right,
-    bstart = right,
-    keyword = {
-      [1] = left,
-      [2] = right,
-    },
-  }
+  local obj = initBlock('do') --- @type parser.object.do
   Token.next()
   Chunk.pushIntoCurrent(obj)
   Chunk.push(obj)
   parseActions()
   Chunk.pop()
   if Token.get() == 'end' then
-    local _, start, finish = assert(Token.getWithPos())
-    obj.finish = finish
-    obj.keyword[3] = start
-    obj.keyword[4] = finish
+    local _, endStart, endFinish = assert(Token.getWithPos())
+    obj.finish = endFinish
+    obj.keyword[3] = endStart
+    obj.keyword[4] = endFinish
     Token.next()
   else
-    Error.missEnd(left, right)
+    Error.missEnd(obj.keyword[1], obj.keyword[2])
   end
 
   Chunk.localCount = Chunk.localCount - #(obj.locals or {})
@@ -3411,20 +3428,10 @@ end
 --- @param parent parser.object.if
 --- @return parser.object.ifblock
 local function parseIfBlock(parent)
-  local _, ifLeft, ifRight = assert(Token.getWithPos())
-  Token.next()
   --- @type parser.object.ifblock
-  local obj = {
-    type = 'ifblock',
-    parent = parent,
-    start = ifLeft,
-    finish = ifRight,
-    bstart = ifRight,
-    keyword = {
-      [1] = ifLeft,
-      [2] = ifRight,
-    },
-  }
+  local obj = initBlock('ifblock')
+  obj.parent = parent
+  Token.next()
   skipSpace()
   local filter = parseExp()
   if filter then
@@ -3459,37 +3466,29 @@ local function parseIfBlock(parent)
   return obj
 end
 
+--- @param parent parser.object.if
+--- @return parser.object.elseifblock
 local function parseElseIfBlock(parent)
-  local _, ifLeft, ifRight = assert(Token.getWithPos())
-  local elseifblock = {
-    type = 'elseifblock',
-    parent = parent,
-    start = ifLeft,
-    finish = ifRight,
-    bstart = ifRight,
-    keyword = {
-      [1] = ifLeft,
-      [2] = ifRight,
-    },
-  }
+  local obj = initBlock('elseifblock') --- @type parser.object.elseifblock
+  obj.parent = parent
   Token.next()
   skipSpace()
   local filter = parseExp()
   if filter then
-    elseifblock.filter = filter
-    elseifblock.finish = filter.finish
-    elseifblock.bstart = elseifblock.finish
-    filter.parent = elseifblock
+    obj.filter = filter
+    obj.finish = filter.finish
+    obj.bstart = obj.finish
+    filter.parent = obj
   else
     Error.missExp()
   end
   skipSpace()
   local thenToken, thenLeft, thenRight = Token.getWithPos()
   if thenToken == 'then' or thenToken == 'do' then
-    elseifblock.finish = thenRight
-    elseifblock.bstart = elseifblock.finish
-    elseifblock.keyword[3] = thenLeft
-    elseifblock.keyword[4] = elseifblock.finish
+    obj.finish = assert(thenRight)
+    obj.bstart = obj.finish
+    obj.keyword[3] = thenLeft
+    obj.keyword[4] = obj.finish
     if thenToken == 'do' then
       Error.token('ERR_THEN_AS_DO', {
         fix = { title = 'FIX_THEN_AS_DO', { text = 'then' } },
@@ -3499,47 +3498,35 @@ local function parseElseIfBlock(parent)
   else
     Error.missSymbol('then')
   end
-  Chunk.push(elseifblock)
+  Chunk.push(obj)
   parseActions()
   Chunk.pop()
-  elseifblock.finish = getPosition(Token.getPos(), 'left')
-  Chunk.localCount = Chunk.localCount - #(elseifblock.locals or {})
-  return elseifblock
+  obj.finish = getPosition(Token.getPos(), 'left')
+  Chunk.localCount = Chunk.localCount - #(obj.locals or {})
+  return obj
 end
 
+--- @param parent parser.object.if
+--- @return parser.object.elseblock
 local function parseElseBlock(parent)
-  local _, ifLeft, ifRight = assert(Token.getWithPos())
-  local elseblock = {
-    type = 'elseblock',
-    parent = parent,
-    start = ifLeft,
-    finish = ifRight,
-    bstart = ifRight,
-    keyword = {
-      [1] = ifLeft,
-      [2] = ifRight,
-    },
-  }
+  local obj = initBlock('elseblock') --- @type parser.object.elseblock
+  obj.parent = parent
   Token.next()
   skipSpace()
-  Chunk.push(elseblock)
+  Chunk.push(obj)
   parseActions()
   Chunk.pop()
-  elseblock.finish = getPosition(Token.getPos(), 'left')
-  Chunk.localCount = Chunk.localCount - #(elseblock.locals or {})
-  return elseblock
+  obj.finish = getPosition(Token.getPos(), 'left')
+  Chunk.localCount = Chunk.localCount - #(obj.locals or {})
+  return obj
 end
 
-local function parseIf()
-  local token, left, right = Token.getWithPos()
-  local obj = {
-    type = 'if',
-    start = left,
-    finish = right,
-  }
+--- @param token string
+local function parseIf(token)
+  local obj = initBlock('if') --- @type parser.object.if
   Chunk.pushIntoCurrent(obj)
   if token ~= 'if' then
-    Error.missSymbol('if', left, left)
+    Error.missSymbol('if', obj.keyword[1], obj.keyword[1])
   end
   local hasElse
   while true do
@@ -3578,16 +3565,7 @@ end
 
 --- @return parser.object.for|parser.object.loop|parser.object.in
 local function parseFor()
-  local _, start, finish = assert(Token.getWithPos())
-  --- @type parser.object.for
-  local action = {
-    type = 'for',
-    start = start,
-    finish = finish,
-    keyword = { start, finish },
-    bstart = finish,
-  }
-
+  local action = initBlock('for') --- @type parser.object.for
   Token.next()
   Chunk.pushIntoCurrent(action)
   Chunk.push(action)
@@ -3771,15 +3749,7 @@ end
 
 --- @return parser.object.while
 local function parseWhile()
-  local _, start, finish = assert(Token.getWithPos())
-  --- @type parser.object.while
-  local action = {
-    type = 'while',
-    start = start,
-    finish = finish,
-    keyword = { start, finish },
-    bstart = finish,
-  }
+  local action = initBlock('while') --- @type parser.object.while
   Token.next()
 
   skipSpace()
@@ -3835,18 +3805,7 @@ end
 
 --- @return parser.object.repeat
 local function parseRepeat()
-  local _, start, finish = assert(Token.getWithPos())
-
-  --- @type parser.object.repeat
-  local action = {
-    type = 'repeat',
-    start = start,
-    finish = finish,
-    keyword = {start, finish},
-  }
-
-  action.bstart = action.finish
-
+  local action = initBlock('repeat') --- @type parser.object.repeat
   Token.next()
   Chunk.pushIntoCurrent(action)
   Chunk.push(action)
@@ -3936,7 +3895,7 @@ function parseAction()
   elseif token == 'local' then
     return parseLocal()
   elseif token == 'if' or token == 'elseif' or token == 'else' then
-    return parseIf()
+    return parseIf(token)
   elseif token == 'for' then
     return parseFor()
   elseif token == 'do' then
@@ -3963,11 +3922,8 @@ function parseAction()
       name.vstart = exp.start
       name.range = exp.finish
       exp.parent = name
-      if name.type == 'setlocal' then
-        local loc = name.node
-        if loc.attrs then
-          pushError({ type = 'SET_CONST', at = name })
-        end
+      if name.type == 'setlocal' and name.node.attrs then
+        pushError({ type = 'SET_CONST', at = name })
       end
       Chunk.pushIntoCurrent(name)
       return name
