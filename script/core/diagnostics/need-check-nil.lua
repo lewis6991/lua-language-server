@@ -4,6 +4,33 @@ local vm = require('vm')
 local lang = require('language')
 local await = require('await')
 
+local function checkNil(src)
+  local nxt = src.next
+  if nxt then
+    if
+      nxt.type == 'getfield'
+      or nxt.type == 'getmethod'
+      or nxt.type == 'getindex'
+      or nxt.type == 'call'
+    then
+      return true
+    end
+  end
+
+  local parent = src.parent
+  if parent then
+    if parent.type == 'call' and parent.node == src then
+      return true
+    end
+
+    if parent.type == 'setindex' and parent.index == src then
+      return true
+    end
+  end
+
+  return false
+end
+
 --- @async
 return function(uri, callback)
   local state = files.getState(uri)
@@ -15,36 +42,22 @@ return function(uri, callback)
   ---@async
   guide.eachSourceType(state.ast, 'getlocal', function(src)
     delayer:delay()
-    local checkNil
-    local nxt = src.next
-    if nxt then
-      if
-        nxt.type == 'getfield'
-        or nxt.type == 'getmethod'
-        or nxt.type == 'getindex'
-        or nxt.type == 'call'
-      then
-        checkNil = true
-      end
-    end
-    local call = src.parent
-    if call and call.type == 'call' and call.node == src then
-      checkNil = true
-    end
-    local setIndex = src.parent
-    if setIndex and setIndex.type == 'setindex' and setIndex.index == src then
-      checkNil = true
-    end
-    if not checkNil then
+    if not checkNil(src) then
       return
     end
-    local node = vm.compileNode(src)
-    if node:hasFalsy() and not vm.getInfer(src):hasType(uri, 'any') then
-      callback({
-        start = src.start,
-        finish = src.finish,
-        message = lang.script('DIAG_NEED_CHECK_NIL'),
-      })
+
+    if not vm.compileNode(src):hasFalsy() then
+      return
     end
+
+    if vm.getInfer(src):hasType(uri, 'any') then
+      return
+    end
+
+    callback({
+      start = src.start,
+      finish = src.finish,
+      message = lang.script('DIAG_NEED_CHECK_NIL'),
+    })
   end)
 end
