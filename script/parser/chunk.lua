@@ -15,7 +15,7 @@ function M.push(chunk)
   chunks[#chunks + 1] = chunk
 end
 
----@param x parser.object.block
+---@param x parser.object.union
 function M.pushIntoCurrent(x)
   local chunk = chunks[#chunks]
   if chunk then
@@ -30,7 +30,7 @@ end
 
 --- @param label parser.object.label
 --- @param obj parser.object.goto
-local function resolveLable(label, obj)
+local function resolveLabel(label, obj)
   label.ref = label.ref or {}
   label.ref[#label.ref + 1] = obj
   obj.node = label
@@ -94,7 +94,7 @@ local function resolveGoTo(gotos)
     local action = gotos[i]
     local label = guide.getLabel(action, action[1])
     if label then
-      resolveLable(label, action)
+      resolveLabel(label, action)
     else
       pushError({
         type = 'NO_VISIBLE_LABEL',

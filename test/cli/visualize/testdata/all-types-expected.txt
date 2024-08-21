@@ -16,7 +16,7 @@ digraph AST {
 	"setglobal:0:3" -> "table:6:35"
 	"tablefield:7:8" [
 		label="tablefield\lx\l"
-		tooltip="start: 7\nfinish: 8\nnode: <node table>\nrange: 12\nfield: <node field>\nvalue: <node integer>\n"
+		tooltip="start: 7\nfinish: 8\nrange: 12\nfield: <node field>\nnode: <node table>\nvalue: <node integer>\n"
 	]
 	"table:6:35" -> "tablefield:7:8"
 	"field:7:8" [
@@ -31,7 +31,7 @@ digraph AST {
 	"tablefield:7:8" -> "integer:11:12"
 	"tablefield:14:17" [
 		label="tablefield\lbar\l"
-		tooltip="start: 14\nfinish: 17\nnode: <node table>\nrange: 21\nfield: <node field>\nvalue: <node integer>\n"
+		tooltip="start: 14\nfinish: 17\nrange: 21\nfield: <node field>\nnode: <node table>\nvalue: <node integer>\n"
 	]
 	"table:6:35" -> "tablefield:14:17"
 	"field:14:17" [
