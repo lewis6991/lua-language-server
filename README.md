@@ -19,6 +19,10 @@ The Lua language server provides various language features for Lua to make devel
 - Much stronger type checking.
 - First class mode for type-checking a workspace with a CLI.
 
+### New checks
+
+- Nil check on `table[index]` is index can be nil.
+
 ## Features
 
 - ⚙️ Supports `Lua 5.4`, `Lua 5.3`, `Lua 5.2`, `Lua 5.1`, and `LuaJIT`

@@ -217,12 +217,14 @@ local ListFinishMap = {
 
 --- @alias parser.object.union
 --- | parser.object.block
+--- | parser.object.break
 --- | parser.object.expr
 --- | parser.object.forlist
 --- | parser.object.goto
 --- | parser.object.local
 --- | parser.object.main
 --- | parser.object.name
+--- | parser.object.funcargs
 
 --- @class parser.object.base
 --- @field start integer
@@ -230,6 +232,9 @@ local ListFinishMap = {
 --- @field parent? parser.object.union
 --- @field special? string
 --- @field state? parser.state
+
+--- @class parser.object.break : parser.object.base
+--- @field type 'break'
 
 --- @class parser.object.forlist : parser.object.base
 --- @field type 'list'
@@ -256,6 +261,9 @@ local ListFinishMap = {
 --- @field attrs parser.object.localattrs
 --- @field ref? parser.object.expr[] References to local
 --- @field [1] string Name of local variable
+
+--- @class parser.object.self : parser.object.local
+--- @field type 'self'
 
 --- @class parser.object.main : parser.object.base
 --- @field type 'main'
@@ -340,8 +348,11 @@ local ListFinishMap = {
 --- | parser.object.if
 --- | parser.object.ifblock
 --- | parser.object.for
+--- | parser.object.function
+--- | parser.object.lambda
 --- | parser.object.loop
 --- | parser.object.in
+--- | parser.object.repeat
 --- | parser.object.while
 
 --- @class parser.object.block.common : parser.object.base
@@ -350,12 +361,31 @@ local ListFinishMap = {
 --- @field labels? table<string,parser.object.label>
 --- @field locals parser.object.local[]
 --- @field gotos parser.object.goto[]
+--- @field breaks parser.object.break[]
 --- @field hasGoTo? true
 --- @field hasReturn? true
+--- @field hasBreak? true
 --- @field [integer] parser.object.block
 
 --- @class parser.object.do : parser.object.block.common
 --- @field type 'do'
+
+--- @class parser.object.funcargs : parser.object.base
+--- @field type 'funcargs'
+--- @field [integer] parser.object.local|parser.object.self|parser.object.vararg
+
+--- @class parser.object.vararg : parser.object.base
+--- @field type '...'
+--- @field [1] '...'
+
+--- @class parser.object.function : parser.object.block.common
+--- @field type 'function'
+--- @field keyword [integer,integer]
+--- @field vararg? parser.object.vararg
+--- @field args? parser.object.funcargs
+--- @field name? parser.object.simple
+
+--- @class parser.object.lambda : parser.object.block.common
 
 --- Blocks: If
 
@@ -388,6 +418,10 @@ local ListFinishMap = {
 --- @field keyword [integer,integer, integer, integer]
 --- @field exps parser.object.explist
 --- @field keys parser.object.forlist
+
+--- @class parser.object.repeat : parser.object.block.common
+--- @field type 'repeat'
+--- @field filter? parser.object.expr
 
 --- @class parser.object.while : parser.object.block.common
 --- @field type 'while'
@@ -2121,22 +2155,27 @@ local function parseSimple(node, funcName)
       break
     end
   end
+
   if node.type == 'call' and node.node == lastMethod then
     lastMethod = nil
   end
+
   if node.type == 'call' then
     if node.node.special == 'error' or node.node.special == 'os.exit' then
       node.hasExit = true
     end
   end
+
   if node == lastMethod then
     if funcName then
       lastMethod = nil
     end
   end
+
   if lastMethod then
     Error.missSymbol('(', lastMethod.finish)
   end
+
   return node
 end
 
@@ -2270,6 +2309,8 @@ local function resolveName(node)
   return node
 end
 
+--- @param token any
+--- @return boolean
 local function isChunkFinishToken(token)
   local currentChunk = Chunk.get()
   if not currentChunk then
@@ -2320,6 +2361,9 @@ local function parseActions()
   end
 end
 
+--- @param params parser.object.funcargs
+--- @param isLambda boolean
+--- @return parser.object.funcargs
 local function parseParams(params, isLambda)
   local lastSep
   local hasDots
@@ -2344,10 +2388,9 @@ local function parseParams(params, isLambda)
         Error.missSymbol(',')
       end
       lastSep = false
-      if not params then
-        params = {}
-      end
-      local _, start, finish = Token.getWithPos()
+      params = params or {}
+      local _, start, finish = assert(Token.getWithPos())
+      --- @type parser.object.vararg
       local vararg = {
         type = '...',
         start = start,
@@ -2356,6 +2399,7 @@ local function parseParams(params, isLambda)
         [1] = '...',
       }
       local chunk = Chunk.get()
+      --- @cast chunk parser.object.function|parser.object.lambda
       chunk.vararg = vararg
       params[#params + 1] = vararg
       if hasDots then
@@ -2368,9 +2412,7 @@ local function parseParams(params, isLambda)
         Error.missSymbol(',')
       end
       lastSep = false
-      if not params then
-        params = {}
-      end
+      params = params or {}
       local _, start, finish = assert(Token.getWithPos())
       params[#params + 1] = createLocal({
         start = start,
@@ -2392,20 +2434,24 @@ local function parseParams(params, isLambda)
   return params
 end
 
+--- @param isLocal? boolean
+--- @param isAction? boolean
+--- @return parser.object.function
 local function parseFunction(isLocal, isAction)
-  local _, funcLeft, funcRight = assert(Token.getWithPos())
+  local _, start, finish = assert(Token.getWithPos())
+
+  --- @type parser.object.function
   local func = {
     type = 'function',
-    start = funcLeft,
-    finish = funcRight,
-    bstart = funcRight,
-    keyword = {
-      [1] = funcLeft,
-      [2] = funcRight,
-    },
+    start = start,
+    finish = finish,
+    bstart = finish,
+    keyword = { start, finish },
   }
+
   Token.next()
   skipSpace(true)
+
   local hasLeftParen = Token.get() == '('
   if not hasLeftParen then
     local name = parseName()
@@ -2432,32 +2478,34 @@ local function parseFunction(isLocal, isAction)
       hasLeftParen = Token.get() == '('
     end
   end
+
   local lastLocalCount = Chunk.localCount
   Chunk.localCount = 0
   Chunk.push(func)
-  local params
+
+  local params --- @type parser.object.funcargs?
   if func.name and func.name.type == 'getmethod' then
     if func.name.type == 'getmethod' then
       params = {
         type = 'funcargs',
-        start = funcRight,
-        finish = funcRight,
+        start = finish,
+        finish = finish,
         parent = func,
       }
       params[1] = createLocal({
-        start = funcRight,
-        finish = funcRight,
+        start = finish,
+        finish = finish,
         parent = params,
         [1] = 'self',
       })
       params[1].type = 'self'
     end
   end
+
   if hasLeftParen then
-    params = params or {}
     local parenLeft = getPosition(Token.getPos(), 'left')
     Token.next()
-    params = parseParams(params)
+    params = parseParams(params or {})
     params.type = 'funcargs'
     params.start = parenLeft
     params.finish = lastRightPosition()
@@ -2484,22 +2532,28 @@ local function parseFunction(isLocal, isAction)
   else
     Error.missSymbol('(')
   end
+
   parseActions()
   Chunk.pop()
+
   if Token.get() == 'end' then
-    local _, endLeft, endRight = Token.getWithPos()
+    local _, endLeft, endRight = assert(Token.getWithPos())
     func.keyword[3] = endLeft
     func.keyword[4] = endRight
     func.finish = endRight
     Token.next()
   else
     func.finish = lastRightPosition()
-    Error.missEnd(funcLeft, funcRight)
+    Error.missEnd(start, finish)
   end
+
   Chunk.localCount = lastLocalCount
+
   return func
 end
 
+--- @param isDoublePipe boolean
+--- @return parser.object.lambda
 local function parseLambda(isDoublePipe)
   local lambdaLeft = getPosition(Token.getPos(), 'left')
   local lambdaRight = getPosition(Token.getPos(), 'right')
@@ -3779,27 +3833,29 @@ local function parseWhile()
   return action
 end
 
+--- @return parser.object.repeat
 local function parseRepeat()
   local _, start, finish = assert(Token.getWithPos())
+
+  --- @type parser.object.repeat
   local action = {
     type = 'repeat',
     start = start,
     finish = finish,
-    keyword = {},
+    keyword = {start, finish},
   }
-  action.bstart = action.finish
-  action.keyword[1] = action.start
-  action.keyword[2] = action.finish
-  Token.next()
 
+  action.bstart = action.finish
+
+  Token.next()
   Chunk.pushIntoCurrent(action)
   Chunk.push(action)
   skipSpace()
   parseActions()
-
   skipSpace()
+
   if Token.get() == 'until' then
-    local _, start, finish = Token.getWithPos()
+    local _, start, finish = assert(Token.getWithPos())
     action.finish = finish
     action.keyword[#action.keyword + 1] = start
     action.keyword[#action.keyword + 1] = finish
@@ -3818,51 +3874,50 @@ local function parseRepeat()
   end
 
   Chunk.pop()
+  Chunk.localCount = Chunk.localCount - #(action.locals or {})
+
   if action.filter then
     action.finish = action.filter.finish
   end
 
-  Chunk.localCount = Chunk.localCount - #(action.locals or {})
-
   return action
 end
 
+--- @return parser.object.break
 local function parseBreak()
-  local _, start, finish = Token.getWithPos()
-  Token.next()
-  skipSpace()
+  local _, start, finish = assert(Token.getWithPos())
+
+  --- @type parser.object.break
   local action = {
     type = 'break',
     start = start,
     finish = finish,
   }
 
+  Token.next()
+  skipSpace()
+
   local ok
   for chunk in Chunk.iter_rev() do
-    if chunk.type == 'function' then
+    local ty = chunk.type
+    if ty == 'function' then
       break
-    end
-    if
-      chunk.type == 'while'
-      or chunk.type == 'in'
-      or chunk.type == 'loop'
-      or chunk.type == 'repeat'
-      or chunk.type == 'for'
-    then
-      if not chunk.breaks then
-        chunk.breaks = {}
-      end
+    elseif ty == 'while' or ty == 'in' or ty == 'loop' or ty == 'repeat' or ty == 'for' then
+      chunk.breaks = chunk.breaks or {}
       chunk.breaks[#chunk.breaks + 1] = action
       ok = true
       break
     end
   end
+
   for chunk in Chunk.iter_rev() do
-    if chunk.type == 'ifblock' or chunk.type == 'elseifblock' or chunk.type == 'elseblock' then
+    local ty = chunk.type
+    if ty == 'ifblock' or ty == 'elseifblock' or ty == 'elseblock' then
       chunk.hasBreak = true
       break
     end
   end
+
   if not ok and Mode == 'Lua' then
     pushError({ type = 'BREAK_OUTSIDE', at = action })
   end
@@ -4036,8 +4091,7 @@ local function initState(lua, version, options)
     errs[#errs + 1] = err
     return err
   end
-  Chunk = require 'parser.chunk'(pushError)
-
+  Chunk = require('parser.chunk')(pushError)
 end
 
 --- @param lua string
