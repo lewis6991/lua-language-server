@@ -181,7 +181,7 @@ digraph AST {
 	"local:40006:40007" -> "integer:40010:40011"
 	"while:50000:70003" [
 		label="while\l\l"
-		tooltip="start: 50000\nfinish: 70003\nfilter: <node binary>\nkeyword: <table>\nbstart: 50013\n1: <node setlocal>\n"
+		tooltip="start: 50000\nfinish: 70003\nfilter: <node binary>\nkeyword: <table>\nbstart: 50015\n1: <node setlocal>\n"
 	]
 	"main:0:300000" -> "while:50000:70003"
 	"binary:50006:50012" [
@@ -291,7 +291,7 @@ digraph AST {
 	"callargs:80005:80008" -> "getlocal:80006:80007"
 	"loop:90000:140003" [
 		label="loop\l\l"
-		tooltip="start: 90000\nfinish: 140003\ninit: <node integer>\nstep: <node integer>\nmax: <node integer>\nlocals: <table>\nbstart: 90018\nkeyword: <table>\nloc: <node local>\n1: <node in>\n"
+		tooltip="start: 90000\nfinish: 140003\nstateVars: 3\nstep: <node integer>\nmax: <node integer>\ninit: <node integer>\nlocals: <table>\nbstart: 90020\nkeyword: <table>\nloc: <node local>\n1: <node in>\n"
 	]
 	"main:0:300000" -> "loop:90000:140003"
 	"local:90004:90005" [
@@ -316,7 +316,7 @@ digraph AST {
 	"loop:90000:140003" -> "integer:90015:90017"
 	"in:100001:130004" [
 		label="in\l\l"
-		tooltip="start: 100001\nfinish: 130004\nbstart: 100020\nexps: <node list>\nlabels: <table>\nlocals: <table>\nkeyword: <table>\nkeys: <node list>\n1: <node goto>\n2: <node label>\n"
+		tooltip="start: 100001\nfinish: 130004\nstateVars: 4\nbstart: 100022\nexps: <node list>\nlabels: <table>\nlocals: <table>\nkeyword: <table>\nkeys: <node list>\n1: <node goto>\n2: <node label>\n"
 	]
 	"loop:90000:140003" -> "in:100001:130004"
 	"list:100005:100006" [

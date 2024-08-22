@@ -455,6 +455,22 @@ local ListFinishMap = {
 
 --- Blocks
 
+--- @alias parser.object.action
+--- | parser.object.label
+--- | parser.object.local
+--- | parser.object.do
+--- | parser.object.if
+--- | parser.object.for
+--- | parser.object.in
+--- | parser.object.loop
+--- | parser.object.while
+--- | parser.object.repeat
+--- | parser.object.function
+--- | parser.object.expr
+--- | parser.object.break
+--- | parser.object.return
+--- | parser.object.goto
+
 --- @alias parser.object.block
 --- | parser.object.do
 --- | parser.object.if
@@ -535,6 +551,7 @@ local ListFinishMap = {
 
 --- @class parser.object.loop : parser.object.block.common
 --- @field type 'loop'
+--- @field stateVars integer
 --- @field keyword [integer,integer]
 --- @field loc? parser.object.local
 --- @field init? parser.object.expr
@@ -543,6 +560,7 @@ local ListFinishMap = {
 
 --- @class parser.object.in : parser.object.block.common
 --- @field type 'in'
+--- @field stateVars integer
 --- @field keyword [integer,integer, integer, integer]
 --- @field exps parser.object.explist
 --- @field keys parser.object.forlist
@@ -618,9 +636,19 @@ local Token = {
 }
 
 do -- Token interface
+  --- @param ... string Tokens
   --- @return string?
-  function Token.get()
-    return Token.Tokens[Token.Index + 1] --[[@as string]]
+  function Token.get(...)
+    local t = Token.Tokens[Token.Index + 1] --[[@as string]]
+    if select('#', ...) == 0 then
+      return t
+    end
+
+    for i = 1, select('#', ...) do
+      if t == select(i, ...) then
+        return t
+      end
+    end
   end
 
   --- @return string?
@@ -911,6 +939,9 @@ end
 
 --- @return parser.object.string?
 local function parseLongString()
+  if not CharMapStrLH[Token.get()] then
+    return
+  end
   local start, finish, mark = Lua:find('^(%[%=*%[)', Token.getPos())
   if not start then
     return
@@ -971,7 +1002,7 @@ local function skipComment(isAction)
     local left = Token.left()
     local chead = false
 
-    if token == '//' then
+    if Token.get('//') then
       chead = true
       pushCommentHeadError(left)
     end
@@ -1008,8 +1039,7 @@ local function skipComment(isAction)
     }
 
     return true
-  end
-  if token == '/*' then
+  elseif Token.get('/*') then
     local left = Token.left()
     Token.next()
     local result, right = resolveLongString('*/')
@@ -1025,6 +1055,7 @@ local function skipComment(isAction)
   return false
 end
 
+--- @param isAction? boolean
 local function skipSpace(isAction)
   repeat
   until not skipNL() and not skipComment(isAction)
@@ -1033,32 +1064,20 @@ end
 --- @param isAction? boolean
 --- @return boolean
 local function expectAssign(isAction)
-  local token = Token.get()
-  if token == '=' then
+  if Token.get('=') then
     Token.next()
     return true
-  end
-  if token == '==' then
+  elseif Token.get('==') then
     Error.token('ERR_ASSIGN_AS_EQ', {
       fix = { title = 'FIX_ASSIGN_AS_EQ', { text = '=' } },
     })
     Token.next()
     return true
   end
+
   if isAction then
-    if
-      token == '+='
-      or token == '-='
-      or token == '*='
-      or token == '/='
-      or token == '%='
-      or token == '^='
-      or token == '//='
-      or token == '|='
-      or token == '&='
-      or token == '>>='
-      or token == '<<='
-    then
+    local token = Token.get('+=', '-=', '*=', '/=', '%=', '^=', '//=', '|=', '&=', '>>=', '<<=')
+    if token then
       if not State.options.nonstandardSymbol[token] then
         unknownSymbol()
       end
@@ -1084,8 +1103,7 @@ local function parseLocalAttrs()
   local attrs
   while true do
     skipSpace()
-    local token = Token.get()
-    if token ~= '<' then
+    if not Token.get('<') then
       break
     end
     if not attrs then
@@ -1097,7 +1115,6 @@ local function parseLocalAttrs()
     attr.parent = attrs
     attrs[#attrs + 1] = attr
     Token.next()
-    local token = Token.get()
     skipSpace()
 
     local word, wstart, wfinish = peekWord()
@@ -1119,12 +1136,10 @@ local function parseLocalAttrs()
     attr.finish = lastRightPosition()
     skipSpace()
 
-    local token = Token.get()
-
-    if token == '>' then
+    if Token.get('>') then
       attr.finish = Token.right()
       Token.next()
-    elseif token == '>=' then
+    elseif Token.get('>=') then
       attr.finish = Token.right()
       Error.token('MISS_SPACE_BETWEEN')
       Token.next()
@@ -1414,9 +1429,13 @@ local function parseStringEsc(mark, escs, strIndex, currOffset)
   return strIndex, currOffset
 end
 
---- @return parser.object.string
+--- @return parser.object.string?
 local function parseShortString()
-  local mark = assert(Token.get())
+  local mark = Token.get()
+  if not CharMapStrSH[mark] then
+    return
+  end
+  assert(mark)
   local currOffset = Token.getPos() + 1
   local startPos = Token.left()
   Token.next()
@@ -1481,12 +1500,7 @@ end
 
 --- @return parser.object.string?
 local function parseString()
-  local c = Token.get()
-  if CharMapStrSH[c] then
-    return parseShortString()
-  elseif CharMapStrLH[c] then
-    return parseLongString()
-  end
+  return parseShortString() or parseLongString()
 end
 
 local function parseNumber10(start)
@@ -1710,19 +1724,20 @@ local function parseName(asAction)
   local word = peekWord()
   if not word then
     return
-  end
-  if ChunkFinishMap[word] then
+  elseif ChunkFinishMap[word] then
+    return
+  elseif asAction and ChunkStartMap[word] then
     return
   end
-  if asAction and ChunkStartMap[word] then
-    return
-  end
+
   if not State.options.unicodeName and word:find('[\x80-\xff]') then
     Error.token('UNICODE_NAME')
   end
+
   if isKeyWord(word, Token.get()) then
     Error.token('KEYWORD')
   end
+
   local obj = initObj('name') --- @type parser.object.name
   obj[1] = word
   Token.next()
@@ -1855,7 +1870,7 @@ local function parseIndex()
 
   skipSpace()
 
-  if Token.get() == ']' then
+  if Token.get(']') then
     index.finish = Token.right()
     Token.next()
   else
@@ -1878,7 +1893,7 @@ local function parseTableField(wantSep)
   local name = parseName()
   if name then
     skipSpace()
-    if Token.get() == '=' then
+    if Token.get('=') then
       Token.next()
       if wantSep then
         pushError({
@@ -1938,8 +1953,12 @@ local function parseTableExp(exp, tindex)
   return texp, tindex
 end
 
---- @return parser.object.table
+--- @return parser.object.table?
 local function parseTable()
+  if not Token.get('{') then
+    return
+  end
+
   local tbl = initObj('table') --- @type parser.object.table
   Token.next()
   local index = 0
@@ -2170,7 +2189,7 @@ local function parseCall(node)
   local expList = parseExpList()
 
   local finish
-  if Token.get() == ')' then
+  if Token.get(')') then
     finish = Token.right()
     Token.next()
   else
@@ -2202,9 +2221,12 @@ local function parseCall(node)
 end
 
 --- @param node parser.object.expr
---- @return parser.object.call
+--- @return parser.object.call?
 local function parseTableCall(node)
   local tbl = parseTable()
+  if not tbl then
+    return
+  end
 
   --- @type parser.object.call
   local call = {
@@ -2227,8 +2249,12 @@ local function parseTableCall(node)
   return call
 end
 
+--- @return parser.object.call?
 local function parseShortStrCall(node)
   local str = parseShortString()
+  if not str then
+    return
+  end
   local call = {
     type = 'call',
     start = node.start,
@@ -2284,7 +2310,7 @@ local function parseGetIndex(node)
 end
 
 --- @param node parser.object.expr
---- @param funcName true? Parse function name
+--- @param funcName? boolean Parse function name
 --- @return parser.object.expr
 local function parseSimple(node, funcName)
   local currentName --- @type string?
@@ -2387,8 +2413,11 @@ local function checkVarargs(varargs)
   end
 end
 
---- @return parser.object.varargs
+--- @return parser.object.varargs?
 local function parseVarargs()
+  if Token.get() ~= '...' then
+    return
+  end
   local varargs = initObj('varargs') --- @type parser.object.varargs
   checkVarargs(varargs)
   Token.next()
@@ -2412,7 +2441,7 @@ local function parseParen()
 
   skipSpace()
 
-  if Token.get() == ')' then
+  if Token.get(')') then
     paren.finish = Token.right()
     Token.next()
   else
@@ -2500,30 +2529,32 @@ end
 local parseAction
 
 local function parseActions()
-  local rtn, last
+  local rtn --- @type parser.object.return?
+  local last --- @type parser.object.action?
+
   while true do
     skipSpace(true)
     local token = Token.get()
     if token == ';' then
       Token.next()
+    elseif ChunkFinishMap[token] and isChunkFinishToken(token) then
+      break
     else
-      if ChunkFinishMap[token] and isChunkFinishToken(token) then
-        break
-      end
-      local action, failed = parseAction()
-      if failed then
+      local action = parseAction()
+      if not action then
         if not skipUnknownSymbol() then
           break
         end
-      end
-      if action then
+      else
         if not rtn and action.type == 'return' then
+          --- @cast action parser.object.return
           rtn = action
         end
         last = action
       end
     end
   end
+
   if rtn and rtn ~= last then
     Error.token('ACTION_AFTER_RETURN', { at = rtn })
   end
@@ -2611,15 +2642,32 @@ local function initBlock(ty)
   }
 end
 
+--- @param obj parser.object.block
+local function parseEnd(obj)
+  if Token.get('end') then
+    local left, right = Token.getLeftRight()
+    obj.finish = right
+    obj.keyword[#obj.keyword + 1] = left
+    obj.keyword[#obj.keyword + 1] = right
+    Token.next()
+  else
+    obj.finish = lastRightPosition()
+    Error.missEnd(obj.keyword[1], obj.keyword[2])
+  end
+end
+
 --- @param isLocal? boolean
 --- @param isAction? boolean
---- @return parser.object.function
+--- @return parser.object.function?
 local function parseFunction(isLocal, isAction)
+  if not Token.get('function') then
+    return
+  end
   local func = initBlock('function') --- @type parser.object.function
   Token.next()
   skipSpace(true)
 
-  local hasLeftParen = Token.get() == '('
+  local hasLeftParen = Token.get('(')
   if not hasLeftParen then
     local name = parseName()
     if name then
@@ -2642,7 +2690,7 @@ local function parseFunction(isLocal, isAction)
         Error.token('UNEXPECT_EFUNC_NAME', { at = simple })
       end
       skipSpace(true)
-      hasLeftParen = Token.get() == '('
+      hasLeftParen = Token.get('(')
     end
   end
 
@@ -2679,7 +2727,7 @@ local function parseFunction(isLocal, isAction)
     params.parent = func
     func.args = params
     skipSpace(true)
-    if Token.get() == ')' then
+    if Token.get(')') then
       func.finish = Token.right()
       func.bstart = func.finish
       if params then
@@ -2701,18 +2749,7 @@ local function parseFunction(isLocal, isAction)
 
   parseActions()
   Chunk.pop()
-
-  if Token.get() == 'end' then
-    local endLeft, endRight = Token.getLeftRight()
-    func.keyword[3] = endLeft
-    func.keyword[4] = endRight
-    func.finish = endRight
-    Token.next()
-  else
-    func.finish = lastRightPosition()
-    Error.missEnd(func.keyword[1], func.keyword[2])
-  end
-
+  parseEnd(func)
   Chunk.localCount = lastLocalCount
 
   return func
@@ -2758,7 +2795,7 @@ local function parseLambda(isDoublePipe)
     params.parent = lambda
     lambda.args = params
     skipSpace()
-    if Token.get() == '|' then
+    if Token.get('|') then
       pipeRight = Token.right()
       lambda.finish = pipeRight
       lambda.bstart = pipeRight
@@ -2840,51 +2877,27 @@ local function parseExpUnit()
   local token = Token.get()
   if token == '(' then
     return parseSimple(parseParen(), false)
-  elseif token == '...' then
-    return parseVarargs()
-  elseif token == '{' then
-    local table = parseTable()
-    if not table then
+  elseif token == '{' or CharMapStrSH[token] or CharMapStrLH[token] then
+    --- @type parser.object.expr?
+    local r = parseTable() or parseString()
+    if not r then
       return
     end
-    return checkNeedParen(table)
-  elseif CharMapStrSH[token] then
-    local string = parseShortString()
-    if not string then
-      return
-    end
-    return checkNeedParen(string)
-  elseif CharMapStrLH[token] then
-    local string = parseLongString()
-    if not string then
-      return
-    end
-    return checkNeedParen(string)
-  end
-
-  local number = parseNumber()
-  if number then
-    return number
+    return checkNeedParen(r)
   end
 
   if ChunkFinishMap[token] then
     return
   end
 
-  if token == 'nil' then
-    return parseNil()
-  end
-
-  if token == 'true' or token == 'false' then
-    return parseBoolean()
-  end
-
-  if token == 'function' then
-    return parseFunction()
+  --- @type parser.object.expr?
+  local r = parseVarargs() or parseNumber() or parseNil() or parseBoolean() or parseFunction()
+  if r then
+    return r
   end
 
   -- FIXME: Use something other than nonstandardSymbol to check for lambda support
-  if State.options.nonstandardSymbol['|lambda|'] and (token == '|' or token == '||') then
+  if State.options.nonstandardSymbol['|lambda|'] and Token.get('|', '||') then
     return parseLambda(token == '||')
   end
 
@@ -2958,7 +2971,7 @@ local function parseBinaryOP(asAction, level)
     end
   end
 
-  if token == '//' or token == '<<' or token == '>>' then
+  if Token.get('//', '<<', '>>') then
     if State.version ~= 'Lua 5.3' and State.version ~= 'Lua 5.4' then
       Error.token('UNEXPECT_SYMBOL', {
         version = { 'Lua 5.3', 'Lua 5.4' },
@@ -3053,7 +3066,7 @@ end
 local function skipSeps()
   while true do
     skipSpace()
-    if Token.get() == ',' then
+    if Token.get(',') then
       Error.missExp()
       Token.next()
     else
@@ -3349,6 +3362,10 @@ end
 
 --- @return parser.object.local?
 local function parseLocal()
+  if not Token.get('local') then
+    return
+  end
+
   local locPos = Token.left()
   Token.next()
   skipSpace()
@@ -3358,8 +3375,8 @@ local function parseLocal()
     return
   end
 
-  if word == 'function' then
-    local func = parseFunction(true, true)
+  local func = parseFunction(true, true)
+  if func then
     local name = func.name
     if name then
       func.name = nil
@@ -3370,11 +3387,10 @@ local function parseLocal()
       func.parent = name
       Chunk.pushIntoCurrent(name)
       return name
-    else
-      Error.missName(func.keyword[2])
-      Chunk.pushIntoCurrent(func)
-      return func
     end
+    Error.missName(func.keyword[2])
+    Chunk.pushIntoCurrent(func)
+    return func
   end
 
   local name = parseName(true)
@@ -3392,30 +3408,29 @@ local function parseLocal()
   return loc
 end
 
---- @return parser.object.do
+--- @return parser.object.do?
 local function parseDo()
+  if not Token.get('do') then
+    return
+  end
   local obj = initBlock('do') --- @type parser.object.do
   Token.next()
   Chunk.pushIntoCurrent(obj)
   Chunk.push(obj)
   parseActions()
   Chunk.pop()
-  if Token.get() == 'end' then
-    obj.finish = Token.right()
-    obj.keyword[3] = Token.left()
-    obj.keyword[4] = obj.finish
-    Token.next()
-  else
-    Error.missEnd(obj.keyword[1], obj.keyword[2])
-  end
+  parseEnd(obj)
 
   Chunk.localCount = Chunk.localCount - #(obj.locals or {})
 
   return obj
 end
 
---- @return parser.object.return
+--- @return parser.object.return?
 local function parseReturn()
+  if not Token.get('return') then
+    return
+  end
   local left, right = Token.getLeftRight()
   Token.next()
   skipSpace()
@@ -3460,6 +3475,9 @@ end
 
 --- @return parser.object.label?
 local function parseLabel()
+  if not Token.get('::') then
+    return
+  end
   local left = Token.left()
   Token.next()
   skipSpace()
@@ -3470,7 +3488,7 @@ local function parseLabel()
     Error.missName()
   end
 
-  if Token.get() == '::' then
+  if Token.get('::') then
     Token.next()
   elseif name then
     Error.missSymbol('::')
@@ -3524,6 +3542,10 @@ end
 
 --- @return parser.object.goto?
 local function parseGoTo()
+  if not (Token.get('goto') and isKeyWord('goto', Token.getPrev())) then
+    return
+  end
+
   local start = Token.left()
   Token.next()
   skipSpace()
@@ -3558,6 +3580,35 @@ local function parseGoTo()
   return action
 end
 
+--- @param obj parser.object.block
+--- @param x 'then' | 'do'
+local function parseThenOrDo(obj, x)
+  skipSpace()
+
+  local wrong = x == 'then' and 'do' or 'then'
+
+  local token = Token.get('then', 'do')
+  if not token then
+    Error.missSymbol(x)
+    return
+  end
+
+  local left, right = Token.getLeftRight()
+  obj.finish = right
+  obj.bstart = obj.finish
+  obj.keyword[#obj.keyword + 1] = left
+  obj.keyword[#obj.keyword + 1] = right
+
+  if token == wrong then
+    local err = x == 'then' and 'ERR_THEN_AS_DO' or 'ERR_DO_AS_THEN'
+    Error.token(err, {
+      fix = { title = 'FIX_THEN_AS_DO', { text = x } },
+    })
+  end
+
+  Token.next()
+end
+
 --- @param parent parser.object.if
 --- @return parser.object.ifblock
 local function parseIfBlock(parent)
@@ -3575,23 +3626,9 @@ local function parseIfBlock(parent)
   else
     Error.missExp()
   end
-  skipSpace()
-  local thenToken = Token.get()
-  if thenToken == 'then' or thenToken == 'do' then
-    local thenStart, thenFinish = Token.getLeftRight()
-    obj.finish = thenFinish
-    obj.bstart = obj.finish
-    obj.keyword[3] = thenStart
-    obj.keyword[4] = obj.finish
-    if thenToken == 'do' then
-      Error.token('ERR_THEN_AS_DO', {
-        fix = { title = 'FIX_THEN_AS_DO', { text = 'then' } },
-      })
-    end
-    Token.next()
-  else
-    Error.missSymbol('then')
-  end
+
+  parseThenOrDo(obj, 'then')
+
   Chunk.push(obj)
   parseActions()
   Chunk.pop()
@@ -3616,23 +3653,7 @@ local function parseElseIfBlock(parent)
   else
     Error.missExp()
   end
-  skipSpace()
-  local thenToken = Token.get()
-  if thenToken == 'then' or thenToken == 'do' then
-    local thenLeft, thenRight = Token.getLeftRight()
-    obj.finish = thenRight
-    obj.bstart = obj.finish
-    obj.keyword[3] = thenLeft
-    obj.keyword[4] = obj.finish
-    if thenToken == 'do' then
-      Error.token('ERR_THEN_AS_DO', {
-        fix = { title = 'FIX_THEN_AS_DO', { text = 'then' } },
-      })
-    end
-    Token.next()
-  else
-    Error.missSymbol('then')
-  end
+  parseThenOrDo(obj, 'then')
   Chunk.push(obj)
   parseActions()
   Chunk.pop()
@@ -3656,13 +3677,20 @@ local function parseElseBlock(parent)
   return obj
 end
 
---- @param token string
-local function parseIf(token)
+--- @return parser.object.if?
+local function parseIf()
+  local token = Token.get('if', 'elseif', 'else')
+  if not token then
+    return
+  end
+
   local obj = initBlock('if') --- @type parser.object.if
   Chunk.pushIntoCurrent(obj)
+
   if token ~= 'if' then
     Error.missSymbol('if', obj.keyword[1], obj.keyword[1])
   end
+
   local hasElse
   while true do
     local word = Token.get()
@@ -3688,18 +3716,165 @@ local function parseIf(token)
     skipSpace()
   end
 
-  if Token.get() == 'end' then
-    obj.finish = Token.right()
-    Token.next()
-  else
-    Error.missEnd(obj[1].keyword[1], obj[1].keyword[2])
-  end
+  parseEnd(obj)
 
   return obj
 end
 
---- @return parser.object.for|parser.object.loop|parser.object.in
+--- @param action parser.object.for
+--- @param nameOrList parser.object.forlist|parser.object.name?
+--- @return parser.object.loop?
+local function parseForLoop(action, nameOrList)
+  if not expectAssign() then
+    return
+  end
+
+  local loop = action --[[@as parser.object.loop]]
+  loop.type = 'loop'
+  loop.stateVars = 3
+
+  skipSpace()
+  local expList = parseExpList()
+  local name
+  if nameOrList then
+    if nameOrList.type == 'name' then
+      --- @cast nameOrList parser.object.name
+      name = nameOrList
+    else
+      --- @cast nameOrList -parser.object.name
+      name = nameOrList[1]
+    end
+  end
+  -- for x in ... uses 4 variables
+  Chunk.localCount = Chunk.localCount + loop.stateVars
+  if name then
+    local loc = createLocal(name)
+    loc.parent = loop
+    loop.finish = name.finish
+    loop.bstart = loop.finish
+    loop.loc = loc
+  end
+
+  if expList then
+    expList.parent = loop
+    local value, max, step = expList[1], expList[2], expList[3]
+    if value then
+      value.parent = expList
+      loop.init = value
+      loop.finish = expList[#expList].finish
+      loop.bstart = loop.finish
+    end
+    if max then
+      max.parent = expList
+      loop.max = max
+      loop.finish = max.finish
+      loop.bstart = loop.finish
+    else
+      pushError({
+        type = 'MISS_LOOP_MAX',
+        start = lastRightPosition(),
+        finish = lastRightPosition(),
+      })
+    end
+    if step then
+      step.parent = expList
+      loop.step = step
+      loop.finish = step.finish
+      loop.bstart = loop.finish
+    end
+  else
+    pushError({
+      type = 'MISS_LOOP_MIN',
+      start = lastRightPosition(),
+      finish = lastRightPosition(),
+    })
+  end
+
+  if loop.loc then
+    loop.loc.effect = loop.finish
+  end
+
+  return loop
+end
+
+--- @param action parser.object.for
+--- @param nameOrList parser.object.forlist|parser.object.name?
+--- @return parser.object.in?
+local function parseForIn(action, nameOrList)
+  if not Token.get('in') then
+    return
+  end
+
+  local forin = action --[[@as parser.object.in]]
+  forin.type = 'in'
+  forin.stateVars = State.version == 'Lua 5.4' and 4 or 3
+  local inLeft, inRight = Token.getLeftRight()
+  Token.next()
+  skipSpace()
+
+  local exps = parseExpList()
+
+  forin.finish = inRight
+  forin.bstart = forin.finish
+  forin.keyword[3] = inLeft
+  forin.keyword[4] = inRight
+
+  local list --- @type parser.object.forlist?
+  if nameOrList and nameOrList.type == 'name' then
+    --- @cast nameOrList parser.object.name
+    list = {
+      type = 'list',
+      start = nameOrList.start,
+      finish = nameOrList.finish,
+      parent = forin,
+      [1] = nameOrList,
+    }
+  else
+    --- @cast nameOrList -parser.object.name
+    list = nameOrList
+  end
+
+  if exps then
+    local lastExp = exps[#exps]
+    if lastExp then
+      forin.finish = lastExp.finish
+      forin.bstart = forin.finish
+    end
+
+    forin.exps = exps
+    exps.parent = forin
+    for i = 1, #exps do
+      local exp = exps[i]
+      exp.parent = exps
+    end
+  else
+    Error.missExp()
+  end
+
+  Chunk.localCount = Chunk.localCount + forin.stateVars
+
+  if list then
+    local lastName = list[#list]
+    list.range = lastName and lastName.range or inRight
+    forin.keys = list
+    for _, obj in ipairs(list) do
+      -- TODO(lewis6991): type check bug
+      --- @cast obj -string
+      local loc = createLocal(obj)
+      loc.parent = forin
+      loc.effect = forin.finish
+    end
+  end
+
+  return forin
+end
+
+--- @return parser.object.for|parser.object.loop|parser.object.in?
 local function parseFor()
+  if not Token.get('for') then
+    return
+  end
+
   local action = initBlock('for') --- @type parser.object.for
   Token.next()
   Chunk.pushIntoCurrent(action)
@@ -3710,182 +3885,32 @@ local function parseFor()
     Error.missName()
   end
   skipSpace()
-  local forStateVars
-  -- for i =
-  if expectAssign() then
-    local loop = action --[[@as parser.object.loop]]
-    loop.type = 'loop'
 
-    skipSpace()
-    local expList = parseExpList()
-    local name
-    if nameOrList then
-      if nameOrList.type == 'name' then
-        --- @cast nameOrList parser.object.name
-        name = nameOrList
-      else
-        --- @cast nameOrList -parser.object.name
-        name = nameOrList[1]
-      end
-    end
-    -- for x in ... uses 4 variables
-    forStateVars = 3
-    Chunk.localCount = Chunk.localCount + forStateVars
-    if name then
-      local loc = createLocal(name)
-      loc.parent = loop
-      loop.finish = name.finish
-      loop.bstart = loop.finish
-      loop.loc = loc
-    end
-    if expList then
-      expList.parent = loop
-      local value, max, step = expList[1], expList[2], expList[3]
-      if value then
-        value.parent = expList
-        loop.init = value
-        loop.finish = expList[#expList].finish
-        loop.bstart = loop.finish
-      end
-      if max then
-        max.parent = expList
-        loop.max = max
-        loop.finish = max.finish
-        loop.bstart = loop.finish
-      else
-        pushError({
-          type = 'MISS_LOOP_MAX',
-          start = lastRightPosition(),
-          finish = lastRightPosition(),
-        })
-      end
-      if step then
-        step.parent = expList
-        loop.step = step
-        loop.finish = step.finish
-        loop.bstart = loop.finish
-      end
-    else
-      pushError({
-        type = 'MISS_LOOP_MIN',
-        start = lastRightPosition(),
-        finish = lastRightPosition(),
-      })
-    end
+  local obj = parseForLoop(action, nameOrList) or parseForIn(action, nameOrList) or action
 
-    if loop.loc then
-      loop.loc.effect = loop.finish
-    end
-  elseif Token.get() == 'in' then
-    local forin = action --[[@as parser.object.in]]
-    forin.type = 'in'
-    local inLeft, inRight = Token.getLeftRight()
-    Token.next()
-    skipSpace()
-
-    local exps = parseExpList()
-
-    forin.finish = inRight
-    forin.bstart = forin.finish
-    forin.keyword[3] = inLeft
-    forin.keyword[4] = inRight
-
-    local list --- @type parser.object.forlist?
-    if nameOrList and nameOrList.type == 'name' then
-      --- @cast nameOrList parser.object.name
-      list = {
-        type = 'list',
-        start = nameOrList.start,
-        finish = nameOrList.finish,
-        parent = forin,
-        [1] = nameOrList,
-      }
-    else
-      --- @cast nameOrList -parser.object.name
-      list = nameOrList
-    end
-
-    if exps then
-      local lastExp = exps[#exps]
-      if lastExp then
-        forin.finish = lastExp.finish
-        forin.bstart = forin.finish
-      end
-
-      forin.exps = exps
-      exps.parent = forin
-      for i = 1, #exps do
-        local exp = exps[i]
-        exp.parent = exps
-      end
-    else
-      Error.missExp()
-    end
-
-    if State.version == 'Lua 5.4' then
-      forStateVars = 4
-    else
-      forStateVars = 3
-    end
-    Chunk.localCount = Chunk.localCount + forStateVars
-
-    if list then
-      local lastName = list[#list]
-      list.range = lastName and lastName.range or inRight
-      forin.keys = list
-      for _, obj in ipairs(list) do
-        -- TODO(lewis6991): type check bug
-        --- @cast obj -string
-        local loc = createLocal(obj)
-        loc.parent = forin
-        loc.effect = forin.finish
-      end
-    end
-  else
+  if obj.type == 'for' then
     Error.missSymbol('in')
   end
 
-  skipSpace()
-  local doToken = Token.get()
-  if doToken == 'do' or doToken == 'then' then
-    local left, right = Token.getLeftRight()
-    action.finish = left
-    action.bstart = action.finish
-    action.keyword[#action.keyword + 1] = left
-    action.keyword[#action.keyword + 1] = right
-    if doToken == 'then' then
-      Error.token('ERR_DO_AS_THEN', {
-        fix = { title = 'FIX_DO_AS_THEN', { text = 'do' } },
-      })
-    end
-    Token.next()
-  else
-    Error.missSymbol('do')
-  end
+  parseThenOrDo(obj, 'do')
 
   skipSpace()
   parseActions()
   Chunk.pop()
-
   skipSpace()
-  if Token.get() == 'end' then
-    local left, right = Token.getLeftRight()
-    action.finish = right
-    action.keyword[#action.keyword + 1] = left
-    action.keyword[#action.keyword + 1] = action.finish
-    Token.next()
-  else
-    Error.missEnd(action.keyword[1], action.keyword[2])
-  end
+  parseEnd(obj)
 
-  Chunk.localCount = Chunk.localCount - #(action.locals or {})
-  Chunk.localCount = Chunk.localCount - (forStateVars or 0)
+  Chunk.localCount = Chunk.localCount - #(obj.locals or {})
+  Chunk.localCount = Chunk.localCount - (obj.stateVars or 0)
 
-  return action
+  return obj
 end
 
---- @return parser.object.while
+--- @return parser.object.while?
 local function parseWhile()
+  if not Token.get('while') then
+    return
+  end
   local action = initBlock('while') --- @type parser.object.while
   Token.next()
 
@@ -3900,48 +3925,24 @@ local function parseWhile()
     Error.missExp()
   end
 
-  skipSpace()
-  local doToken = Token.get()
-  if doToken == 'do' or doToken == 'then' then
-    local left, right = Token.getLeftRight()
-    action.finish = left
-    action.bstart = left
-    action.keyword[#action.keyword + 1] = left
-    action.keyword[#action.keyword + 1] = right
-    if doToken == 'then' then
-      Error.token('ERR_DO_AS_THEN', {
-        fix = { title = 'FIX_DO_AS_THEN', { text = 'do' } },
-      })
-    end
-    Token.next()
-  else
-    Error.missSymbol('do')
-  end
-
+  parseThenOrDo(action, 'do')
   Chunk.pushIntoCurrent(action)
   Chunk.push(action)
   skipSpace()
   parseActions()
   Chunk.pop()
-
   skipSpace()
-  if Token.get() == 'end' then
-    local left, right = Token.getLeftRight()
-    action.finish = right
-    action.keyword[#action.keyword + 1] = left
-    action.keyword[#action.keyword + 1] = action.finish
-    Token.next()
-  else
-    Error.missEnd(action.keyword[1], action.keyword[2])
-  end
-
+  parseEnd(action)
   Chunk.localCount = Chunk.localCount - #(action.locals or {})
 
   return action
 end
 
---- @return parser.object.repeat
+--- @return parser.object.repeat?
 local function parseRepeat()
+  if not Token.get('repeat') then
+    return
+  end
   local obj = initBlock('repeat') --- @type parser.object.repeat
   Token.next()
   Chunk.pushIntoCurrent(obj)
@@ -3950,7 +3951,7 @@ local function parseRepeat()
   parseActions()
   skipSpace()
 
-  if Token.get() == 'until' then
+  if Token.get('until') then
     local start, finish = Token.getLeftRight()
     obj.finish = finish
     obj.keyword[#obj.keyword + 1] = start
@@ -3979,8 +3980,14 @@ local function parseRepeat()
   return obj
 end
 
---- @return parser.object.break
+--- @return parser.object.break?
 local function parseBreak()
+  if
+    not Token.get('break')
+    and not (Token.get('continue') and State.options.nonstandardSymbol['continue'])
+  then
+    return
+  end
   --- @type parser.object.break
   local action = initObj('break') --- @as parser.object.break
 
@@ -4016,63 +4023,55 @@ local function parseBreak()
   return action
 end
 
---- @return parser.object.union? action
---- @return true? err
-function parseAction()
-  local token = Token.get()
-
-  if token == '::' then
-    return parseLabel()
-  elseif token == 'local' then
-    return parseLocal()
-  elseif token == 'if' or token == 'elseif' or token == 'else' then
-    return parseIf(token)
-  elseif token == 'for' then
-    return parseFor()
-  elseif token == 'do' then
-    return parseDo()
-  elseif token == 'return' then
-    return parseReturn()
-  elseif token == 'break' then
-    return parseBreak()
-  elseif token == 'continue' and State.options.nonstandardSymbol['continue'] then
-    return parseBreak()
-  elseif token == 'while' then
-    return parseWhile()
-  elseif token == 'repeat' then
-    return parseRepeat()
-  elseif token == 'goto' and isKeyWord('goto', Token.getPrev()) then
-    return parseGoTo()
-  elseif token == 'function' then
-    local exp = parseFunction(false, true)
-    local name = exp.name
-    if name then
-      exp.name = nil
-      name.type = GetToSetMap[name.type]
-      name.value = exp
-      name.vstart = exp.start
-      name.range = exp.finish
-      exp.parent = name
-      if name.type == 'setlocal' and name.node.attrs then
-        pushError({ type = 'SET_CONST', at = name })
-      end
-      Chunk.pushIntoCurrent(name)
-      return name
-    else
-      Chunk.pushIntoCurrent(exp)
-      Error.missName(exp.keyword[2])
-      return exp
-    end
+--- @return parser.object.function?
+local function parseFunctionAction()
+  local exp = parseFunction(false, true)
+  if not exp then
+    return
   end
 
+  local name = exp.name
+  if name then
+    exp.name = nil
+    name.type = GetToSetMap[name.type]
+    name.value = exp
+    name.vstart = exp.start
+    name.range = exp.finish
+    exp.parent = name
+    if name.type == 'setlocal' and name.node.attrs then
+      pushError({ type = 'SET_CONST', at = name })
+    end
+    Chunk.pushIntoCurrent(name)
+    return name
+  end
+
+  Chunk.pushIntoCurrent(exp)
+  Error.missName(exp.keyword[2])
+  return exp
+end
+
+--- @return parser.object.expr?
+local function parseExpAction()
   local exp = parseExp(true)
   if exp then
-    local action = compileExpAsAction(exp)
-    if action then
-      return action
-    end
+    return compileExpAsAction(exp)
   end
-  return nil, true
+end
+
+--- @return parser.object.action?
+function parseAction()
+  return parseLabel()
+    or parseLocal()
+    or parseIf()
+    or parseFor()
+    or parseDo()
+    or parseReturn()
+    or parseBreak()
+    or parseWhile()
+    or parseRepeat()
+    or parseGoTo()
+    or parseFunctionAction()
+    or parseExpAction()
 end
 
 local function skipFirstComment()
