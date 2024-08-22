@@ -2424,8 +2424,12 @@ local function parseVarargs()
   return varargs
 end
 
---- @return parser.object.paren
-local function parseParen()
+--- @return parser.object.expr?
+local function parseParenExpr()
+  if not Token.get('(') then
+    return
+  end
+
   local paren = initObj('paren') --- @type parser.object.paren
   Token.next()
   skipSpace()
@@ -2448,7 +2452,7 @@ local function parseParen()
     Error.missSymbol(')')
   end
 
-  return paren
+  return parseSimple(paren, false)
 end
 
 --- @param name string
@@ -2755,9 +2759,14 @@ local function parseFunction(isLocal, isAction)
   return func
 end
 
---- @param isDoublePipe boolean
---- @return parser.object.lambda
-local function parseLambda(isDoublePipe)
+--- @return parser.object.lambda?
+local function parseLambda()
+  -- FIXME: Use something other than nonstandardSymbol to check for lambda support
+  if not (State.options.nonstandardSymbol['|lambda|'] and Token.get('|', '||')) then
+    return
+  end
+
+  local isDoublePipe = Token.get('||')
   local lambdaLeft = getPosition(Token.getPos(), 'left')
   local lambdaRight = getPosition(Token.getPos(), 'right')
   local lambda = {
@@ -2844,14 +2853,15 @@ end
 --- @param source parser.object.expr
 --- @return parser.object.expr
 local function checkNeedParen(source)
-  local token = Token.get()
-  if token ~= '.' and token ~= ':' then
+  if not Token.get('.', ':') then
     return source
   end
+
   local exp = parseSimple(source, false)
   if exp == source then
     return exp
   end
+
   pushError({
     type = 'NEED_PAREN',
     at = source,
@@ -2869,45 +2879,47 @@ local function checkNeedParen(source)
       },
     },
   })
+
   return exp
 end
 
---- @return parser.object.expr?
-local function parseExpUnit()
-  local token = Token.get()
-  if token == '(' then
-    return parseSimple(parseParen(), false)
-  elseif token == '{' or CharMapStrSH[token] or CharMapStrLH[token] then
-    --- @type parser.object.expr?
-    local r = parseTable() or parseString()
-    if not r then
-      return
-    end
+local function parseTableExpr()
+  local r = parseTable()
+  if r then
     return checkNeedParen(r)
   end
+end
 
-  if ChunkFinishMap[token] then
+local function parseStringExpr()
+  local r = parseString()
+  if r then
+    return checkNeedParen(r)
+  end
+end
+
+local function parseNameExpr()
+  local node = parseName()
+  if not node then
     return
   end
-
-  --- @type parser.object.expr?
-  local r = parseVarargs() or parseNumber() or parseNil() or parseBoolean() or parseFunction()
-  if r then
-    return r
+  local nameNode = resolveName(node)
+  if nameNode then
+    return parseSimple(nameNode, false)
   end
+end
 
-  -- FIXME: Use something other than nonstandardSymbol to check for lambda support
-  if State.options.nonstandardSymbol['|lambda|'] and Token.get('|', '||') then
-    return parseLambda(token == '||')
-  end
-
-  local node = parseName()
-  if node then
-    local nameNode = resolveName(node)
-    if nameNode then
-      return parseSimple(nameNode, false)
-    end
-  end
+--- @return parser.object.expr?
+local function parseExprUnit()
+  return parseParenExpr()
+    or parseTableExpr()
+    or parseStringExpr()
+    or parseVarargs()
+    or parseNumber()
+    or parseNil()
+    or parseBoolean()
+    or parseFunction()
+    or parseLambda()
+    or parseNameExpr()
 end
 
 local function parseUnaryOP()
@@ -3015,7 +3027,7 @@ function parseExp(asAction, level)
       end
     end
   else
-    local e = parseExpUnit()
+    local e = parseExprUnit()
     if not e then
       return
     end
