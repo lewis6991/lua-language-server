@@ -584,7 +584,7 @@ local ListFinishMap = {
 --- @field lua? string
 --- @field uri? string
 --- @field lines integer[]
---- @field version string
+--- @field version 'Lua 5.1' | 'Lua 5.2' | 'Lua 5.3' | 'Lua 5.4' | 'LuaJIT'
 --- @field options table
 --- @field ENVMode '@fenv' | '_ENV'
 --- @field errs parser.state.err[]
@@ -1276,155 +1276,166 @@ local stringPool = {} --- @type table<integer,string>
 
 --- @param mark string
 --- @param escs (string|integer)[]
---- @param stringIndex integer
---- @param currentOffset integer
---- @return integer stringIndex
---- @return integer currentOffset
-local function parseStringEsc(mark, escs, stringIndex, currentOffset)
-  stringIndex = stringIndex + 1
-  stringPool[stringIndex] = Lua:sub(currentOffset, Token.getPos() - 1)
-  currentOffset = Token.getPos()
+--- @param strIndex integer
+--- @param currOffset integer
+--- @return integer strIndex
+--- @return integer currOffset
+local function parseStringEsc(mark, escs, strIndex, currOffset)
+  strIndex = strIndex + 1
+  stringPool[strIndex] = Lua:sub(currOffset, Token.getPos() - 1)
+  currOffset = Token.getPos()
   Token.next()
-  if Token.getPos() then
-    local escLeft = getPosition(currentOffset, 'left')
-    -- has space?
-    if Token.getPos() - currentOffset > 1 then
-      Error.token('ERR_ESC')
-      escs[#escs + 1] = escLeft
-      escs[#escs + 1] = getPosition(currentOffset + 1, 'right')
-      escs[#escs + 1] = 'err'
-      local right = getPosition(currentOffset + 1, 'right')
-      pushError({ type = 'ERR_ESC', start = escLeft, finish = right })
-      escs[#escs + 1] = escLeft
-      escs[#escs + 1] = right
-      escs[#escs + 1] = 'err'
-      Token.next()
-    else
-      local tokenNext = Token.get():sub(1, 1)
-      if EscMap[tokenNext] then
-        stringIndex = stringIndex + 1
-        stringPool[stringIndex] = EscMap[tokenNext]
-        currentOffset = Token.getPos() + #tokenNext
-        Token.next()
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = escLeft + 2
-        escs[#escs + 1] = 'normal'
-      elseif tokenNext == mark then
-        stringIndex = stringIndex + 1
-        stringPool[stringIndex] = mark
-        currentOffset = Token.getPos() + #tokenNext
-        Token.next()
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = escLeft + 2
-        escs[#escs + 1] = 'normal'
-      elseif tokenNext == 'z' then
-        Token.next()
-        repeat
-        until not skipNL()
-        currentOffset = Token.getPos()
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = escLeft + 2
-        escs[#escs + 1] = 'normal'
-      elseif CharMapNumber[tokenNext] then
-        local numbers = Token.get():match('^%d+')
-        if #numbers > 3 then
-          numbers = string.sub(numbers, 1, 3)
-        end
-        currentOffset = Token.getPos() + #numbers
-        fastForwardToken(currentOffset)
-        local right = getPosition(currentOffset - 1, 'right')
-        local byte = math.tointeger(numbers)
-        if byte and byte <= 255 then
-          stringIndex = stringIndex + 1
-          stringPool[stringIndex] = string.char(byte)
-        else
-          pushError({
-            type = 'ERR_ESC',
-            start = escLeft,
-            finish = right,
-          })
-        end
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = right
-        escs[#escs + 1] = 'byte'
-      elseif tokenNext == 'x' then
-        local left = getPosition(Token.getPos() - 1, 'left')
-        local x16 = Token.get():sub(2, 3)
-        local byte = tonumber(x16, 16)
-        if byte then
-          currentOffset = Token.getPos() + 3
-          stringIndex = stringIndex + 1
-          stringPool[stringIndex] = string.char(byte)
-        else
-          currentOffset = Token.getPos() + 1
-          pushError({
-            type = 'MISS_ESC_X',
-            start = getPosition(currentOffset, 'left'),
-            finish = getPosition(currentOffset + 1, 'right'),
-          })
-        end
-        local right = getPosition(currentOffset + 1, 'right')
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = right
-        escs[#escs + 1] = 'byte'
-        if State.version == 'Lua 5.1' then
-          pushError({
-            type = 'ERR_ESC',
-            start = left,
-            finish = left + 4,
-            version = { 'Lua 5.2', 'Lua 5.3', 'Lua 5.4', 'LuaJIT' },
-            info = {
-              version = State.version,
-            },
-          })
-        end
-        Token.next()
-      elseif tokenNext == 'u' then
-        local str, newOffset = parseStringUnicode()
-        if str then
-          stringIndex = stringIndex + 1
-          stringPool[stringIndex] = str
-        end
-        currentOffset = newOffset
-        fastForwardToken(currentOffset - 1)
-        local right = getPosition(currentOffset + 1, 'right')
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = right
-        escs[#escs + 1] = 'unicode'
-      elseif NLMap[tokenNext] then
-        stringIndex = stringIndex + 1
-        stringPool[stringIndex] = '\n'
-        currentOffset = Token.getPos() + #tokenNext
-        skipNL()
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = escLeft + 1
-        escs[#escs + 1] = 'normal'
-      else
-        local right = getPosition(currentOffset + 1, 'right')
-        pushError({ type = 'ERR_ESC', start = escLeft, finish = right })
-        escs[#escs + 1] = escLeft
-        escs[#escs + 1] = right
-        escs[#escs + 1] = 'err'
-        Token.next()
-      end
-    end
+
+  if not Token.getPos() then
+    return strIndex, currOffset
   end
-  return stringIndex, currentOffset
+
+  local escLeft = getPosition(currOffset, 'left')
+  -- has space?
+  if Token.getPos() - currOffset > 1 then
+    local right = getPosition(currOffset + 1, 'right')
+    pushError({ type = 'ERR_ESC', start = escLeft, finish = right })
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = right
+    escs[#escs + 1] = 'err'
+    Token.next()
+    return strIndex, currOffset
+  end
+
+  local tokenNext = Token.get():sub(1, 1)
+  if EscMap[tokenNext] or tokenNext == mark or NLMap[tokenNext] then
+    strIndex = strIndex + 1
+    currOffset = Token.getPos() + #tokenNext
+    if skipNL() then
+      stringPool[strIndex] = '\n'
+    else
+      stringPool[strIndex] = tokenNext == mark and mark or EscMap[tokenNext]
+      Token.next()
+    end
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = escLeft + 2
+    escs[#escs + 1] = 'normal'
+  elseif tokenNext == 'z' then
+    -- The escape sequence '\z' skips the following span of whitespace characters,
+    -- including line breaks; it is particularly useful to break and indent a long
+    -- literal string into multiple lines without adding the newlines and spaces
+    -- into the string contents.
+    Token.next()
+    if State.version == 'Lua 5.1' then
+      pushError({
+        type = 'ERR_ESC',
+        start = escLeft,
+        finish = escLeft + 2,
+        version = { 'Lua 5.2', 'Lua 5.3', 'Lua 5.4', 'LuaJIT' },
+        info = {
+          version = State.version,
+        },
+      })
+    else
+      repeat
+      until not skipNL()
+      currOffset = Token.getPos()
+    end
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = escLeft + 2
+    escs[#escs + 1] = 'normal'
+  elseif CharMapNumber[tokenNext] then
+    -- We can specify any byte in a short literal string, including embedded zeros,
+    -- by its numeric value. This can be done ..., or with the escape sequence
+    -- \ddd, where ddd is a sequence of up to three decimal digits. (Note that if a
+    -- decimal escape sequence is to be followed by a digit, it must be expressed using
+    -- exactly three digits.)
+
+    -- TODO(lewis6991): Supported in Lua 5.1?
+    local numbers = Token.get():match('^%d+')
+    if #numbers > 3 then
+      numbers = numbers:sub(1, 3)
+    end
+    currOffset = Token.getPos() + #numbers
+    fastForwardToken(currOffset)
+    local right = getPosition(currOffset - 1, 'right')
+    local byte = math.tointeger(numbers)
+    if byte and byte <= 255 then
+      strIndex = strIndex + 1
+      stringPool[strIndex] = string.char(byte)
+    else
+      pushError({
+        type = 'ERR_ESC',
+        start = escLeft,
+        finish = right,
+      })
+    end
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = right
+    escs[#escs + 1] = 'byte'
+  elseif tokenNext == 'x' then
+    local left = getPosition(Token.getPos() - 1, 'left')
+    local x16 = Token.get():sub(2, 3)
+    local byte = tonumber(x16, 16)
+    if byte then
+      currOffset = Token.getPos() + 3
+      strIndex = strIndex + 1
+      stringPool[strIndex] = string.char(byte)
+    else
+      currOffset = Token.getPos() + 1
+      pushError({
+        type = 'MISS_ESC_X',
+        start = getPosition(currOffset, 'left'),
+        finish = getPosition(currOffset + 1, 'right'),
+      })
+    end
+    local right = getPosition(currOffset + 1, 'right')
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = right
+    escs[#escs + 1] = 'byte'
+    if State.version == 'Lua 5.1' then
+      pushError({
+        type = 'ERR_ESC',
+        start = left,
+        finish = left + 4,
+        version = { 'Lua 5.2', 'Lua 5.3', 'Lua 5.4', 'LuaJIT' },
+        info = {
+          version = State.version,
+        },
+      })
+    end
+    Token.next()
+  elseif tokenNext == 'u' then
+    local str, newOffset = parseStringUnicode()
+    if str then
+      strIndex = strIndex + 1
+      stringPool[strIndex] = str
+    end
+    currOffset = newOffset
+    fastForwardToken(currOffset - 1)
+    local right = getPosition(currOffset + 1, 'right')
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = right
+    escs[#escs + 1] = 'unicode'
+  else
+    local right = getPosition(currOffset + 1, 'right')
+    pushError({ type = 'ERR_ESC', start = escLeft, finish = right })
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = right
+    escs[#escs + 1] = 'err'
+    Token.next()
+  end
+  return strIndex, currOffset
 end
 
 --- @return parser.object.string
 local function parseShortString()
   local mark = assert(Token.get())
-  local currentOffset = Token.getPos() + 1
+  local currOffset = Token.getPos() + 1
   local startPos = Token.left()
   Token.next()
-  local stringIndex = 0
+  local strIndex = 0
   local escs = {}
   while true do
     local token = Token.get()
     if not token or NLMap[token] or token == mark then
-      stringIndex = stringIndex + 1
-      stringPool[stringIndex] = Lua:sub(currentOffset, (Token.getPos() or 0) - 1)
+      strIndex = strIndex + 1
+      stringPool[strIndex] = Lua:sub(currOffset, (Token.getPos() or 0) - 1)
       if token == mark then
         Token.next()
       else
@@ -1432,13 +1443,13 @@ local function parseShortString()
       end
       break
     elseif token == '\\' then
-      stringIndex, currentOffset = parseStringEsc(mark, escs, stringIndex, currentOffset)
+      strIndex, currOffset = parseStringEsc(mark, escs, strIndex, currOffset)
     else
       Token.next()
     end
   end
 
-  local stringResult = table.concat(stringPool, '', 1, stringIndex)
+  local stringResult = table.concat(stringPool, '', 1, strIndex)
   --- @type parser.object.string
   local str = {
     type = 'string',
@@ -1449,31 +1460,29 @@ local function parseShortString()
     [2] = mark,
   }
 
-  if mark == '`' then
-    if not State.options.nonstandardSymbol[mark] then
-      pushError({
-        type = 'ERR_NONSTANDARD_SYMBOL',
-        start = str.start,
-        finish = str.finish,
-        info = {
-          symbol = '"',
+  if mark == '`' and not State.options.nonstandardSymbol[mark] then
+    pushError({
+      type = 'ERR_NONSTANDARD_SYMBOL',
+      start = str.start,
+      finish = str.finish,
+      info = {
+        symbol = '"',
+      },
+      fix = {
+        title = 'FIX_NONSTANDARD_SYMBOL',
+        symbol = '"',
+        {
+          start = str.start,
+          finish = str.start + 1,
+          text = '"',
         },
-        fix = {
-          title = 'FIX_NONSTANDARD_SYMBOL',
-          symbol = '"',
-          {
-            start = str.start,
-            finish = str.start + 1,
-            text = '"',
-          },
-          {
-            start = str.finish - 1,
-            finish = str.finish,
-            text = '"',
-          },
+        {
+          start = str.finish - 1,
+          finish = str.finish,
+          text = '"',
         },
-      })
-    end
+      },
+    })
   end
 
   return str
