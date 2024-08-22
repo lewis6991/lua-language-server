@@ -1291,13 +1291,18 @@ local function parseStringEsc(mark, escs, strIndex, currOffset)
   end
 
   local escLeft = getPosition(currOffset, 'left')
+
+  local function addEsc(ty, finish)
+    escs[#escs + 1] = escLeft
+    escs[#escs + 1] = finish
+    escs[#escs + 1] = ty
+  end
+
   -- has space?
   if Token.getPos() - currOffset > 1 then
     local right = getPosition(currOffset + 1, 'right')
     pushError({ type = 'ERR_ESC', start = escLeft, finish = right })
-    escs[#escs + 1] = escLeft
-    escs[#escs + 1] = right
-    escs[#escs + 1] = 'err'
+    addEsc('err', right)
     Token.next()
     return strIndex, currOffset
   end
@@ -1312,9 +1317,7 @@ local function parseStringEsc(mark, escs, strIndex, currOffset)
       stringPool[strIndex] = tokenNext == mark and mark or EscMap[tokenNext]
       Token.next()
     end
-    escs[#escs + 1] = escLeft
-    escs[#escs + 1] = escLeft + 2
-    escs[#escs + 1] = 'normal'
+    addEsc('normal', escLeft + 2)
   elseif tokenNext == 'z' then
     -- The escape sequence '\z' skips the following span of whitespace characters,
     -- including line breaks; it is particularly useful to break and indent a long
@@ -1336,9 +1339,7 @@ local function parseStringEsc(mark, escs, strIndex, currOffset)
       until not skipNL()
       currOffset = Token.getPos()
     end
-    escs[#escs + 1] = escLeft
-    escs[#escs + 1] = escLeft + 2
-    escs[#escs + 1] = 'normal'
+    addEsc('normal', escLeft + 2)
   elseif CharMapNumber[tokenNext] then
     -- We can specify any byte in a short literal string, including embedded zeros,
     -- by its numeric value. This can be done ..., or with the escape sequence
@@ -1365,9 +1366,7 @@ local function parseStringEsc(mark, escs, strIndex, currOffset)
         finish = right,
       })
     end
-    escs[#escs + 1] = escLeft
-    escs[#escs + 1] = right
-    escs[#escs + 1] = 'byte'
+    addEsc('byte', right)
   elseif tokenNext == 'x' then
     local left = getPosition(Token.getPos() - 1, 'left')
     local x16 = Token.get():sub(2, 3)
@@ -1384,10 +1383,7 @@ local function parseStringEsc(mark, escs, strIndex, currOffset)
         finish = getPosition(currOffset + 1, 'right'),
       })
     end
-    local right = getPosition(currOffset + 1, 'right')
-    escs[#escs + 1] = escLeft
-    escs[#escs + 1] = right
-    escs[#escs + 1] = 'byte'
+    addEsc('byte', getPosition(currOffset + 1, 'right'))
     if State.version == 'Lua 5.1' then
       pushError({
         type = 'ERR_ESC',
@@ -1408,16 +1404,11 @@ local function parseStringEsc(mark, escs, strIndex, currOffset)
     end
     currOffset = newOffset
     fastForwardToken(currOffset - 1)
-    local right = getPosition(currOffset + 1, 'right')
-    escs[#escs + 1] = escLeft
-    escs[#escs + 1] = right
-    escs[#escs + 1] = 'unicode'
+    addEsc('unicode', getPosition(currOffset + 1, 'right'))
   else
     local right = getPosition(currOffset + 1, 'right')
     pushError({ type = 'ERR_ESC', start = escLeft, finish = right })
-    escs[#escs + 1] = escLeft
-    escs[#escs + 1] = right
-    escs[#escs + 1] = 'err'
+    addEsc('err', right)
     Token.next()
   end
   return strIndex, currOffset
