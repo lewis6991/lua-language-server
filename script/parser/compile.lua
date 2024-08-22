@@ -1854,7 +1854,7 @@ function P.ExpList(mini)
           break
         end
       end
-      local exp = P.Expr()
+      local exp = P.Exp()
       if not exp then
         break
       end
@@ -1888,7 +1888,7 @@ local function parseIndex()
   local start = Token.left()
   Token.next()
   skipSpace()
-  local exp = P.Expr()
+  local exp = P.Exp()
   --- @type parser.object.index
   local index = {
     type = 'index',
@@ -1939,7 +1939,7 @@ local function parseTableField(wantSep)
       end
       wantSep = true
       skipSpace()
-      local fvalue = P.Expr()
+      local fvalue = P.Exp()
       local field = name --[[@as parser.object.field]]
       field.type = 'field'
       --- @type parser.object.tablefield
@@ -2021,7 +2021,7 @@ function P.Table()
         tbl[index] = tfield
       else
         local lastRight = lastRightPosition()
-        local exp = P.Expr(true)
+        local exp = P.Exp(true)
         if exp then
           if wantSep then
             pushError({
@@ -2057,7 +2057,7 @@ function P.Table()
 
           if expectAssign() then
             skipSpace()
-            local ivalue = P.Expr()
+            local ivalue = P.Exp()
             if ivalue then
               ivalue.parent = tblIndex
               tblIndex.range = ivalue.finish
@@ -2469,7 +2469,7 @@ function P.ParenExpr()
   Token.next()
   skipSpace()
 
-  local exp = P.Expr()
+  local exp = P.Exp()
   if exp then
     paren.exp = exp
     paren.finish = exp.finish
@@ -2855,7 +2855,7 @@ function P.Lambda()
       Error.missSymbol('|')
     end
   end
-  local child = P.Expr()
+  local child = P.Exp()
 
   -- Drop fake chunk
   Chunk.drop()
@@ -3029,7 +3029,7 @@ function P.exprUnary(asAction, level)
 
   skipSpace()
 
-  local child = P.Expr(asAction, uopLevel)
+  local child = P.Exp(asAction, uopLevel)
 
   -- Precompute negative numbers
   if uop.type == '-' and child and (child.type == 'number' or child.type == 'integer') then
@@ -3058,7 +3058,7 @@ function P.exprUnary(asAction, level)
 end
 
 --- @return parser.object.expr?
-function P.Expr(asAction, level)
+function P.Exp(asAction, level)
   local exp = P.exprUnary(asAction, level)
   if not exp then
     return
@@ -3075,7 +3075,7 @@ function P.Expr(asAction, level)
     while true do
       skipSpace()
       local isForward = SymbolForward[bopLevel]
-      child = P.Expr(asAction, isForward and (bopLevel + 0.5) or bopLevel)
+      child = P.Exp(asAction, isForward and (bopLevel + 0.5) or bopLevel)
       if child then
         break
       end
@@ -3110,7 +3110,7 @@ end
 --- @return parser.object[]? rest
 local function parseSetValues()
   skipSpace()
-  local first = P.Expr()
+  local first = P.Exp()
   if not first then
     return nil
   end
@@ -3120,7 +3120,7 @@ local function parseSetValues()
   end
   Token.next()
   skipSeps()
-  local second = P.Expr()
+  local second = P.Exp()
   if not second then
     Error.missExp()
     return first
@@ -3131,7 +3131,7 @@ local function parseSetValues()
   end
   Token.next()
   skipSeps()
-  local third = P.Expr()
+  local third = P.Exp()
   if not third then
     Error.missExp()
     return first, second
@@ -3145,7 +3145,7 @@ local function parseSetValues()
     end
     Token.next()
     skipSeps()
-    local exp = P.Expr()
+    local exp = P.Exp()
     if not exp then
       Error.missExp()
       return first, second, rest
@@ -3600,7 +3600,7 @@ function P.IfBlock(parent)
   obj.parent = parent
   Token.next()
   skipSpace()
-  local filter = P.Expr()
+  local filter = P.Exp()
   if filter then
     obj.filter = filter
     obj.finish = filter.finish
@@ -3627,7 +3627,7 @@ function P.elseIfBlock(parent)
   obj.parent = parent
   Token.next()
   skipSpace()
-  local filter = P.Expr()
+  local filter = P.Exp()
   if filter then
     obj.filter = filter
     obj.finish = filter.finish
@@ -3899,7 +3899,7 @@ function P.While()
 
   skipSpace()
   local tokenNext = Token.get()
-  local filter = tokenNext ~= 'do' and tokenNext ~= 'then' and P.Expr()
+  local filter = tokenNext ~= 'do' and tokenNext ~= 'then' and P.Exp()
   if filter then
     action.filter = filter
     action.finish = filter.finish
@@ -3942,7 +3942,7 @@ function P.Repeat()
     Token.next()
 
     skipSpace()
-    local filter = P.Expr()
+    local filter = P.Exp()
     if filter then
       obj.filter = filter
       filter.parent = obj
@@ -4035,7 +4035,7 @@ end
 
 --- @return parser.object.expr?
 function P.ExprAction()
-  local exp = P.Expr(true)
+  local exp = P.Exp(true)
   if not exp then
     return
   end
@@ -4054,7 +4054,7 @@ function P.ExprAction()
       isLocal = true
       skipSpace()
     end
-    local action, isSet = parseMultiVars(exp, P.Expr, isLocal)
+    local action, isSet = parseMultiVars(exp, P.Exp, isLocal)
     if isSet or action.type == 'getmethod' then
       return action
     end
@@ -4217,23 +4217,8 @@ return function(lua, mode, version, options)
   Mode = mode
   initState(lua, version, options)
   skipSpace()
-  if mode == 'Lua' then
-    State.ast = P.Lua()
-  elseif mode == 'Nil' then
-    State.ast = P.Nil()
-  elseif mode == 'Boolean' then
-    State.ast = P.Boolean()
-  elseif mode == 'String' then
-    State.ast = P.String()
-  elseif mode == 'Number' then
-    State.ast = P.Number()
-  elseif mode == 'Name' then
-    State.ast = P.Name()
-  elseif mode == 'Exp' then
-    State.ast = P.Expr()
-  elseif mode == 'Action' then
-    State.ast = P.Action()
-  end
+
+  State.ast = assert(P[mode])()
 
   if State.ast then
     State.ast.state = State
