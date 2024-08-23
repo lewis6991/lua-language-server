@@ -11,6 +11,7 @@ local chunks = {} --- @type parser.object.block[]
 
 local pushError
 
+--- @param chunk parser.object.block
 function M.push(chunk)
     chunks[#chunks + 1] = chunk
 end

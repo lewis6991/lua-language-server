@@ -109,11 +109,6 @@ local ChunkFinishMap = {
 --- @class parser.object.self : parser.object.local
 --- @field type 'self'
 
---- @class parser.object.main : parser.object.base
---- @field type 'main'
---- @field bstart integer
---- @field returns? parser.object.return[]
-
 --- @class parser.object.return : parser.object.base
 --- @field type 'return'
 
@@ -194,7 +189,7 @@ local ChunkFinishMap = {
 --- @field type 'binary
 --- @field op parser.binop
 --- @field [1] parser.object.expr
---- @field [2] parser.object.expr
+--- @field [2] parser.object.expr?
 
 --- @class parser.object.nil : parser.object.base
 --- @field type 'nil'
@@ -248,6 +243,8 @@ local ChunkFinishMap = {
 
 --- @class parser.object.table : parser.object.base
 --- @field type 'table'
+--- @field bstart integer
+--- @field bfinish integer
 --- @field [integer] parser.object.tableentry
 
 --- @class parser.object.boolean : parser.object.base
@@ -318,6 +315,7 @@ local ChunkFinishMap = {
 --- | parser.object.goto
 
 --- @alias parser.object.block
+--- | parser.object.main
 --- | parser.object.do
 --- | parser.object.if
 --- | parser.object.ifblock
@@ -331,9 +329,9 @@ local ChunkFinishMap = {
 --- | parser.object.repeat
 --- | parser.object.while
 
---- @class parser.object.block.common : parser.object.base
+--- @class parser.object.block.base : parser.object.base
 --- @field bstart integer Block start
---- @field bfinish integer Block end
+--- @field bfinish? integer Block end
 --- @field parent? parser.object.block
 --- @field labels? table<string,parser.object.label>
 --- @field locals parser.object.local[]
@@ -344,7 +342,11 @@ local ChunkFinishMap = {
 --- @field hasBreak? true
 --- @field [integer] parser.object.union
 
---- @class parser.object.do : parser.object.block.common
+--- @class parser.object.main : parser.object.block.base
+--- @field type 'main'
+--- @field returns? parser.object.return[]
+
+--- @class parser.object.do : parser.object.block.base
 --- @field type 'do'
 --- @field keyword [integer,integer]
 
@@ -357,46 +359,48 @@ local ChunkFinishMap = {
 --- @field [1] '...'
 --- @field ref parser.object.varargs[]
 
---- @class parser.object.function : parser.object.block.common
+--- @class parser.object.function : parser.object.block.base
 --- @field type 'function'
 --- @field keyword [integer,integer]
 --- @field vararg? parser.object.vararg
 --- @field args? parser.object.funcargs
 --- @field name? parser.object.simple
---- @field returns parser.object.return[]
+--- @field returns? parser.object.return[]
 
---- @class parser.object.lambda : parser.object.block.common
+--- @class parser.object.lambda : parser.object.block.base
+--- @field args? parser.object.funcargs
+--- @field returns? parser.object.return[]
 
 --- Blocks: If
 
---- @class parser.object.if : parser.object.block.common
+--- @class parser.object.if : parser.object.block.base
 --- @field type 'if'
 --- @field keyword [integer,integer]
 
---- @class parser.object.ifblock : parser.object.block.common
+--- @class parser.object.ifblock : parser.object.block.base
 --- @field type 'ifblock'
 --- @field parent parser.object.if
 --- @field filter? parser.object.expr? Condition of if block
 --- @field keyword [integer,integer]
 
---- @class parser.object.elseifblock : parser.object.block.common
+--- @class parser.object.elseifblock : parser.object.block.base
 --- @field type 'elseifblock'
 --- @field parent parser.object.if
 --- @field filter? parser.object.expr? Condition of if block
 --- @field keyword [integer,integer]
 
---- @class parser.object.elseblock : parser.object.block.common
+--- @class parser.object.elseblock : parser.object.block.base
 --- @field type 'elseblock'
 --- @field parent parser.object.if
 --- @field keyword [integer,integer]
 
 --- Blocks: Loops
 
---- @class parser.object.for : parser.object.block.common
+--- @class parser.object.for : parser.object.block.base
 --- @field type 'for'
 --- @field keyword [integer,integer]
 
---- @class parser.object.loop : parser.object.block.common
+--- @class parser.object.loop : parser.object.block.base
 --- @field type 'loop'
 --- @field stateVars integer
 --- @field keyword [integer,integer]
@@ -405,19 +409,19 @@ local ChunkFinishMap = {
 --- @field max? parser.object.expr
 --- @field step? parser.object.expr
 
---- @class parser.object.in : parser.object.block.common
+--- @class parser.object.in : parser.object.block.base
 --- @field type 'in'
 --- @field stateVars integer
 --- @field keyword [integer,integer, integer, integer]
 --- @field exps parser.object.explist
 --- @field keys parser.object.forlist
 
---- @class parser.object.repeat : parser.object.block.common
+--- @class parser.object.repeat : parser.object.block.base
 --- @field type 'repeat'
 --- @field filter? parser.object.expr
 --- @field keyword [integer,integer, integer, integer]
 
---- @class parser.object.while : parser.object.block.common
+--- @class parser.object.while : parser.object.block.base
 --- @field type 'while'
 --- @field keyword [integer,integer]
 --- @field filter? parser.object.expr
@@ -2300,7 +2304,7 @@ do -- P.Simple
 
     --- @param node parser.object.expr
     --- @param funcName? boolean Parse function name
-    --- @return parser.object.expr
+    --- @return parser.object.simple
     function P.Simple(node, funcName)
         local currentName --- @type string?
         if node.type == 'getglobal' or node.type == 'getlocal' then
@@ -2355,6 +2359,7 @@ do -- P.Simple
                 end
             end
         end
+        assert(node)
 
         if node.type == 'call' then
             local cnode = node.node
@@ -2761,22 +2766,18 @@ do -- P.Function | P.Lambda
         end
 
         local isDoublePipe = Token.get('||')
-        local lambdaLeft = getPosition(Token.getPos(), 'left')
-        local lambdaRight = getPosition(Token.getPos(), 'right')
+        local lambdaLeft, lambdaRight = Token.getLeftRight()
+        --- @type parser.object.lambda
         local lambda = {
             type = 'function',
             start = lambdaLeft,
             finish = lambdaRight,
             bstart = lambdaRight,
-            keyword = {
-                [1] = lambdaLeft,
-                [2] = lambdaRight,
-            },
+            keyword = { lambdaLeft, lambdaRight },
             hasReturn = true,
         }
         Token.next()
-        local pipeLeft = getPosition(Token.getPos(), 'left')
-        local pipeRight = getPosition(Token.getPos(), 'right')
+        local pipeLeft, pipeRight = Token.getLeftRight()
         skipSpace(true)
         local params
         local LastLocalCount = Chunk.localCount
@@ -2823,6 +2824,7 @@ do -- P.Function | P.Lambda
 
         if child then
             -- create dummy return
+            --- @type parser.object.return
             local rtn = {
                 type = 'return',
                 start = child.start,
@@ -3085,7 +3087,7 @@ function P.Exp(asAction, level)
             break
         end
 
-        local child --- @type parser.object.expr
+        local child --- @type parser.object.expr?
         while true do
             skipSpace()
             local isForward = SymbolForward[bopLevel]
@@ -3119,9 +3121,9 @@ function P.Exp(asAction, level)
     return exp
 end
 
---- @return parser.object?   first
---- @return parser.object?   second
---- @return parser.object[]? rest
+--- @return parser.object.union?   first
+--- @return parser.object.union?   second
+--- @return parser.object.union[]? rest
 local function parseSetValues()
     skipSpace()
     local first = P.Exp()
@@ -3168,8 +3170,8 @@ local function parseSetValues()
     end
 end
 
---- @return parser.object?   second
---- @return parser.object[]? rest
+--- @return parser.object.union?   second
+--- @return parser.object.union[]? rest
 local function parseVarTails(parser, isLocal)
     if Token.get() ~= ',' then
         return nil
