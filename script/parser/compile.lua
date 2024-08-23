@@ -2293,7 +2293,6 @@ do -- P.Simple
     --- @return parser.object.getindex
     local function parseGetIndex(node)
         local index = parseIndex() --[[@as parser.object.getindex]]
-        local bstart = index.start
         index.type = 'getindex'
         index.start = node.start
         index.node = node
@@ -3022,7 +3021,7 @@ do -- P.BinaryOp
 end
 
 --- @return parser.object.expr?
-function P.ExprUnary(asAction, level)
+function P.ExprUnary(asAction)
     local uop, uopLevel = unaryOP()
     if not uop then
         return P.ExprUnit()
@@ -3075,7 +3074,7 @@ local SymbolForward = {
 
 --- @return parser.object.expr?
 function P.Exp(asAction, level)
-    local exp = P.ExprUnary(asAction, level)
+    local exp = P.ExprUnary(asAction)
     if not exp then
         return
     end
@@ -3529,7 +3528,7 @@ function P.Label()
         return
     end
 
-    label = name --[[@as parser.object.label]]
+    local label = name --[[@as parser.object.label]]
     label.type = 'label'
 
     Chunk.pushIntoCurrent(label)
@@ -3537,8 +3536,8 @@ function P.Label()
     local block = guide.getBlock(label)
     if block then
         block.labels = block.labels or {}
-        local name = label[1]
-        local olabel = guide.getLabel(block, name)
+        local name0 = label[1]
+        local olabel = guide.getLabel(block, name0)
         if olabel then
             if State.version == 'Lua 5.4' or block == guide.getBlock(olabel) then
                 pushError({
@@ -3553,7 +3552,7 @@ function P.Label()
                 })
             end
         end
-        block.labels[name] = label
+        block.labels[name0] = label
     end
 
     if State.version == 'Lua 5.1' then
