@@ -3403,6 +3403,8 @@ function P.Local()
         return
     end
 
+    -- local function a()
+    -- end
     local func = P.Function(true, true)
     if func then
         local name = func.name
@@ -4029,31 +4031,31 @@ function P.Break()
     return action
 end
 
+--- function a()
+--- end
 --- @return parser.object.function?
 function P.FunctionAction()
-    local exp = P.Function(false, true)
-    if not exp then
-        return
-    end
+    local func = P.Function(false, true)
+    if func then
+      local name = func.name
+      if name then
+          func.name = nil
+          name.type = GetToSetMap[name.type]
+          name.value = func
+          name.vstart = func.start
+          name.range = func.finish
+          func.parent = name
+          if name.type == 'setlocal' and name.node.attrs then
+              pushError({ type = 'SET_CONST', at = name })
+          end
+          Chunk.pushIntoCurrent(name)
+          return name
+      end
 
-    local name = exp.name
-    if name then
-        exp.name = nil
-        name.type = GetToSetMap[name.type]
-        name.value = exp
-        name.vstart = exp.start
-        name.range = exp.finish
-        exp.parent = name
-        if name.type == 'setlocal' and name.node.attrs then
-            pushError({ type = 'SET_CONST', at = name })
-        end
-        Chunk.pushIntoCurrent(name)
-        return name
+      Error.missName(func.keyword[2])
+      Chunk.pushIntoCurrent(func)
+      return func
     end
-
-    Chunk.pushIntoCurrent(exp)
-    Error.missName(exp.keyword[2])
-    return exp
 end
 
 --- @return parser.object.expr?

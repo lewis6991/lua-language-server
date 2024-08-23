@@ -6,6 +6,7 @@ local vm = require('vm.vm')
 local config = require('config.config')
 local glob = require('glob')
 
+--- @return 'strong'|'weak'|false?
 local function hasGet(loc)
     if not loc.ref then
         return false
@@ -26,8 +27,6 @@ local function hasGet(loc)
     end
     if weak then
         return 'weak'
-    else
-        return nil
     end
 end
 
