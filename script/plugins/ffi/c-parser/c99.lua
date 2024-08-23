@@ -35,102 +35,102 @@ local defs = {}
 c99.tracing = false
 
 defs['trace'] = function(s, i)
-  if c99.tracing then
-    --local location = require("titan-compiler.location")
-    --local line, col = location.get_line_number(s, i)
-    --print("TRACE", line, col, "[[" ..s:sub(i, i+ 256):gsub("\n.*", "") .. "]]")
-  end
-  return true
+    if c99.tracing then
+        --local location = require("titan-compiler.location")
+        --local line, col = location.get_line_number(s, i)
+        --print("TRACE", line, col, "[[" ..s:sub(i, i+ 256):gsub("\n.*", "") .. "]]")
+    end
+    return true
 end
 
 local typedefs = {}
 
 local function elem(xs, e)
-  for _, x in ipairs(xs) do
-    if e == x then
-      return true
+    for _, x in ipairs(xs) do
+        if e == x then
+            return true
+        end
     end
-  end
-  return false
+    return false
 end
 
 defs['decl_func'] = typed('string, number, table -> boolean, Decl', function(_, _, decl)
-  typed.set_type(decl, 'Decl')
-  return true, decl
+    typed.set_type(decl, 'Decl')
+    return true, decl
 end)
 
 defs['decl_ids'] = typed('string, number, table -> boolean, Decl?', function(_, _, decl)
-  -- store typedef
-  if elem(decl.spec, 'typedef') then
-    if not (decl.ids and decl.ids[1] and decl.ids[1].decl) then
-      return true
+    -- store typedef
+    if elem(decl.spec, 'typedef') then
+        if not (decl.ids and decl.ids[1] and decl.ids[1].decl) then
+            return true
+        end
+        for _, id in ipairs(decl.ids) do
+            local name = id.decl.name or id.decl.declarator.name
+            if name then
+                typedefs[name] = true
+            end
+        end
     end
-    for _, id in ipairs(decl.ids) do
-      local name = id.decl.name or id.decl.declarator.name
-      if name then
-        typedefs[name] = true
-      end
-    end
-  end
-  typed.set_type(decl, 'Decl')
-  return true, decl
+    typed.set_type(decl, 'Decl')
+    return true, decl
 end)
 
 defs['is_typedef'] = function(_, _, id)
-  --print("is " .. id .. " a typedef? " .. tostring(not not typedefs[id]))
-  return typedefs[id], typedefs[id] and id
+    --print("is " .. id .. " a typedef? " .. tostring(not not typedefs[id]))
+    return typedefs[id], typedefs[id] and id
 end
 
 defs['empty_table'] = function()
-  return true, {}
+    return true, {}
 end
 
 -- Flatten nested expression tables
 defs['nest_exp'] = typed('string, number, {Exp} -> boolean, Exp', function(_, _, exp)
-  typed.set_type(exp, 'Exp')
-  if not exp.op then
-    return true, exp[1]
-  end
-  return true, exp
+    typed.set_type(exp, 'Exp')
+    if not exp.op then
+        return true, exp[1]
+    end
+    return true, exp
 end)
 
 -- Primary expression tables
 defs['prim_exp'] = typed('string, number, {string} -> boolean, Exp', function(_, _, exp)
-  typed.set_type(exp, 'Exp')
-  return true, exp
+    typed.set_type(exp, 'Exp')
+    return true, exp
 end)
 
 -- Type tables
 defs['type_exp'] = typed('string, number, table -> boolean, Exp', function(_, _, exp)
-  typed.check(exp[1], 'Type')
-  typed.set_type(exp, 'Exp')
-  return true, exp
+    typed.check(exp[1], 'Type')
+    typed.set_type(exp, 'Exp')
+    return true, exp
 end)
 
 -- Types
 defs['type'] = typed('string, number, table -> boolean, Type', function(_, _, typ)
-  typed.set_type(typ, 'Type')
-  return true, typ
+    typed.set_type(typ, 'Type')
+    return true, typ
 end)
 
 defs['join'] = typed('string, number, {array} -> boolean, array', function(_, _, xss)
-  -- xss[1] .. xss[2]
-  if xss[2] then
-    table.move(xss[2], 1, #xss[2], #xss[1] + 1, xss[1])
-  end
-  return true, xss[1] or {}
+    -- xss[1] .. xss[2]
+    if xss[2] then
+        table.move(xss[2], 1, #xss[2], #xss[1] + 1, xss[1])
+    end
+    return true, xss[1] or {}
 end)
 
 defs['postfix'] = typed('string, number, table -> boolean, table', function(_, _, pf)
-  typed.check(pf[1], 'Exp')
-  if pf.postfix ~= '' then
-    pf[1].postfix = pf.postfix
-  end
-  return true, pf[1]
+    typed.check(pf[1], 'Exp')
+    if pf.postfix ~= '' then
+        pf[1].postfix = pf.postfix
+    end
+    return true, pf[1]
 end)
 
 defs['litstruct'] = typed('string, number, number -> boolean, string', function(_, _, _)
-  return true, 'litstruct'
+    return true, 'litstruct'
 end)
 
 --==============================================================================
@@ -682,46 +682,46 @@ S <- %s+
 local preprocessing_grammar = re.compile(preprocessing_rules .. lexical_rules, defs)
 
 local preprocessing_expression_grammar =
-  re.compile(preprocessing_expression_rules .. lexical_rules .. common_expression_rules, defs)
+    re.compile(preprocessing_expression_rules .. lexical_rules .. common_expression_rules, defs)
 
 local language_expression_grammar = re.compile(
-  language_expression_rules
-    .. simplified_language_expression_rules
-    .. lexical_rules
-    .. common_expression_rules,
-  defs
+    language_expression_rules
+        .. simplified_language_expression_rules
+        .. lexical_rules
+        .. common_expression_rules,
+    defs
 )
 
 local language_grammar = re.compile(
-  language_rules .. language_expression_rules .. lexical_rules .. common_expression_rules,
-  defs
+    language_rules .. language_expression_rules .. lexical_rules .. common_expression_rules,
+    defs
 )
 
 local function match(grammar, subject)
-  local res, err, pos = grammar:match(subject)
-  if res == nil then
-    local l, c = re.calcline(subject, pos)
-    local fragment = subject:sub(pos, pos + 20)
-    return res, err, l, c, fragment
-  end
-  return res
+    local res, err, pos = grammar:match(subject)
+    if res == nil then
+        local l, c = re.calcline(subject, pos)
+        local fragment = subject:sub(pos, pos + 20)
+        return res, err, l, c, fragment
+    end
+    return res
 end
 
 function c99.match_language_grammar(subject)
-  typedefs = {}
-  return match(language_grammar, subject)
+    typedefs = {}
+    return match(language_grammar, subject)
 end
 
 function c99.match_language_expression_grammar(subject)
-  return match(language_expression_grammar, subject)
+    return match(language_expression_grammar, subject)
 end
 
 function c99.match_preprocessing_grammar(subject)
-  return match(preprocessing_grammar, subject)
+    return match(preprocessing_grammar, subject)
 end
 
 function c99.match_preprocessing_expression_grammar(subject)
-  return match(preprocessing_expression_grammar, subject)
+    return match(preprocessing_expression_grammar, subject)
 end
 
 return c99

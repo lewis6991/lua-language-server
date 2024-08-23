@@ -13,34 +13,34 @@ TESTURI = furi.encode(TESTROOT .. 'unittest.ffi.lua')
 
 ---@async
 local function TestBuilder()
-  local builder = require('core.command.reloadFFIMeta')
-  files.setText(
-    TESTURI,
-    [[
+    local builder = require('core.command.reloadFFIMeta')
+    files.setText(
+        TESTURI,
+        [[
         local ffi = require 'ffi'
         ffi.cdef 'void test();'
     ]]
-  )
-  local uri = ws.getFirstScope().uri
-  builder(uri)
+    )
+    local uri = ws.getFirstScope().uri
+    builder(uri)
 end
 
 ---@async
 lclient():start(function(languageClient)
-  languageClient:registerFakers()
-  local rootUri = TESTURI
-  languageClient:initialize({
-    rootUri = rootUri,
-  })
+    languageClient:registerFakers()
+    local rootUri = TESTURI
+    languageClient:initialize({
+        rootUri = rootUri,
+    })
 
-  diagnostic.pause()
+    diagnostic.pause()
 
-  ws.awaitReady(rootUri)
+    ws.awaitReady(rootUri)
 
-  require('plugins.ffi.cdef')
-  require('plugins.ffi.parser')
-  require('plugins.ffi.builder')
-  TestBuilder()
+    require('plugins.ffi.cdef')
+    require('plugins.ffi.parser')
+    require('plugins.ffi.builder')
+    TestBuilder()
 
-  diagnostic.resume()
+    diagnostic.resume()
 end)

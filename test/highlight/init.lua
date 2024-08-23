@@ -4,38 +4,38 @@ local files = require('files')
 local catch = require('catch')
 
 local function founded(targets, results)
-  if #targets ~= #results then
-    return false
-  end
-  for _, target in ipairs(targets) do
-    for _, result in ipairs(results) do
-      if target[1] == result[1] and target[2] == result[2] then
-        goto NEXT
-      end
+    if #targets ~= #results then
+        return false
     end
-    do
-      return false
+    for _, target in ipairs(targets) do
+        for _, result in ipairs(results) do
+            if target[1] == result[1] and target[2] == result[2] then
+                goto NEXT
+            end
+        end
+        do
+            return false
+        end
+        ::NEXT::
     end
-    ::NEXT::
-  end
-  return true
+    return true
 end
 
 function TEST(script)
-  local newScript, catched = catch(script, '!')
-  files.setText(TESTURI, newScript)
-  for _, enter in ipairs(catched['!']) do
-    local start, finish = enter[1], enter[2]
-    local pos = (start + finish) // 2
-    local positions = core(TESTURI, pos)
-    assert(positions)
-    local results = {}
-    for _, position in ipairs(positions) do
-      results[#results + 1] = { position.start, position.finish }
+    local newScript, catched = catch(script, '!')
+    files.setText(TESTURI, newScript)
+    for _, enter in ipairs(catched['!']) do
+        local start, finish = enter[1], enter[2]
+        local pos = (start + finish) // 2
+        local positions = core(TESTURI, pos)
+        assert(positions)
+        local results = {}
+        for _, position in ipairs(positions) do
+            results[#results + 1] = { position.start, position.finish }
+        end
+        assert(founded(catched['!'], results))
     end
-    assert(founded(catched['!'], results))
-  end
-  files.remove(TESTURI)
+    files.remove(TESTURI)
 end
 
 TEST([[

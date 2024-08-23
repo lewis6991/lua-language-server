@@ -11,79 +11,79 @@ mt._removed = false
 mt._max = 10
 
 local function destroyGCObject(obj)
-  local tp = type(obj)
-  if tp == 'function' then
-    xpcall(obj, log.error)
-  elseif tp == 'table' then
-    local remove = obj.remove
-    if type(remove) == 'function' then
-      xpcall(remove, log.error, obj)
+    local tp = type(obj)
+    if tp == 'function' then
+        xpcall(obj, log.error)
+    elseif tp == 'table' then
+        local remove = obj.remove
+        if type(remove) == 'function' then
+            xpcall(remove, log.error, obj)
+        end
     end
-  end
 end
 
 local function isRemoved(obj)
-  local tp = type(obj)
-  if tp == 'function' then
-    for i = 1, 1000 do
-      local n, v = debug.getupvalue(obj, i)
-      if not n then
-        if i > 1 then
-          log.warn(
-            'Functional destructor has no removed upper value!',
-            util.dump(debug.getinfo(obj))
-          )
+    local tp = type(obj)
+    if tp == 'function' then
+        for i = 1, 1000 do
+            local n, v = debug.getupvalue(obj, i)
+            if not n then
+                if i > 1 then
+                    log.warn(
+                        'Functional destructor has no removed upper value!',
+                        util.dump(debug.getinfo(obj))
+                    )
+                end
+                break
+            end
+            if n == 'removed' then
+                if v then
+                    return true
+                end
+                break
+            end
         end
-        break
-      end
-      if n == 'removed' then
-        if v then
-          return true
+    elseif tp == 'table' then
+        if obj._removed then
+            return true
         end
-        break
-      end
     end
-  elseif tp == 'table' then
-    if obj._removed then
-      return true
-    end
-  end
-  return false
+    return false
 end
 
 local function zip(self)
-  local list = self._list
-  local index = 1
-  for _ = 1, #list do
-    local obj = list[index]
-    if not obj then
-      break
+    local list = self._list
+    local index = 1
+    for _ = 1, #list do
+        local obj = list[index]
+        if not obj then
+            break
+        end
+        if isRemoved(obj) then
+            if index == #list then
+                list[#list] = nil
+                break
+            end
+            list[index] = list[#list]
+        else
+            index = index + 1
+        end
     end
-    if isRemoved(obj) then
-      if index == #list then
-        list[#list] = nil
-        break
-      end
-      list[index] = list[#list]
-    else
-      index = index + 1
+    self._max = #list * 1.5
+    if self._max < 10 then
+        self._max = 10
     end
-  end
-  self._max = #list * 1.5
-  if self._max < 10 then
-    self._max = 10
-  end
 end
 
 function mt:remove()
-  if self._removed then
-    return
-  end
-  self._removed = true
-  local list = self._list
-  for i = 1, #list do
-    destroyGCObject(list[i])
-  end
+    if self._removed then
+        return
+    end
+    self._removed = true
+    local list = self._list
+    for i = 1, #list do
+        destroyGCObject(list[i])
+    end
 end
 
 --- Flag `obj` is automatically removed when the buff is removed.
@@ -92,15 +92,15 @@ end
 --- @param obj any
 --- @return any
 function mt:add(obj)
-  if self._removed then
-    destroyGCObject(obj)
-    return nil
-  end
-  self._list[#self._list + 1] = obj
-  if #self._list > self._max then
-    zip(self)
-  end
-  return obj
+    if self._removed then
+        destroyGCObject(obj)
+        return nil
+    end
+    self._list[#self._list + 1] = obj
+    if #self._list > self._max then
+        zip(self)
+    end
+    return obj
 end
 
 --- Create a gc container and use `gc:add(obj)` to put the destructor into the gc container.
@@ -118,7 +118,7 @@ end
 --- gc:remove()        -- Remove the gc container and also remove obj1 and obj2
 --- ```
 return function()
-  return setmetatable({
-    _list = {},
-  }, mt)
+    return setmetatable({
+        _list = {},
+    }, mt)
 end

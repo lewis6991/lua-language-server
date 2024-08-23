@@ -297,8 +297,8 @@ local y = x
 
 <!y!> = nil
 ]])(function(diags)
-  local diag = diags[1]
-  assert(diag.message == [[
+    local diag = diags[1]
+    assert(diag.message == [[
 已显式定义变量的类型为 `string` ，不能再将其类型转换为 `nil`。
 - `nil` 无法匹配 `string`
 - 类型 `nil` 无法匹配 `string`]])
@@ -310,8 +310,8 @@ local x
 
 <!x!> = nil
 ]])(function(diags)
-  local diag = diags[1]
-  assert(diag.message == [[
+    local diag = diags[1]
+    assert(diag.message == [[
 已显式定义变量的类型为 `'A'|'B'|'C'|'D'|'E'...(+21)` ，不能再将其类型转换为 `nil`。
 - `nil` 无法匹配 `'A'|'B'|'C'|'D'|'E'...(+21)`
 - `nil` 无法匹配 `'A'|'B'|'C'|'D'|'E'...(+21)` 中的任何子类

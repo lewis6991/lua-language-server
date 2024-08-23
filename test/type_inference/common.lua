@@ -3766,7 +3766,7 @@ local t = {
 ]])
 
 config.set(nil, 'Lua.runtime.special', {
-  ['xx.assert'] = 'assert',
+    ['xx.assert'] = 'assert',
 })
 
 TEST('number')([[

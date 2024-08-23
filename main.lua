@@ -5,42 +5,42 @@ local version = require('version')
 require('config.env')
 
 local function getValue(value)
-  if value == 'true' or value == nil then
-    value = true
-  elseif value == 'false' then
-    value = false
-  elseif tonumber(value) then
-    value = tonumber(value)
-  elseif value:sub(1, 1) == '"' and value:sub(-1, -1) == '"' then
-    value = value:sub(2, -2)
-  end
-  return value
+    if value == 'true' or value == nil then
+        value = true
+    elseif value == 'false' then
+        value = false
+    elseif tonumber(value) then
+        value = tonumber(value)
+    elseif value:sub(1, 1) == '"' and value:sub(-1, -1) == '"' then
+        value = value:sub(2, -2)
+    end
+    return value
 end
 
 local function loadArgs()
-  ---@type string?
-  local lastKey
-  for _, v in ipairs(arg) do
     ---@type string?
-    local key, tail = v:match('^%-%-([%w_]+)(.*)$')
-    local value
-    if key then
-      value = tail:match('=(.+)')
-      lastKey = nil
-      if not value then
-        lastKey = key
-      end
-    else
-      if lastKey then
-        key = lastKey
-        value = v
-        lastKey = nil
-      end
+    local lastKey
+    for _, v in ipairs(arg) do
+        ---@type string?
+        local key, tail = v:match('^%-%-([%w_]+)(.*)$')
+        local value
+        if key then
+            value = tail:match('=(.+)')
+            lastKey = nil
+            if not value then
+                lastKey = key
+            end
+        else
+            if lastKey then
+                key = lastKey
+                value = v
+                lastKey = nil
+            end
+        end
+        if key then
+            _G[key:upper():gsub('-', '_')] = getValue(value)
+        end
     end
-    if key then
-      _G[key:upper():gsub('-', '_')] = getValue(value)
-    end
-  end
 end
 
 loadArgs()
@@ -62,7 +62,7 @@ collectgarbage('generational', 10, 50)
 log = require('log')
 log.init(ROOT, fs.path(LOGPATH) / 'service.log')
 if LOGLEVEL then
-  log.level = tostring(LOGLEVEL):lower()
+    log.level = tostring(LOGLEVEL):lower()
 end
 
 log.info('Lua Lsp startup, root: ', ROOT)

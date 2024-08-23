@@ -6,30 +6,30 @@ rawset(_G, 'TEST', true)
 
 ---@diagnostic disable: await-in-sync
 function TEST(script)
-  return function(expect)
-    local newScript, catched1 = catch(script, '?')
-    files.setText(TESTURI, newScript)
-    local hovers = core(TESTURI, catched1['?'][1][1])
-    if hovers then
-      assert(#hovers == #expect)
-      for i, hover in ipairs(hovers) do
-        local newExpect, catched2 = catch(expect[i], '!')
-        local arg = hover.params[hover.index]
+    return function(expect)
+        local newScript, catched1 = catch(script, '?')
+        files.setText(TESTURI, newScript)
+        local hovers = core(TESTURI, catched1['?'][1][1])
+        if hovers then
+            assert(#hovers == #expect)
+            for i, hover in ipairs(hovers) do
+                local newExpect, catched2 = catch(expect[i], '!')
+                local arg = hover.params[hover.index]
 
-        assert(newExpect == hover.label)
-        if arg then
-          assert(catched2['!'][1] ~= nil)
-          assert(catched2['!'][1][1] == arg.label[1])
-          assert(catched2['!'][1][2] == arg.label[2])
+                assert(newExpect == hover.label)
+                if arg then
+                    assert(catched2['!'][1] ~= nil)
+                    assert(catched2['!'][1][1] == arg.label[1])
+                    assert(catched2['!'][1][2] == arg.label[2])
+                else
+                    assert(#catched2['!'] == 0)
+                end
+            end
         else
-          assert(#catched2['!'] == 0)
+            assert(expect == nil)
         end
-      end
-    else
-      assert(expect == nil)
+        files.remove(TESTURI)
     end
-    files.remove(TESTURI)
-  end
 end
 
 TEST([[
@@ -217,9 +217,9 @@ function X(a, b) end
 
 X(<??>)
 ]])({
-  'function X()',
-  'function X(<!a: number!>)',
-  'function X(<!a: number!>, b: number)',
+    'function X()',
+    'function X(<!a: number!>)',
+    'function X(<!a: number!>, b: number)',
 })
 
 TEST([[\
@@ -231,8 +231,8 @@ function X(a, b) end
 
 X(<?1?>)
 ]])({
-  'function X(<!a: number!>)',
-  'function X(<!a: number!>, b: number)',
+    'function X(<!a: number!>)',
+    'function X(<!a: number!>, b: number)',
 })
 
 TEST([[
@@ -244,7 +244,7 @@ function X(a, b) end
 
 X(1, <??>)
 ]])({
-  'function X(a: number, <!b: number!>)',
+    'function X(a: number, <!b: number!>)',
 })
 
 TEST([[
@@ -256,7 +256,7 @@ function X(a, b) end
 
 X(1, <?2?>)
 ]])({
-  'function X(a: number, <!b: number!>)',
+    'function X(a: number, <!b: number!>)',
 })
 
 TEST([[
@@ -271,7 +271,7 @@ end
 
 X({}, <??>)
 ]])({
-  'function X(a: { x: number, y: number, z: number }, <!b: string!>)',
+    'function X(a: { x: number, y: number, z: number }, <!b: string!>)',
 })
 
 TEST([[
@@ -282,8 +282,8 @@ end
 
 f(<??>)
 ]])({
-  'function f(<!x: number!>)',
-  'function f(<!x: number!>, y: number)',
+    'function f(<!x: number!>)',
+    'function f(<!x: number!>, y: number)',
 })
 
 TEST([[
@@ -295,7 +295,7 @@ local t
 
 t(<??>)
 ]])({
-  'function (<!x: number!>)',
+    'function (<!x: number!>)',
 })
 
 TEST([[
@@ -308,7 +308,7 @@ end
 
 f(1, 2<??>)
 ]])({
-  'function f(a: 😅, <!b: integer!>)',
+    'function f(a: 😅, <!b: integer!>)',
 })
 
 TEST([[
@@ -321,7 +321,7 @@ local t
 
 t:event("onChat", <??>)
 ]])({
-  '(method) (ev: "onChat", <!c: string!>)',
+    '(method) (ev: "onChat", <!c: string!>)',
 })
 
 TEST([[
@@ -334,7 +334,7 @@ local t
 
 t:event("onTimer", <??>)
 ]])({
-  '(method) (ev: "onTimer", <!t: integer!>)',
+    '(method) (ev: "onTimer", <!t: integer!>)',
 })
 
 local config = require('config')
@@ -346,7 +346,7 @@ end
 
 x("1", <??>)
 ]])({
-  'function x(a: string, <!b: any!>)',
+    'function x(a: string, <!b: any!>)',
 })
 
 TEST([[
@@ -357,7 +357,7 @@ x('str')
 x(1)
 x(<??>)
 ]])({
-  'function x(<!a: string|integer!>)',
+    'function x(<!a: string|integer!>)',
 })
 
 config.set(nil, 'Lua.type.inferParamType', false)

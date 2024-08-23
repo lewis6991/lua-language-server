@@ -16,33 +16,33 @@ util.saveFile(filePath, '')
 
 ---@async
 lclient():start(function(client)
-  client:registerFakers()
+    client:registerFakers()
 
-  client:register('workspace/configuration', function()
-    return {
-      {},
-      {
-        ['*.lua.txt'] = 'lua',
-      },
-    }
-  end)
+    client:register('workspace/configuration', function()
+        return {
+            {},
+            {
+                ['*.lua.txt'] = 'lua',
+            },
+        }
+    end)
 
-  client:initialize({
-    rootPath = rootPath,
-    rootUri = rootUri,
-    workspaceFolders = {
-      {
-        name = 'ws',
-        uri = rootUri,
-      },
-    },
-  })
+    client:initialize({
+        rootPath = rootPath,
+        rootUri = rootUri,
+        workspaceFolders = {
+            {
+                name = 'ws',
+                uri = rootUri,
+            },
+        },
+    })
 
-  ws.awaitReady(rootUri)
+    ws.awaitReady(rootUri)
 
-  assert(files.isLua(furi.encode('aaa.lua.txt')) == true)
-  assert(files.isLua(furi.encode('/aaa.lua.txt')) == true)
-  assert(files.isLua(furi.encode('D:\\aaa.lua.txt')) == true)
-  assert(files.isLua(fileUri) == true)
-  assert(files.exists(fileUri) == true)
+    assert(files.isLua(furi.encode('aaa.lua.txt')) == true)
+    assert(files.isLua(furi.encode('/aaa.lua.txt')) == true)
+    assert(files.isLua(furi.encode('D:\\aaa.lua.txt')) == true)
+    assert(files.isLua(fileUri) == true)
+    assert(files.exists(fileUri) == true)
 end)

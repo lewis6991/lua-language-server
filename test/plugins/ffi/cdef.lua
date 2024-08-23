@@ -5,18 +5,18 @@ local cdefRerence = require('plugins.ffi.cdefRerence')
 rawset(_G, 'TEST', true)
 
 function TEST(wanted)
-  ---@async
-  return function(script)
-    files.setText(TESTURI, script)
-    local codeResults = code(cdefRerence(), TESTURI)
-    assert(codeResults)
-    table.sort(codeResults)
-    assert(
-      table.concat(codeResults, '|') == wanted,
-      table.concat(codeResults, '|') .. ' ~= ' .. wanted
-    )
-    files.remove(TESTURI)
-  end
+    ---@async
+    return function(script)
+        files.setText(TESTURI, script)
+        local codeResults = code(cdefRerence(), TESTURI)
+        assert(codeResults)
+        table.sort(codeResults)
+        assert(
+            table.concat(codeResults, '|') == wanted,
+            table.concat(codeResults, '|') .. ' ~= ' .. wanted
+        )
+        files.remove(TESTURI)
+    end
 end
 
 TEST('aaa|bbb')([[

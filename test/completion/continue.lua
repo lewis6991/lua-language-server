@@ -11,30 +11,30 @@ TEST([[
 local zabcde
 za<??>
 ]])({
-  {
-    label = 'zabcde',
-    kind = define.CompletionItemKind.Variable,
-  },
+    {
+        label = 'zabcde',
+        kind = define.CompletionItemKind.Variable,
+    },
 })
 
 TEST([[
 -- zabcde
 io.z<??>
 ]])({
-  {
-    label = 'zabcde',
-    kind = define.CompletionItemKind.Text,
-  },
+    {
+        label = 'zabcde',
+        kind = define.CompletionItemKind.Text,
+    },
 })
 
 TEST([[
 -- provider
 pro<??>
 ]])({
-  {
-    label = 'provider',
-    kind = define.CompletionItemKind.Text,
-  },
+    {
+        label = 'provider',
+        kind = define.CompletionItemKind.Text,
+    },
 })
 
 TEST([[
@@ -43,11 +43,11 @@ local function f(n) end
 
 f 'abc<??>'
 ]])({
-  {
-    label = "'abcdefg'",
-    kind = define.CompletionItemKind.EnumMember,
-    textEdit = EXISTS,
-  },
+    {
+        label = "'abcdefg'",
+        kind = define.CompletionItemKind.EnumMember,
+        textEdit = EXISTS,
+    },
 })
 
 TEST([[
@@ -56,11 +56,11 @@ local t
 
 if t == 'abc<??>'
 ]])({
-  {
-    label = "'abcdefg'",
-    kind = define.CompletionItemKind.EnumMember,
-    textEdit = EXISTS,
-  },
+    {
+        label = "'abcdefg'",
+        kind = define.CompletionItemKind.EnumMember,
+        textEdit = EXISTS,
+    },
 })
 
 ContinueTyping = false

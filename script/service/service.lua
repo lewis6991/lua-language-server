@@ -24,272 +24,272 @@ M.idleClock = 0.0
 M.sleeping = false
 
 local function countMemory()
-  local mems = {}
-  local total = 0
-  mems[0] = collectgarbage('count')
-  total = total + collectgarbage('count')
-  for id, brave in ipairs(pub.braves) do
-    mems[id] = brave.memory
-    total = total + brave.memory
-  end
-  return total, mems
+    local mems = {}
+    local total = 0
+    mems[0] = collectgarbage('count')
+    total = total + collectgarbage('count')
+    for id, brave in ipairs(pub.braves) do
+        mems[id] = brave.memory
+        total = total + brave.memory
+    end
+    return total, mems
 end
 
 function M.reportMemoryCollect()
-  local totalMemBefore = countMemory()
-  local clock = os.clock()
-  collectgarbage()
-  local passed = os.clock() - clock
-  local totalMemAfter, mems = countMemory()
+    local totalMemBefore = countMemory()
+    local clock = os.clock()
+    collectgarbage()
+    local passed = os.clock() - clock
+    local totalMemAfter, mems = countMemory()
 
-  local lines = {}
-  lines[#lines + 1] = '    --------------- Memory ---------------'
-  lines[#lines + 1] = ('        Total: %.3f(%.3f) MB'):format(
-    totalMemAfter / 1000.0,
-    totalMemBefore / 1000.0
-  )
-  for i = 0, #mems do
-    lines[#lines + 1] = ('        # %02d : %.3f MB'):format(i, mems[i] / 1000.0)
-  end
-  lines[#lines + 1] = ('        Collect garbage takes [%.3f] sec'):format(passed)
-  return table.concat(lines, '\n')
+    local lines = {}
+    lines[#lines + 1] = '    --------------- Memory ---------------'
+    lines[#lines + 1] = ('        Total: %.3f(%.3f) MB'):format(
+        totalMemAfter / 1000.0,
+        totalMemBefore / 1000.0
+    )
+    for i = 0, #mems do
+        lines[#lines + 1] = ('        # %02d : %.3f MB'):format(i, mems[i] / 1000.0)
+    end
+    lines[#lines + 1] = ('        Collect garbage takes [%.3f] sec'):format(passed)
+    return table.concat(lines, '\n')
 end
 
 function M.reportMemory()
-  local totalMem, mems = countMemory()
+    local totalMem, mems = countMemory()
 
-  local lines = {}
-  lines[#lines + 1] = '    --------------- Memory ---------------'
-  lines[#lines + 1] = ('        Total: %.3f MB'):format(totalMem / 1000.0)
-  for i = 0, #mems do
-    lines[#lines + 1] = ('        # %02d : %.3f MB'):format(i, mems[i] / 1000.0)
-  end
-  return table.concat(lines, '\n')
+    local lines = {}
+    lines[#lines + 1] = '    --------------- Memory ---------------'
+    lines[#lines + 1] = ('        Total: %.3f MB'):format(totalMem / 1000.0)
+    for i = 0, #mems do
+        lines[#lines + 1] = ('        # %02d : %.3f MB'):format(i, mems[i] / 1000.0)
+    end
+    return table.concat(lines, '\n')
 end
 
 function M.reportTask()
-  local total = 0
-  local running = 0
-  local suspended = 0
-  local normal = 0
-  local dead = 0
+    local total = 0
+    local running = 0
+    local suspended = 0
+    local normal = 0
+    local dead = 0
 
-  for co in pairs(await.coMap) do
-    total = total + 1
-    local status = coroutine.status(co)
-    if status == 'running' then
-      running = running + 1
-    elseif status == 'suspended' then
-      suspended = suspended + 1
-    elseif status == 'normal' then
-      normal = normal + 1
-    elseif status == 'dead' then
-      dead = dead + 1
+    for co in pairs(await.coMap) do
+        total = total + 1
+        local status = coroutine.status(co)
+        if status == 'running' then
+            running = running + 1
+        elseif status == 'suspended' then
+            suspended = suspended + 1
+        elseif status == 'normal' then
+            normal = normal + 1
+        elseif status == 'dead' then
+            dead = dead + 1
+        end
     end
-  end
 
-  local lines = {}
-  lines[#lines + 1] = '    --------------- Coroutine ---------------'
-  lines[#lines + 1] = ('        Total:     %d'):format(total)
-  lines[#lines + 1] = ('        Running:   %d'):format(running)
-  lines[#lines + 1] = ('        Suspended: %d'):format(suspended)
-  lines[#lines + 1] = ('        Normal:    %d'):format(normal)
-  lines[#lines + 1] = ('        Dead:      %d'):format(dead)
-  return table.concat(lines, '\n')
+    local lines = {}
+    lines[#lines + 1] = '    --------------- Coroutine ---------------'
+    lines[#lines + 1] = ('        Total:     %d'):format(total)
+    lines[#lines + 1] = ('        Running:   %d'):format(running)
+    lines[#lines + 1] = ('        Suspended: %d'):format(suspended)
+    lines[#lines + 1] = ('        Normal:    %d'):format(normal)
+    lines[#lines + 1] = ('        Dead:      %d'):format(dead)
+    return table.concat(lines, '\n')
 end
 
 function M.reportCache()
-  local total = 0
-  local dead = 0
+    local total = 0
+    local dead = 0
 
-  for cache in pairs(vm.cacheTracker) do
-    total = total + 1
-    if cache.dead then
-      dead = dead + 1
+    for cache in pairs(vm.cacheTracker) do
+        total = total + 1
+        if cache.dead then
+            dead = dead + 1
+        end
     end
-  end
 
-  local lines = {}
-  lines[#lines + 1] = '    --------------- Cache ---------------'
-  lines[#lines + 1] = ('        Total: %d'):format(total)
-  lines[#lines + 1] = ('        Dead:  %d'):format(dead)
-  return table.concat(lines, '\n')
+    local lines = {}
+    lines[#lines + 1] = '    --------------- Cache ---------------'
+    lines[#lines + 1] = ('        Total: %d'):format(total)
+    lines[#lines + 1] = ('        Dead:  %d'):format(dead)
+    return table.concat(lines, '\n')
 end
 
 function M.reportProto()
-  local holdon = 0
-  local waiting = 0
+    local holdon = 0
+    local waiting = 0
 
-  for _ in pairs(proto.holdon) do
-    holdon = holdon + 1
-  end
-  for _ in pairs(proto.waiting) do
-    waiting = waiting + 1
-  end
+    for _ in pairs(proto.holdon) do
+        holdon = holdon + 1
+    end
+    for _ in pairs(proto.waiting) do
+        waiting = waiting + 1
+    end
 
-  local lines = {}
-  lines[#lines + 1] = '    ---------------  RPC  ---------------'
-  lines[#lines + 1] = ('        Holdon:   %d'):format(holdon)
-  lines[#lines + 1] = ('        Waiting:  %d'):format(waiting)
-  return table.concat(lines, '\n')
+    local lines = {}
+    lines[#lines + 1] = '    ---------------  RPC  ---------------'
+    lines[#lines + 1] = ('        Holdon:   %d'):format(holdon)
+    lines[#lines + 1] = ('        Waiting:  %d'):format(waiting)
+    return table.concat(lines, '\n')
 end
 
 function M.report()
-  local t = timer.loop(600.0, function()
-    local lines = {}
-    lines[#lines + 1] = ''
-    lines[#lines + 1] = '========= Medical Examination Report ========='
-    lines[#lines + 1] = M.reportMemory()
-    lines[#lines + 1] = M.reportTask()
-    lines[#lines + 1] = M.reportCache()
-    lines[#lines + 1] = M.reportProto()
-    lines[#lines + 1] = '=============================================='
+    local t = timer.loop(600.0, function()
+        local lines = {}
+        lines[#lines + 1] = ''
+        lines[#lines + 1] = '========= Medical Examination Report ========='
+        lines[#lines + 1] = M.reportMemory()
+        lines[#lines + 1] = M.reportTask()
+        lines[#lines + 1] = M.reportCache()
+        lines[#lines + 1] = M.reportProto()
+        lines[#lines + 1] = '=============================================='
 
-    log.info(table.concat(lines, '\n'))
-  end)
-  t:onTimer()
+        log.info(table.concat(lines, '\n'))
+    end)
+    t:onTimer()
 end
 
 function M.eventLoop()
-  pub.task('timer', 1)
-  pub.on('wakeup', function()
-    M.reportStatus()
-    fw.update()
-  end)
+    pub.task('timer', 1)
+    pub.on('wakeup', function()
+        M.reportStatus()
+        fw.update()
+    end)
 
-  local function busy()
-    if not M.workingClock then
-      M.workingClock = time.monotonic()
-      M.reportStatus()
+    local function busy()
+        if not M.workingClock then
+            M.workingClock = time.monotonic()
+            M.reportStatus()
+        end
     end
-  end
 
-  local function idle()
-    if M.workingClock then
-      M.workingClock = nil
-      M.reportStatus()
+    local function idle()
+        if M.workingClock then
+            M.workingClock = nil
+            M.reportStatus()
+        end
     end
-  end
 
-  local function doSomething()
-    net.update()
-    timer.update()
-    pub.step(false)
-    if await.step() then
-      busy()
-      return true
+    local function doSomething()
+        net.update()
+        timer.update()
+        pub.step(false)
+        if await.step() then
+            busy()
+            return true
+        end
+        return false
     end
-    return false
-  end
 
-  local function sleep()
-    idle()
-    for _ = 1, 10 do
-      net.update(100)
-      if doSomething() then
-        return
-      end
+    local function sleep()
+        idle()
+        for _ = 1, 10 do
+            net.update(100)
+            if doSomething() then
+                return
+            end
+        end
+        pub.step(true)
     end
-    pub.step(true)
-  end
 
-  while true do
-    if doSomething() then
-      goto CONTINUE
+    while true do
+        if doSomething() then
+            goto CONTINUE
+        end
+        sleep()
+        ::CONTINUE::
     end
-    sleep()
-    ::CONTINUE::
-  end
 end
 
 local showStatusTip = math.random(100) == 1
 
 function M.reportStatus()
-  if not client.getOption('statusBar') then
-    return
-  end
-  local info = {}
-  if M.workingClock and time.monotonic() - M.workingClock > 100 then
-    info.text = '$(loading~spin)Lua'
-  elseif M.sleeping then
-    info.text = '💤Lua'
-  else
-    info.text = '😺Lua'
-  end
+    if not client.getOption('statusBar') then
+        return
+    end
+    local info = {}
+    if M.workingClock and time.monotonic() - M.workingClock > 100 then
+        info.text = '$(loading~spin)Lua'
+    elseif M.sleeping then
+        info.text = '💤Lua'
+    else
+        info.text = '😺Lua'
+    end
 
-  local tooltips = {}
-  local params = {
-    ast = files.countStates(),
-    max = files.fileCount,
-    mem = collectgarbage('count') / 1000,
-  }
-  for i, scp in ipairs(ws.folders) do
-    tooltips[i] = lang.script('WINDOW_LUA_STATUS_WORKSPACE', furi.decode(scp.uri))
-  end
-  tooltips[#tooltips + 1] = lang.script('WINDOW_LUA_STATUS_CACHED_FILES', params)
-  tooltips[#tooltips + 1] = lang.script('WINDOW_LUA_STATUS_MEMORY_COUNT', params)
-  if showStatusTip then
-    tooltips[#tooltips + 1] = lang.script('WINDOW_LUA_STATUS_TIP')
-  end
+    local tooltips = {}
+    local params = {
+        ast = files.countStates(),
+        max = files.fileCount,
+        mem = collectgarbage('count') / 1000,
+    }
+    for i, scp in ipairs(ws.folders) do
+        tooltips[i] = lang.script('WINDOW_LUA_STATUS_WORKSPACE', furi.decode(scp.uri))
+    end
+    tooltips[#tooltips + 1] = lang.script('WINDOW_LUA_STATUS_CACHED_FILES', params)
+    tooltips[#tooltips + 1] = lang.script('WINDOW_LUA_STATUS_MEMORY_COUNT', params)
+    if showStatusTip then
+        tooltips[#tooltips + 1] = lang.script('WINDOW_LUA_STATUS_TIP')
+    end
 
-  info.tooltip = table.concat(tooltips, '\n')
-  if util.equal(M.lastInfo, info) then
-    return
-  end
-  M.lastInfo = info
-  proto.notify('$/status/report', info)
+    info.tooltip = table.concat(tooltips, '\n')
+    if util.equal(M.lastInfo, info) then
+        return
+    end
+    M.lastInfo = info
+    proto.notify('$/status/report', info)
 end
 
 function M.testVersion()
-  local stack = debug.setcstacklimit(200)
-  debug.setcstacklimit(stack + 1)
-  if type(stack) == 'number' and debug.setcstacklimit(stack) == stack + 1 then
-    proto.notify('window/showMessage', {
-      type = 2,
-      message = 'It seems to be running in Lua 5.4.0 or Lua 5.4.1 . Please upgrade to Lua 5.4.2 or above. Otherwise, it may encounter weird "C stack overflow", resulting in failure to work properly',
-    })
-  end
+    local stack = debug.setcstacklimit(200)
+    debug.setcstacklimit(stack + 1)
+    if type(stack) == 'number' and debug.setcstacklimit(stack) == stack + 1 then
+        proto.notify('window/showMessage', {
+            type = 2,
+            message = 'It seems to be running in Lua 5.4.0 or Lua 5.4.1 . Please upgrade to Lua 5.4.2 or above. Otherwise, it may encounter weird "C stack overflow", resulting in failure to work properly',
+        })
+    end
 end
 
 function M.sayHello()
-  proto.notify('$/hello', { 'world' })
+    proto.notify('$/hello', { 'world' })
 end
 
 function M.lockCache()
-  local fs = require('bee.filesystem')
-  local sp = require('bee.subprocess')
-  local cacheDir = string.format('%s/cache', LOGPATH)
-  local myCacheDir = string.format('%s/%d', cacheDir, sp.get_id())
-  fs.create_directories(fs.path(myCacheDir))
-  local err
-  M.lockFile, err = io.open(myCacheDir .. '/.lock', 'wb')
-  if err then
-    log.error(err)
-  end
+    local fs = require('bee.filesystem')
+    local sp = require('bee.subprocess')
+    local cacheDir = string.format('%s/cache', LOGPATH)
+    local myCacheDir = string.format('%s/%d', cacheDir, sp.get_id())
+    fs.create_directories(fs.path(myCacheDir))
+    local err
+    M.lockFile, err = io.open(myCacheDir .. '/.lock', 'wb')
+    if err then
+        log.error(err)
+    end
 end
 
 function M.start()
-  util.enableCloseFunction()
-  await.setErrorHandle(log.error)
-  pub.recruitBraves(4)
-  if COMPILECORES and COMPILECORES > 0 then
-    pub.recruitBraves(COMPILECORES, 'compile')
-  end
-  if SOCKET then
-    assert(math.tointeger(SOCKET), '`socket` must be integer')
-    proto.listen('socket', SOCKET)
-  else
-    proto.listen('stdio')
-  end
-  M.report()
-  M.testVersion()
-  M.lockCache()
+    util.enableCloseFunction()
+    await.setErrorHandle(log.error)
+    pub.recruitBraves(4)
+    if COMPILECORES and COMPILECORES > 0 then
+        pub.recruitBraves(COMPILECORES, 'compile')
+    end
+    if SOCKET then
+        assert(math.tointeger(SOCKET), '`socket` must be integer')
+        proto.listen('socket', SOCKET)
+    else
+        proto.listen('stdio')
+    end
+    M.report()
+    M.testVersion()
+    M.lockCache()
 
-  require('provider')
+    require('provider')
 
-  M.sayHello()
+    M.sayHello()
 
-  M.eventLoop()
+    M.eventLoop()
 end
 
 return M

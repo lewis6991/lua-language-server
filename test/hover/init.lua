@@ -7,16 +7,16 @@ rawset(_G, 'TEST', true)
 
 ---@diagnostic disable: await-in-sync
 function TEST(script)
-  return function(expect)
-    local newScript, catched = catch(script, '?')
-    files.setText(TESTURI, newScript)
-    local hover = core.byUri(TESTURI, catched['?'][1][1])
-    assert(hover)
-    expect = expect:gsub('^[\r\n]*(.-)[\r\n]*$', '%1'):gsub('\r\n', '\n')
-    local label = hover:string():gsub('\r\n', '\n'):match('```lua[\r\n]*(.-)[\r\n]*```')
-    assert(expect == label)
-    files.remove(TESTURI)
-  end
+    return function(expect)
+        local newScript, catched = catch(script, '?')
+        files.setText(TESTURI, newScript)
+        local hover = core.byUri(TESTURI, catched['?'][1][1])
+        assert(hover)
+        expect = expect:gsub('^[\r\n]*(.-)[\r\n]*$', '%1'):gsub('\r\n', '\n')
+        local label = hover:string():gsub('\r\n', '\n'):match('```lua[\r\n]*(.-)[\r\n]*```')
+        assert(expect == label)
+        files.remove(TESTURI)
+    end
 end
 
 TEST([[

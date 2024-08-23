@@ -10,24 +10,24 @@ local largeFilePath = LOGPATH .. '/large-file-library/large-file.lua'
 
 ---@async
 lclient():start(function(client)
-  client:registerFakers()
+    client:registerFakers()
 
-  client:register('workspace/configuration', function()
-    return {
-      {
-        ['workspace.library'] = { libraryPath },
-      },
-    }
-  end)
+    client:register('workspace/configuration', function()
+        return {
+            {
+                ['workspace.library'] = { libraryPath },
+            },
+        }
+    end)
 
-  fs.create_directories(fs.path(libraryPath))
-  if not fs.exists(fs.path(largeFilePath)) then
-    util.saveFile(largeFilePath, string.rep('--this is a large file\n', 100000))
-  end
+    fs.create_directories(fs.path(libraryPath))
+    if not fs.exists(fs.path(largeFilePath)) then
+        util.saveFile(largeFilePath, string.rep('--this is a large file\n', 100000))
+    end
 
-  client:initialize()
+    client:initialize()
 
-  ws.awaitReady()
+    ws.awaitReady()
 
-  assert(files.getState(furi.encode(largeFilePath)) ~= nil)
+    assert(files.getState(furi.encode(largeFilePath)) ~= nil)
 end)

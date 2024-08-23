@@ -1,6 +1,6 @@
 return {
-  compile = require('parser.compile'),
-  lines = require('parser.lines'),
-  guide = require('parser.guide'),
-  luadoc = require('parser.luadoc').luadoc,
+    compile = require('parser.compile'),
+    lines = require('parser.lines'),
+    guide = require('parser.guide'),
+    luadoc = require('parser.luadoc').luadoc,
 }

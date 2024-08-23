@@ -22,594 +22,594 @@ M.watchList = {}
 --- 注册事件
 --- @param callback async fun(ev: string, uri: string)
 function M.watch(callback)
-  M.watchList[#M.watchList + 1] = callback
+    M.watchList[#M.watchList + 1] = callback
 end
 
 function M.onWatch(ev, uri)
-  for _, callback in ipairs(M.watchList) do
-    await.call(function()
-      callback(ev, uri)
-    end)
-  end
+    for _, callback in ipairs(M.watchList) do
+        await.call(function()
+            callback(ev, uri)
+        end)
+    end
 end
 
 function M.initRoot(uri)
-  M.rootUri = uri
-  log.info('Workspace init root: ', uri)
+    M.rootUri = uri
+    log.info('Workspace init root: ', uri)
 
-  local logPath = fs.path(LOGPATH) / (uri:gsub('[/:]+', '_') .. '.log')
-  client.logMessage('Log', 'Log path: ' .. furi.encode(logPath:string()))
-  log.info('Log path: ', logPath)
-  log.init(ROOT, logPath)
+    local logPath = fs.path(LOGPATH) / (uri:gsub('[/:]+', '_') .. '.log')
+    client.logMessage('Log', 'Log path: ' .. furi.encode(logPath:string()))
+    log.info('Log path: ', logPath)
+    log.init(ROOT, logPath)
 end
 
 --- 初始化工作区
 function M.create(uri)
-  log.info('Workspace create: ', uri)
-  local scp = scope.createFolder(uri)
-  M.folders[#M.folders + 1] = scp
-  if uri == furi.encode('/') or uri == furi.encode(os.getenv('HOME') or '') then
-    if not FORCE_ACCEPT_WORKSPACE then
-      client.showMessage('Error', lang.script('WORKSPACE_NOT_ALLOWED', furi.decode(uri)))
-      scp:set('bad root', true)
+    log.info('Workspace create: ', uri)
+    local scp = scope.createFolder(uri)
+    M.folders[#M.folders + 1] = scp
+    if uri == furi.encode('/') or uri == furi.encode(os.getenv('HOME') or '') then
+        if not FORCE_ACCEPT_WORKSPACE then
+            client.showMessage('Error', lang.script('WORKSPACE_NOT_ALLOWED', furi.decode(uri)))
+            scp:set('bad root', true)
+        end
     end
-  end
 end
 
 function M.remove(uri)
-  log.info('Workspace remove: ', uri)
-  for i, scp in ipairs(M.folders) do
-    if scp.uri == uri then
-      scp:remove()
-      table.remove(M.folders, i)
-      scp:set('ready', false)
-      scp:set('nativeMatcher', nil)
-      scp:set('libraryMatcher', nil)
-      scp:removeAllLinks()
-      M.flushFiles(scp)
-      return
+    log.info('Workspace remove: ', uri)
+    for i, scp in ipairs(M.folders) do
+        if scp.uri == uri then
+            scp:remove()
+            table.remove(M.folders, i)
+            scp:set('ready', false)
+            scp:set('nativeMatcher', nil)
+            scp:set('libraryMatcher', nil)
+            scp:removeAllLinks()
+            M.flushFiles(scp)
+            return
+        end
     end
-  end
 end
 
 function M.reset()
-  ---@type scope[]
-  M.folders = {}
-  M.rootUri = nil
+    ---@type scope[]
+    M.folders = {}
+    M.rootUri = nil
 end
 M.reset()
 
 function M.getRootUri(uri)
-  local scp = scope.getScope(uri)
-  return scp.uri
+    local scp = scope.getScope(uri)
+    return scp.uri
 end
 
 local globInteferFace = {
-  type = function(path, data)
-    if data[path] then
-      return data[path]
-    end
-    local result
-    pcall(function()
-      if fs.is_directory(fs.path(path)) then
-        result = 'directory'
-        data[path] = 'directory'
-      else
-        result = 'file'
-        data[path] = 'file'
-      end
-    end)
-    return result
-  end,
-  list = function(path, data)
-    if data[path] == 'file' then
-      return nil
-    end
-    local fullPath = fs.path(path)
-    if not fs.is_directory(fullPath) then
-      data[path] = 'file'
-      return nil
-    end
-    data[path] = true
-    local paths = {}
-    pcall(function()
-      for fullpath, status in fs.pairs(fullPath) do
-        local pathString = fullpath:string()
-        paths[#paths + 1] = pathString
-        local st = status:type()
-        if st == 'directory' or st == 'symlink' or st == 'junction' then
-          data[pathString] = 'directory'
-        else
-          data[pathString] = 'file'
+    type = function(path, data)
+        if data[path] then
+            return data[path]
         end
-      end
-    end)
-    return paths
-  end,
+        local result
+        pcall(function()
+            if fs.is_directory(fs.path(path)) then
+                result = 'directory'
+                data[path] = 'directory'
+            else
+                result = 'file'
+                data[path] = 'file'
+            end
+        end)
+        return result
+    end,
+    list = function(path, data)
+        if data[path] == 'file' then
+            return nil
+        end
+        local fullPath = fs.path(path)
+        if not fs.is_directory(fullPath) then
+            data[path] = 'file'
+            return nil
+        end
+        data[path] = true
+        local paths = {}
+        pcall(function()
+            for fullpath, status in fs.pairs(fullPath) do
+                local pathString = fullpath:string()
+                paths[#paths + 1] = pathString
+                local st = status:type()
+                if st == 'directory' or st == 'symlink' or st == 'junction' then
+                    data[pathString] = 'directory'
+                else
+                    data[pathString] = 'file'
+                end
+            end
+        end)
+        return paths
+    end,
 }
 
 --- 创建排除文件匹配器
 --- @param scp scope
 function M.getNativeMatcher(scp)
-  if scp:get('nativeMatcher') then
-    return scp:get('nativeMatcher')
-  end
+    if scp:get('nativeMatcher') then
+        return scp:get('nativeMatcher')
+    end
 
-  local pattern = {}
-  for path, ignore in pairs(config.get(scp.uri, 'files.exclude')) do
-    if ignore then
-      log.debug('Ignore by exclude:', path)
-      pattern[#pattern + 1] = path
-    end
-  end
-  if scp.uri and config.get(scp.uri, 'Lua.workspace.useGitIgnore') then
-    local buf = util.loadFile(furi.decode(scp.uri) .. '/.gitignore')
-    if buf then
-      for line in buf:gmatch('[^\r\n]+') do
-        if line:sub(1, 1) ~= '#' then
-          log.debug('Ignore by .gitignore:', line)
-          pattern[#pattern + 1] = line
+    local pattern = {}
+    for path, ignore in pairs(config.get(scp.uri, 'files.exclude')) do
+        if ignore then
+            log.debug('Ignore by exclude:', path)
+            pattern[#pattern + 1] = path
         end
-      end
     end
-    buf = util.loadFile(furi.decode(scp.uri) .. '/.git/info/exclude')
-    if buf then
-      for line in buf:gmatch('[^\r\n]+') do
-        if line:sub(1, 1) ~= '#' then
-          log.debug('Ignore by .git/info/exclude:', line)
-          pattern[#pattern + 1] = line
+    if scp.uri and config.get(scp.uri, 'Lua.workspace.useGitIgnore') then
+        local buf = util.loadFile(furi.decode(scp.uri) .. '/.gitignore')
+        if buf then
+            for line in buf:gmatch('[^\r\n]+') do
+                if line:sub(1, 1) ~= '#' then
+                    log.debug('Ignore by .gitignore:', line)
+                    pattern[#pattern + 1] = line
+                end
+            end
         end
-      end
+        buf = util.loadFile(furi.decode(scp.uri) .. '/.git/info/exclude')
+        if buf then
+            for line in buf:gmatch('[^\r\n]+') do
+                if line:sub(1, 1) ~= '#' then
+                    log.debug('Ignore by .git/info/exclude:', line)
+                    pattern[#pattern + 1] = line
+                end
+            end
+        end
     end
-  end
-  if scp.uri and config.get(scp.uri, 'Lua.workspace.ignoreSubmodules') then
-    local buf = util.loadFile(furi.decode(scp.uri) .. '/.gitmodules')
-    if buf then
-      for path in buf:gmatch('path = ([^\r\n]+)') do
-        log.debug('Ignore by .gitmodules:', path)
+    if scp.uri and config.get(scp.uri, 'Lua.workspace.ignoreSubmodules') then
+        local buf = util.loadFile(furi.decode(scp.uri) .. '/.gitmodules')
+        if buf then
+            for path in buf:gmatch('path = ([^\r\n]+)') do
+                log.debug('Ignore by .gitmodules:', path)
+                pattern[#pattern + 1] = path
+            end
+        end
+    end
+    for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.library')) do
+        path = M.getAbsolutePath(scp.uri, path)
+        if path then
+            log.debug('Ignore by library:', path)
+            debug[#pattern + 1] = path
+        end
+    end
+    for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.ignoreDir')) do
+        log.debug('Ignore directory:', path)
         pattern[#pattern + 1] = path
-      end
     end
-  end
-  for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.library')) do
-    path = M.getAbsolutePath(scp.uri, path)
-    if path then
-      log.debug('Ignore by library:', path)
-      debug[#pattern + 1] = path
-    end
-  end
-  for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.ignoreDir')) do
-    log.debug('Ignore directory:', path)
-    pattern[#pattern + 1] = path
-  end
 
-  local matcher = glob.gitignore(pattern, {
-    root = scp.uri and furi.decode(scp.uri),
-    ignoreCase = platform.os == 'windows',
-  }, globInteferFace)
+    local matcher = glob.gitignore(pattern, {
+        root = scp.uri and furi.decode(scp.uri),
+        ignoreCase = platform.os == 'windows',
+    }, globInteferFace)
 
-  scp:set('nativeMatcher', matcher)
-  return matcher
+    scp:set('nativeMatcher', matcher)
+    return matcher
 end
 
 --- 创建代码库筛选器
 --- @param scp scope
 function M.getLibraryMatchers(scp)
-  if scp:get('libraryMatcher') then
-    return scp:get('libraryMatcher')
-  end
-  log.debug('Build library matchers:', scp)
-
-  local pattern = {}
-  for path, ignore in pairs(config.get(scp.uri, 'files.exclude')) do
-    if ignore then
-      log.debug('Ignore by exclude:', path)
-      pattern[#pattern + 1] = path
+    if scp:get('libraryMatcher') then
+        return scp:get('libraryMatcher')
     end
-  end
-  for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.ignoreDir')) do
-    log.debug('Ignore directory:', path)
-    pattern[#pattern + 1] = path
-  end
+    log.debug('Build library matchers:', scp)
 
-  local librarys = {}
-  for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.library')) do
-    path = M.getAbsolutePath(scp.uri, path)
-    if path then
-      librarys[files.normalize(path)] = true
+    local pattern = {}
+    for path, ignore in pairs(config.get(scp.uri, 'files.exclude')) do
+        if ignore then
+            log.debug('Ignore by exclude:', path)
+            pattern[#pattern + 1] = path
+        end
     end
-  end
-  local metaPaths = scp:get('metaPaths')
-  log.debug('meta path:', inspect(metaPaths))
-  if metaPaths then
-    for _, metaPath in ipairs(metaPaths) do
-      librarys[files.normalize(metaPath)] = true
+    for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.ignoreDir')) do
+        log.debug('Ignore directory:', path)
+        pattern[#pattern + 1] = path
     end
-  end
 
-  local matchers = {}
-  for path in pairs(librarys) do
-    if fs.exists(fs.path(path)) then
-      local nPath = fs.absolute(fs.path(path)):string()
-      local matcher = glob.gitignore(pattern, {
-        root = path,
-        ignoreCase = platform.os == 'windows',
-      }, globInteferFace)
-      matchers[#matchers + 1] = {
-        uri = furi.encode(nPath),
-        matcher = matcher,
-      }
+    local librarys = {}
+    for _, path in ipairs(config.get(scp.uri, 'Lua.workspace.library')) do
+        path = M.getAbsolutePath(scp.uri, path)
+        if path then
+            librarys[files.normalize(path)] = true
+        end
     end
-  end
+    local metaPaths = scp:get('metaPaths')
+    log.debug('meta path:', inspect(metaPaths))
+    if metaPaths then
+        for _, metaPath in ipairs(metaPaths) do
+            librarys[files.normalize(metaPath)] = true
+        end
+    end
 
-  scp:set('libraryMatcher', matchers)
-  --log.debug('library matcher:', inspect(matchers))
+    local matchers = {}
+    for path in pairs(librarys) do
+        if fs.exists(fs.path(path)) then
+            local nPath = fs.absolute(fs.path(path)):string()
+            local matcher = glob.gitignore(pattern, {
+                root = path,
+                ignoreCase = platform.os == 'windows',
+            }, globInteferFace)
+            matchers[#matchers + 1] = {
+                uri = furi.encode(nPath),
+                matcher = matcher,
+            }
+        end
+    end
 
-  return matchers
+    scp:set('libraryMatcher', matchers)
+    --log.debug('library matcher:', inspect(matchers))
+
+    return matchers
 end
 
 --- 文件是否被忽略
 --- @param uri string
 function M.isIgnored(uri)
-  local scp = scope.getScope(uri)
-  local path = M.getRelativePath(uri)
-  local ignore = M.getNativeMatcher(scp)
-  if not ignore then
-    return false
-  end
-  return ignore(path)
+    local scp = scope.getScope(uri)
+    local path = M.getRelativePath(uri)
+    local ignore = M.getNativeMatcher(scp)
+    if not ignore then
+        return false
+    end
+    return ignore(path)
 end
 
 --- @async
 function M.isValidLuaUri(uri)
-  if not files.isLua(uri) then
-    return false
-  end
-  if M.isIgnored(uri) and not files.isLibrary(uri) then
-    return false
-  end
-  return true
+    if not files.isLua(uri) then
+        return false
+    end
+    if M.isIgnored(uri) and not files.isLibrary(uri) then
+        return false
+    end
+    return true
 end
 
 --- @async
 function M.awaitLoadFile(uri)
-  M.awaitReady(uri)
-  local scp = scope.getScope(uri)
-  local ld <close> = loading.create(scp)
-  local native = M.getNativeMatcher(scp)
-  log.info('Scan files at:', uri)
-  ---@async
-  native:scan(furi.decode(uri), function(path)
-    local uri0 = files.getRealUri(furi.encode(path))
-    scp:get('cachedUris')[uri0] = true
-    ld:loadFile(uri0)
-  end)
-  ld:loadAll(uri)
+    M.awaitReady(uri)
+    local scp = scope.getScope(uri)
+    local ld <close> = loading.create(scp)
+    local native = M.getNativeMatcher(scp)
+    log.info('Scan files at:', uri)
+    ---@async
+    native:scan(furi.decode(uri), function(path)
+        local uri0 = files.getRealUri(furi.encode(path))
+        scp:get('cachedUris')[uri0] = true
+        ld:loadFile(uri0)
+    end)
+    ld:loadAll(uri)
 end
 
 function M.removeFile(uri)
-  for _, scp in ipairs(M.folders) do
-    if scp:isChildUri(uri) or scp:isLinkedUri(uri) then
-      local cachedUris = scp:get('cachedUris')
-      if cachedUris and cachedUris[uri] then
-        cachedUris[uri] = nil
-        files.delRef(uri)
-      end
+    for _, scp in ipairs(M.folders) do
+        if scp:isChildUri(uri) or scp:isLinkedUri(uri) then
+            local cachedUris = scp:get('cachedUris')
+            if cachedUris and cachedUris[uri] then
+                cachedUris[uri] = nil
+                files.delRef(uri)
+            end
+        end
     end
-  end
 end
 
 --- 预读工作区内所有文件
 --- @async
 --- @param scp scope
 function M.awaitPreload(scp)
-  await.close('preload:' .. scp:getName())
-  await.setID('preload:' .. scp:getName())
-  await.sleep(0.1)
+    await.close('preload:' .. scp:getName())
+    await.setID('preload:' .. scp:getName())
+    await.sleep(0.1)
 
-  scp:flushGC()
+    scp:flushGC()
 
-  if scp:isRemoved() then
-    return
-  end
+    if scp:isRemoved() then
+        return
+    end
 
-  local ld <close> = loading.create(scp)
-  scp:set('loading', ld)
+    local ld <close> = loading.create(scp)
+    scp:set('loading', ld)
 
-  log.info('Preload start:', scp:getName())
+    log.info('Preload start:', scp:getName())
 
-  local native = M.getNativeMatcher(scp)
-  local librarys = M.getLibraryMatchers(scp)
+    local native = M.getNativeMatcher(scp)
+    local librarys = M.getLibraryMatchers(scp)
 
-  if scp.uri and not scp:get('bad root') then
-    log.info('Scan files at:', scp:getName())
-    scp:gc(fw.watch(files.normalize(furi.decode(scp.uri)), true, function(path)
-      local rpath = M.getRelativePath(path)
-      if native(rpath) then
-        return false
-      end
-      return true
-    end))
-    local count = 0
-    ---@async
-    native:scan(furi.decode(scp.uri), function(path)
-      local uri = files.getRealUri(furi.encode(path))
-      scp:get('cachedUris')[uri] = true
-      ld:loadFile(uri)
-    end, function(_) ---@async
-      count = count + 1
-      if count == 100000 then
-        client.showMessage(
-          'Warning',
-          lang.script('WORKSPACE_SCAN_TOO_MUCH', count, furi.decode(scp.uri))
-        )
-      end
-    end)
-  end
+    if scp.uri and not scp:get('bad root') then
+        log.info('Scan files at:', scp:getName())
+        scp:gc(fw.watch(files.normalize(furi.decode(scp.uri)), true, function(path)
+            local rpath = M.getRelativePath(path)
+            if native(rpath) then
+                return false
+            end
+            return true
+        end))
+        local count = 0
+        ---@async
+        native:scan(furi.decode(scp.uri), function(path)
+            local uri = files.getRealUri(furi.encode(path))
+            scp:get('cachedUris')[uri] = true
+            ld:loadFile(uri)
+        end, function(_) ---@async
+            count = count + 1
+            if count == 100000 then
+                client.showMessage(
+                    'Warning',
+                    lang.script('WORKSPACE_SCAN_TOO_MUCH', count, furi.decode(scp.uri))
+                )
+            end
+        end)
+    end
 
-  for _, libMatcher in ipairs(librarys) do
-    log.info('Scan library at:', libMatcher.uri)
-    local count = 0
-    scp:gc(fw.watch(furi.decode(libMatcher.uri), true, function(path)
-      local rpath = M.getRelativePath(path)
-      if libMatcher.matcher(rpath) then
-        return false
-      end
-      return true
-    end))
-    scp:addLink(libMatcher.uri)
-    ---@async
-    libMatcher.matcher:scan(furi.decode(libMatcher.uri), function(path)
-      local uri = files.getRealUri(furi.encode(path))
-      scp:get('cachedUris')[uri] = true
-      ld:loadFile(uri, libMatcher.uri)
-    end, function() ---@async
-      count = count + 1
-      if count == 100000 then
-        client.showMessage(
-          'Warning',
-          lang.script('WORKSPACE_SCAN_TOO_MUCH', count, furi.decode(libMatcher.uri))
-        )
-      end
-    end)
-  end
+    for _, libMatcher in ipairs(librarys) do
+        log.info('Scan library at:', libMatcher.uri)
+        local count = 0
+        scp:gc(fw.watch(furi.decode(libMatcher.uri), true, function(path)
+            local rpath = M.getRelativePath(path)
+            if libMatcher.matcher(rpath) then
+                return false
+            end
+            return true
+        end))
+        scp:addLink(libMatcher.uri)
+        ---@async
+        libMatcher.matcher:scan(furi.decode(libMatcher.uri), function(path)
+            local uri = files.getRealUri(furi.encode(path))
+            scp:get('cachedUris')[uri] = true
+            ld:loadFile(uri, libMatcher.uri)
+        end, function() ---@async
+            count = count + 1
+            if count == 100000 then
+                client.showMessage(
+                    'Warning',
+                    lang.script('WORKSPACE_SCAN_TOO_MUCH', count, furi.decode(libMatcher.uri))
+                )
+            end
+        end)
+    end
 
-  -- must wait for other scopes to add library
-  await.sleep(0.1)
+    -- must wait for other scopes to add library
+    await.sleep(0.1)
 
-  log.info(('Found %d files at:'):format(ld.max), scp:getName())
-  ld:loadAll(scp:getName())
-  log.info('Preload finish at:', scp:getName())
+    log.info(('Found %d files at:'):format(ld.max), scp:getName())
+    ld:loadAll(scp:getName())
+    log.info('Preload finish at:', scp:getName())
 end
 
 --- 查找符合指定file path的所有uri
 --- @param path string
 function M.findUrisByFilePath(path)
-  if type(path) ~= 'string' then
-    return {}
-  end
-  local myUri = furi.encode(path)
-  local vm = require('vm')
-  local resultCache = vm.getCache('findUrisByFilePath.result')
-  if resultCache[path] then
-    return resultCache[path]
-  end
-  local results = {}
-  for uri in files.eachFile() do
-    if uri == myUri then
-      results[#results + 1] = uri
+    if type(path) ~= 'string' then
+        return {}
     end
-  end
-  resultCache[path] = results
-  return results
+    local myUri = furi.encode(path)
+    local vm = require('vm')
+    local resultCache = vm.getCache('findUrisByFilePath.result')
+    if resultCache[path] then
+        return resultCache[path]
+    end
+    local results = {}
+    for uri in files.eachFile() do
+        if uri == myUri then
+            results[#results + 1] = uri
+        end
+    end
+    resultCache[path] = results
+    return results
 end
 
 --- @param folderUri? string
 --- @param path string
 --- @return string?
 function M.getAbsolutePath(folderUri, path)
-  path = files.normalize(path)
-  if fs.path(path):is_relative() then
-    if not folderUri then
-      return nil
+    path = files.normalize(path)
+    if fs.path(path):is_relative() then
+        if not folderUri then
+            return nil
+        end
+        local folderPath = furi.decode(folderUri)
+        path = files.normalize(folderPath .. '/' .. path)
     end
-    local folderPath = furi.decode(folderUri)
-    path = files.normalize(folderPath .. '/' .. path)
-  end
-  return path
+    return path
 end
 
 --- @param uriOrPath string|string
 --- @return string
 --- @return boolean suc
 function M.getRelativePath(uriOrPath)
-  local path, uri
-  if uriOrPath:sub(1, 5) == 'file:' then
-    path = furi.decode(uriOrPath)
-    uri = uriOrPath
-  else
-    path = uriOrPath
-    uri = furi.encode(uriOrPath)
-  end
-  local scp = scope.getScope(uri)
-  if not scp.uri then
-    local relative = files.normalize(path)
-    return relative:gsub('^[/\\]+', ''), false
-  end
-  local _, pos = files.normalize(path):find(furi.decode(scp.uri), 1, true)
-  if pos then
-    return files.normalize(path:sub(pos + 1)):gsub('^[/\\]+', ''), true
-  else
-    return files.normalize(path):gsub('^[/\\]+', ''), false
-  end
+    local path, uri
+    if uriOrPath:sub(1, 5) == 'file:' then
+        path = furi.decode(uriOrPath)
+        uri = uriOrPath
+    else
+        path = uriOrPath
+        uri = furi.encode(uriOrPath)
+    end
+    local scp = scope.getScope(uri)
+    if not scp.uri then
+        local relative = files.normalize(path)
+        return relative:gsub('^[/\\]+', ''), false
+    end
+    local _, pos = files.normalize(path):find(furi.decode(scp.uri), 1, true)
+    if pos then
+        return files.normalize(path:sub(pos + 1)):gsub('^[/\\]+', ''), true
+    else
+        return files.normalize(path):gsub('^[/\\]+', ''), false
+    end
 end
 
 --- @param scp scope
 function M.reload(scp)
-  ---@async
-  await.call(function()
-    M.awaitReload(scp)
-  end)
+    ---@async
+    await.call(function()
+        M.awaitReload(scp)
+    end)
 end
 
 function M.init()
-  if M.rootUri then
-    for _, folder in ipairs(scope.folders) do
-      M.reload(folder)
+    if M.rootUri then
+        for _, folder in ipairs(scope.folders) do
+            M.reload(folder)
+        end
     end
-  end
-  M.reload(scope.fallback)
+    M.reload(scope.fallback)
 end
 
 --- @param scp scope
 function M.flushFiles(scp)
-  local cachedUris = scp:get('cachedUris')
-  scp:set('cachedUris', {})
-  if not cachedUris then
-    return
-  end
-  for uri in pairs(cachedUris) do
-    files.delRef(uri)
-  end
+    local cachedUris = scp:get('cachedUris')
+    scp:set('cachedUris', {})
+    if not cachedUris then
+        return
+    end
+    for uri in pairs(cachedUris) do
+        files.delRef(uri)
+    end
 end
 
 --- @param scp scope
 function M.resetFiles(scp)
-  local cachedUris = scp:get('cachedUris')
-  if cachedUris then
-    for uri in pairs(cachedUris) do
-      files.resetText(uri)
+    local cachedUris = scp:get('cachedUris')
+    if cachedUris then
+        for uri in pairs(cachedUris) do
+            files.resetText(uri)
+        end
     end
-  end
-  for uri in pairs(files.openMap) do
-    if scope.getScope(uri) == scp then
-      files.resetText(uri)
+    for uri in pairs(files.openMap) do
+        if scope.getScope(uri) == scp then
+            files.resetText(uri)
+        end
     end
-  end
 end
 
 --- @async
 --- @param scp scope
 function M.awaitReload(scp)
-  await.unique('workspace reload:' .. scp:getName())
-  await.sleep(0.1)
-  scp:set('ready', false)
-  scp:set('nativeMatcher', nil)
-  scp:set('libraryMatcher', nil)
-  scp:removeAllLinks()
-  M.flushFiles(scp)
-  M.onWatch('startReload', scp.uri)
-  M.awaitPreload(scp)
-  scp:set('ready', true)
-  local waiting = scp:get('waitingReady')
-  if waiting then
-    scp:set('waitingReady', nil)
-    for _, waker in ipairs(waiting) do
-      waker()
+    await.unique('workspace reload:' .. scp:getName())
+    await.sleep(0.1)
+    scp:set('ready', false)
+    scp:set('nativeMatcher', nil)
+    scp:set('libraryMatcher', nil)
+    scp:removeAllLinks()
+    M.flushFiles(scp)
+    M.onWatch('startReload', scp.uri)
+    M.awaitPreload(scp)
+    scp:set('ready', true)
+    local waiting = scp:get('waitingReady')
+    if waiting then
+        scp:set('waitingReady', nil)
+        for _, waker in ipairs(waiting) do
+            waker()
+        end
     end
-  end
 
-  M.onWatch('reload', scp.uri)
+    M.onWatch('reload', scp.uri)
 end
 
 --- @return scope
 function M.getFirstScope()
-  return M.folders[1] or scope.fallback
+    return M.folders[1] or scope.fallback
 end
 
 ---等待工作目录加载完成
 --- @async
 function M.awaitReady(uri)
-  if M.isReady(uri) then
-    return
-  end
-  local scp = scope.getScope(uri)
-  local waitingReady = scp:get('waitingReady') or scp:set('waitingReady', {})
-  await.wait(function(waker)
-    waitingReady[#waitingReady + 1] = waker
-  end)
+    if M.isReady(uri) then
+        return
+    end
+    local scp = scope.getScope(uri)
+    local waitingReady = scp:get('waitingReady') or scp:set('waitingReady', {})
+    await.wait(function(waker)
+        waitingReady[#waitingReady + 1] = waker
+    end)
 end
 
 --- @param uri string
 --- @return boolean
 function M.isReady(uri)
-  local scp = scope.getScope(uri)
-  return scp:get('ready') == true
+    local scp = scope.getScope(uri)
+    return scp:get('ready') == true
 end
 
 --- @return boolean
 function M.isAllReady()
-  local scp = scope.fallback
-  if not scp:get('ready') then
-    return false
-  end
-  for _, folder in ipairs(scope.folders) do
-    if not folder:get('ready') then
-      return false
+    local scp = scope.fallback
+    if not scp:get('ready') then
+        return false
     end
-  end
-  return true
+    for _, folder in ipairs(scope.folders) do
+        if not folder:get('ready') then
+            return false
+        end
+    end
+    return true
 end
 
 function M.getLoadingProcess(uri)
-  local scp = scope.getScope(uri)
-  ---@type workspace.loading
-  local ld = scp:get('loading')
-  if ld then
-    return ld.read, ld.max
-  else
-    return 0, 0
-  end
+    local scp = scope.getScope(uri)
+    ---@type workspace.loading
+    local ld = scp:get('loading')
+    if ld then
+        return ld.read, ld.max
+    else
+        return 0, 0
+    end
 end
 
 config.watch(function(uri, key, value, oldValue)
-  if
-    key:find('^Lua.runtime')
-    or key:find('^Lua.workspace')
-    or key:find('^Lua.type')
-    or key:find('^files')
-  then
-    if value ~= oldValue then
-      local scp = scope.getScope(uri)
-      M.reload(scp)
-      M.resetFiles(scp)
+    if
+        key:find('^Lua.runtime')
+        or key:find('^Lua.workspace')
+        or key:find('^Lua.type')
+        or key:find('^files')
+    then
+        if value ~= oldValue then
+            local scp = scope.getScope(uri)
+            M.reload(scp)
+            M.resetFiles(scp)
+        end
     end
-  end
 end)
 
 fw.event(function(ev, path) ---@async
-  local uri = furi.encode(path)
+    local uri = furi.encode(path)
 
-  if ev == 'create' then
-    log.debug('FileChangeType.Created', uri)
-    M.awaitLoadFile(uri)
-  elseif ev == 'delete' then
-    log.debug('FileChangeType.Deleted', uri)
-    files.remove(uri)
-    M.removeFile(uri)
-    local childs = files.getChildFiles(uri)
-    for _, curi in ipairs(childs) do
-      log.debug('FileChangeType.Deleted.Child', curi)
-      files.remove(curi)
-      M.removeFile(uri)
+    if ev == 'create' then
+        log.debug('FileChangeType.Created', uri)
+        M.awaitLoadFile(uri)
+    elseif ev == 'delete' then
+        log.debug('FileChangeType.Deleted', uri)
+        files.remove(uri)
+        M.removeFile(uri)
+        local childs = files.getChildFiles(uri)
+        for _, curi in ipairs(childs) do
+            log.debug('FileChangeType.Deleted.Child', curi)
+            files.remove(curi)
+            M.removeFile(uri)
+        end
+    elseif ev == 'change' then
+        if M.isValidLuaUri(uri) then
+            -- 如果文件处于关闭状态，则立即更新；否则等待didChange协议来更新
+            if not files.isOpen(uri) then
+                files.setText(uri, pub.awaitTask('loadFile', furi.decode(uri)), false)
+            end
+        end
     end
-  elseif ev == 'change' then
-    if M.isValidLuaUri(uri) then
-      -- 如果文件处于关闭状态，则立即更新；否则等待didChange协议来更新
-      if not files.isOpen(uri) then
-        files.setText(uri, pub.awaitTask('loadFile', furi.decode(uri)), false)
-      end
-    end
-  end
 
-  local filename = fs.path(path):filename():string()
-  -- 排除类文件发生更改需要重新扫描
-  if filename == '.gitignore' or filename == '.gitmodules' then
-    local scp = scope.getScope(uri)
-    if scp.type ~= 'fallback' then
-      M.reload(scp)
+    local filename = fs.path(path):filename():string()
+    -- 排除类文件发生更改需要重新扫描
+    if filename == '.gitignore' or filename == '.gitmodules' then
+        local scp = scope.getScope(uri)
+        if scp.type ~= 'fallback' then
+            M.reload(scp)
+        end
     end
-  end
 end)
 
 return M

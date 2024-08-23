@@ -6,41 +6,41 @@ local guide = require('parser.guide')
 local config = require('config')
 
 local function replace(text, positions)
-  local state = files.getState(TESTURI)
-  local buf = {}
-  table.sort(positions, function(a, b)
-    return a.start < b.start
-  end)
-  local lastPos = 1
-  for _, info in ipairs(positions) do
-    local start = guide.positionToOffset(state, info.start)
-    local finish = guide.positionToOffset(state, info.finish)
-    buf[#buf + 1] = text:sub(lastPos, start)
-    buf[#buf + 1] = info.text
-    lastPos = finish + 1
-  end
-  buf[#buf + 1] = text:sub(lastPos)
-  return table.concat(buf)
+    local state = files.getState(TESTURI)
+    local buf = {}
+    table.sort(positions, function(a, b)
+        return a.start < b.start
+    end)
+    local lastPos = 1
+    for _, info in ipairs(positions) do
+        local start = guide.positionToOffset(state, info.start)
+        local finish = guide.positionToOffset(state, info.finish)
+        buf[#buf + 1] = text:sub(lastPos, start)
+        buf[#buf + 1] = info.text
+        lastPos = finish + 1
+    end
+    buf[#buf + 1] = text:sub(lastPos)
+    return table.concat(buf)
 end
 
 function TEST(oldName, newName)
-  return function(oldScript)
-    return function(expectScript)
-      files.setText(TESTURI, oldScript)
-      local state = files.getState(TESTURI)
-      local offset = oldScript:find('[^%w_]' .. oldName .. '[^%w_]')
-      assert(offset)
-      local position = guide.offsetToPosition(state, offset)
+    return function(oldScript)
+        return function(expectScript)
+            files.setText(TESTURI, oldScript)
+            local state = files.getState(TESTURI)
+            local offset = oldScript:find('[^%w_]' .. oldName .. '[^%w_]')
+            assert(offset)
+            local position = guide.offsetToPosition(state, offset)
 
-      local positions = core.rename(TESTURI, position, newName)
-      local script = oldScript
-      if positions then
-        script = replace(script, positions)
-      end
-      assert(script == expectScript)
-      files.remove(TESTURI)
+            local positions = core.rename(TESTURI, position, newName)
+            local script = oldScript
+            if positions then
+                script = replace(script, positions)
+            end
+            assert(script == expectScript)
+            files.remove(TESTURI)
+        end
     end
-  end
 end
 
 TEST('a', 'b')([[

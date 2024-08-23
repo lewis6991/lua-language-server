@@ -10,38 +10,38 @@ local number = R('09') ^ 1
 local word = R('AZ', 'az', '__', '\x80\xff') * R('AZ', 'az', '09', '__', '\x80\xff') ^ 0
 
 local symbol = P('==')
-  + P('~=')
-  + P('--')
-  -- non-standard:
-  + P('<<=')
-  + P('>>=')
-  + P('//=')
-  -- end non-standard
-  + P('<<')
-  + P('>>')
-  + P('<=')
-  + P('>=')
-  + P('//')
-  + P('...')
-  + P('..')
-  + P('::')
-  -- non-standard:
-  + P('!=')
-  + P('&&')
-  + P('||')
-  + P('/*')
-  + P('*/')
-  + P('+=')
-  + P('-=')
-  + P('*=')
-  + P('%=')
-  + P('&=')
-  + P('|=')
-  + P('^=')
-  + P('/=')
-  -- end non-standard
-  -- singles
-  + S('+-*/!#%^&()={}[]|\\\'":;<>,.?~`')
+    + P('~=')
+    + P('--')
+    -- non-standard:
+    + P('<<=')
+    + P('>>=')
+    + P('//=')
+    -- end non-standard
+    + P('<<')
+    + P('>>')
+    + P('<=')
+    + P('>=')
+    + P('//')
+    + P('...')
+    + P('..')
+    + P('::')
+    -- non-standard:
+    + P('!=')
+    + P('&&')
+    + P('||')
+    + P('/*')
+    + P('*/')
+    + P('+=')
+    + P('-=')
+    + P('*=')
+    + P('%=')
+    + P('&=')
+    + P('|=')
+    + P('^=')
+    + P('/=')
+    -- end non-standard
+    -- singles
+    + S('+-*/!#%^&()={}[]|\\\'":;<>,.?~`')
 
 local unknown = (1 - number - word - symbol - sp - nl) ^ 1
 
@@ -53,5 +53,5 @@ local parser = lpeg.Ct((sp ^ 1 + token) ^ 0)
 --- @param lua string
 --- @return integer[]
 return function(lua)
-  return parser:match(lua)
+    return parser:match(lua)
 end

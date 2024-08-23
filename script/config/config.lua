@@ -12,7 +12,7 @@ M.watchList = {}
 M.NULL = {}
 
 M.nullSymbols = {
-  [M.NULL] = true,
+    [M.NULL] = true,
 }
 
 --- @param scp      scope
@@ -20,254 +20,254 @@ M.nullSymbols = {
 --- @param nowValue any
 --- @param rawValue any
 local function update(scp, key, nowValue, rawValue)
-  local now = M.getNowTable(scp)
-  local raw = M.getRawTable(scp)
+    local now = M.getNowTable(scp)
+    local raw = M.getRawTable(scp)
 
-  now[key] = nowValue
-  raw[key] = rawValue
+    now[key] = nowValue
+    raw[key] = rawValue
 end
 
 --- @param uri? string
 --- @param key? string
 --- @return scope
 local function getScope(uri, key)
-  local raw = M.getRawTable(scope.override)
-  if raw then
-    if not key or raw[key] ~= nil then
-      return scope.override
+    local raw = M.getRawTable(scope.override)
+    if raw then
+        if not key or raw[key] ~= nil then
+            return scope.override
+        end
     end
-  end
-  if uri then
-    ---@type scope?
-    local scp = scope.getFolder(uri) or scope.getLinkedScope(uri)
-    if scp then
-      if not key or M.getRawTable(scp)[key] ~= nil then
-        return scp
-      end
+    if uri then
+        ---@type scope?
+        local scp = scope.getFolder(uri) or scope.getLinkedScope(uri)
+        if scp then
+            if not key or M.getRawTable(scp)[key] ~= nil then
+                return scp
+            end
+        end
     end
-  end
-  return scope.fallback
+    return scope.fallback
 end
 
 --- @param scp   scope
 --- @param key   string
 --- @param value any
 function M.setByScope(scp, key, value)
-  local unit = template[key]
-  if not unit then
-    return false
-  end
-  local raw = M.getRawTable(scp)
-  if util.equal(raw[key], value) then
-    return false
-  end
-  if unit:checker(value) then
-    update(scp, key, unit:loader(value), value)
-  else
-    update(scp, key, unit.default, unit.default)
-  end
-  return true
+    local unit = template[key]
+    if not unit then
+        return false
+    end
+    local raw = M.getRawTable(scp)
+    if util.equal(raw[key], value) then
+        return false
+    end
+    if unit:checker(value) then
+        update(scp, key, unit:loader(value), value)
+    else
+        update(scp, key, unit.default, unit.default)
+    end
+    return true
 end
 
 --- @param uri?   string
 --- @param key   string
 --- @param value any
 function M.set(uri, key, value)
-  local unit = template[key]
-  assert(unit, 'unknown key: ' .. key)
-  local scp = getScope(uri, key)
-  local oldValue = M.get(uri, key)
-  M.setByScope(scp, key, value)
-  local newValue = M.get(uri, key)
-  if not util.equal(oldValue, newValue) then
-    M.event(uri, key, newValue, oldValue)
-    return true
-  end
-  return false
+    local unit = template[key]
+    assert(unit, 'unknown key: ' .. key)
+    local scp = getScope(uri, key)
+    local oldValue = M.get(uri, key)
+    M.setByScope(scp, key, value)
+    local newValue = M.get(uri, key)
+    if not util.equal(oldValue, newValue) then
+        M.event(uri, key, newValue, oldValue)
+        return true
+    end
+    return false
 end
 
 function M.add(uri, key, value)
-  local unit = template[key]
-  assert(unit, 'unknown key: ' .. key)
-  local list = M.getRaw(uri, key)
-  assert(type(list) == 'table', 'not a list: ' .. key)
-  local copyed = {}
-  for i, v in ipairs(list) do
-    if util.equal(v, value) then
-      return false
+    local unit = template[key]
+    assert(unit, 'unknown key: ' .. key)
+    local list = M.getRaw(uri, key)
+    assert(type(list) == 'table', 'not a list: ' .. key)
+    local copyed = {}
+    for i, v in ipairs(list) do
+        if util.equal(v, value) then
+            return false
+        end
+        copyed[i] = v
     end
-    copyed[i] = v
-  end
-  copyed[#copyed + 1] = value
-  local oldValue = M.get(uri, key)
-  M.set(uri, key, copyed)
-  local newValue = M.get(uri, key)
-  if not util.equal(oldValue, newValue) then
-    M.event(uri, key, newValue, oldValue)
-    return true
-  end
-  return false
+    copyed[#copyed + 1] = value
+    local oldValue = M.get(uri, key)
+    M.set(uri, key, copyed)
+    local newValue = M.get(uri, key)
+    if not util.equal(oldValue, newValue) then
+        M.event(uri, key, newValue, oldValue)
+        return true
+    end
+    return false
 end
 
 function M.remove(uri, key, value)
-  local unit = template[key]
-  assert(unit, 'unknown key: ' .. key)
-  local list = M.getRaw(uri, key)
-  assert(type(list) == 'table', 'not a list: ' .. key)
-  local copyed = {}
-  for i, v in ipairs(list) do
-    if not util.equal(v, value) then
-      copyed[i] = v
+    local unit = template[key]
+    assert(unit, 'unknown key: ' .. key)
+    local list = M.getRaw(uri, key)
+    assert(type(list) == 'table', 'not a list: ' .. key)
+    local copyed = {}
+    for i, v in ipairs(list) do
+        if not util.equal(v, value) then
+            copyed[i] = v
+        end
     end
-  end
-  local oldValue = M.get(uri, key)
-  M.set(uri, key, copyed)
-  local newValue = M.get(uri, key)
-  if not util.equal(oldValue, newValue) then
-    M.event(uri, key, newValue, oldValue)
-    return true
-  end
-  return false
+    local oldValue = M.get(uri, key)
+    M.set(uri, key, copyed)
+    local newValue = M.get(uri, key)
+    if not util.equal(oldValue, newValue) then
+        M.event(uri, key, newValue, oldValue)
+        return true
+    end
+    return false
 end
 
 function M.prop(uri, key, prop, value)
-  local unit = template[key]
-  assert(unit, 'unknown key: ' .. key)
-  local map = M.getRaw(uri, key)
-  assert(type(map) == 'table', 'not a map: ' .. key)
-  if util.equal(map[prop], value) then
+    local unit = template[key]
+    assert(unit, 'unknown key: ' .. key)
+    local map = M.getRaw(uri, key)
+    assert(type(map) == 'table', 'not a map: ' .. key)
+    if util.equal(map[prop], value) then
+        return false
+    end
+    local copyed = {}
+    for k, v in pairs(map) do
+        copyed[k] = v
+    end
+    copyed[prop] = value
+    local oldValue = M.get(uri, key)
+    M.set(uri, key, copyed)
+    local newValue = M.get(uri, key)
+    if not util.equal(oldValue, newValue) then
+        M.event(uri, key, newValue, oldValue)
+        return true
+    end
     return false
-  end
-  local copyed = {}
-  for k, v in pairs(map) do
-    copyed[k] = v
-  end
-  copyed[prop] = value
-  local oldValue = M.get(uri, key)
-  M.set(uri, key, copyed)
-  local newValue = M.get(uri, key)
-  if not util.equal(oldValue, newValue) then
-    M.event(uri, key, newValue, oldValue)
-    return true
-  end
-  return false
 end
 
 --- @param uri? string
 --- @param key string
 --- @return any
 function M.get(uri, key)
-  local scp = getScope(uri, key)
-  local value = M.getNowTable(scp)[key]
-  if value == nil then
-    value = template[key].default
-  end
-  if value == M.NULL then
-    value = nil
-  end
-  return value
+    local scp = getScope(uri, key)
+    local value = M.getNowTable(scp)[key]
+    if value == nil then
+        value = template[key].default
+    end
+    if value == M.NULL then
+        value = nil
+    end
+    return value
 end
 
 --- @param uri string
 --- @param key string
 --- @return any
 function M.getRaw(uri, key)
-  local scp = getScope(uri, key)
-  local value = M.getRawTable(scp)[key]
-  if value == nil then
-    value = template[key].default
-  end
-  if value == M.NULL then
-    value = nil
-  end
-  return value
+    local scp = getScope(uri, key)
+    local value = M.getRawTable(scp)[key]
+    if value == nil then
+        value = template[key].default
+    end
+    if value == M.NULL then
+        value = nil
+    end
+    return value
 end
 
 --- @param scp  scope
 function M.getNowTable(scp)
-  return scp:get('config.now') or scp:set('config.now', {})
+    return scp:get('config.now') or scp:set('config.now', {})
 end
 
 --- @param scp  scope
 function M.getRawTable(scp)
-  return scp:get('config.raw') or scp:set('config.raw', {})
+    return scp:get('config.raw') or scp:set('config.raw', {})
 end
 
 --- @param scp  scope
 --- @param ...  table
 function M.update(scp, ...)
-  local oldConfig = M.getNowTable(scp)
-  local newConfig = {}
-  scp:set('config.now', newConfig)
-  scp:set('config.raw', {})
+    local oldConfig = M.getNowTable(scp)
+    local newConfig = {}
+    scp:set('config.now', newConfig)
+    scp:set('config.raw', {})
 
-  local function expand(t, left)
-    for key, value in pairs(t) do
-      local fullKey = key
-      if left then
-        fullKey = left .. '.' .. key
-      end
-      if M.nullSymbols[value] then
-        value = M.NULL
-      end
-      if template[fullKey] then
-        M.setByScope(scp, fullKey, value)
-      elseif template['Lua.' .. fullKey] then
-        M.setByScope(scp, 'Lua.' .. fullKey, value)
-      elseif type(value) == 'table' then
-        expand(value, fullKey)
-      end
+    local function expand(t, left)
+        for key, value in pairs(t) do
+            local fullKey = key
+            if left then
+                fullKey = left .. '.' .. key
+            end
+            if M.nullSymbols[value] then
+                value = M.NULL
+            end
+            if template[fullKey] then
+                M.setByScope(scp, fullKey, value)
+            elseif template['Lua.' .. fullKey] then
+                M.setByScope(scp, 'Lua.' .. fullKey, value)
+            elseif type(value) == 'table' then
+                expand(value, fullKey)
+            end
+        end
     end
-  end
 
-  local news = table.pack(...)
-  for i = 1, news.n do
-    if type(news[i]) == 'table' then
-      expand(news[i])
+    local news = table.pack(...)
+    for i = 1, news.n do
+        if type(news[i]) == 'table' then
+            expand(news[i])
+        end
     end
-  end
 
-  -- compare then fire event
-  if oldConfig then
-    for key, oldValue in pairs(oldConfig) do
-      local newValue = newConfig[key]
-      if not util.equal(oldValue, newValue) then
-        M.event(scp.uri, key, newValue, oldValue)
-      end
+    -- compare then fire event
+    if oldConfig then
+        for key, oldValue in pairs(oldConfig) do
+            local newValue = newConfig[key]
+            if not util.equal(oldValue, newValue) then
+                M.event(scp.uri, key, newValue, oldValue)
+            end
+        end
     end
-  end
 
-  M.event(scp.uri, '')
+    M.event(scp.uri, '')
 end
 
 --- @param callback fun(uri: string, key: string, value: any, oldValue: any)
 function M.watch(callback)
-  M.watchList[#M.watchList + 1] = callback
+    M.watchList[#M.watchList + 1] = callback
 end
 
 function M.event(uri, key, value, oldValue)
-  if not M.changes then
-    M.changes = {}
-    timer.wait(0, function()
-      local delay = M.changes
-      M.changes = nil
-      for _, info in ipairs(delay) do
-        for _, callback in ipairs(M.watchList) do
-          callback(info.uri, info.key, info.value, info.oldValue)
-        end
-      end
-    end)
-  end
-  M.changes[#M.changes + 1] = {
-    uri = uri,
-    key = key,
-    value = value,
-    oldValue = oldValue,
-  }
+    if not M.changes then
+        M.changes = {}
+        timer.wait(0, function()
+            local delay = M.changes
+            M.changes = nil
+            for _, info in ipairs(delay) do
+                for _, callback in ipairs(M.watchList) do
+                    callback(info.uri, info.key, info.value, info.oldValue)
+                end
+            end
+        end)
+    end
+    M.changes[#M.changes + 1] = {
+        uri = uri,
+        key = key,
+        value = value,
+        oldValue = oldValue,
+    }
 end
 
 function M.addNullSymbol(null)
-  M.nullSymbols[null] = true
+    M.nullSymbols[null] = true
 end
 
 return M

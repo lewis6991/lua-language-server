@@ -3,13 +3,13 @@ local platform = require('bee.platform')
 local escPatt = '[^%w%-%.%_%~%/]'
 
 local function esc(c)
-  return ('%%%02X'):format(c:byte())
+    return ('%%%02X'):format(c:byte())
 end
 
 local function normalize(str)
-  return str:gsub('%%(%x%x)', function(n)
-    return string.char(tonumber(n, 16))
-  end)
+    return str:gsub('%%(%x%x)', function(n)
+        return string.char(tonumber(n, 16))
+    end)
 end
 
 local M = {}
@@ -22,37 +22,37 @@ local M = {}
 --- @param path string
 --- @return string uri
 function M.encode(path)
-  local authority = ''
-  if platform.os == 'windows' then
-    path = path:gsub('\\', '/')
-  end
-
-  if path:sub(1, 2) == '//' then
-    local idx = path:find('/', 3)
-    if idx then
-      authority = path:sub(3, idx)
-      path = path:sub(idx + 1)
-      if path == '' then
-        path = '/'
-      end
-    else
-      authority = path:sub(3)
-      path = '/'
+    local authority = ''
+    if platform.os == 'windows' then
+        path = path:gsub('\\', '/')
     end
-  end
 
-  if path:sub(1, 1) ~= '/' then
-    path = '/' .. path
-  end
+    if path:sub(1, 2) == '//' then
+        local idx = path:find('/', 3)
+        if idx then
+            authority = path:sub(3, idx)
+            path = path:sub(idx + 1)
+            if path == '' then
+                path = '/'
+            end
+        else
+            authority = path:sub(3)
+            path = '/'
+        end
+    end
 
-  --lower-case windows drive letters in /C:/fff or C:/fff
-  local start, finish, drive = path:find('/(%u):')
-  if drive and finish then
-    path = path:sub(1, start) .. drive:lower() .. path:sub(finish, -1)
-  end
+    if path:sub(1, 1) ~= '/' then
+        path = '/' .. path
+    end
 
-  local uri = 'file://' .. authority:gsub(escPatt, esc) .. path:gsub(escPatt, esc)
-  return uri
+    --lower-case windows drive letters in /C:/fff or C:/fff
+    local start, finish, drive = path:find('/(%u):')
+    if drive and finish then
+        path = path:sub(1, start) .. drive:lower() .. path:sub(finish, -1)
+    end
+
+    local uri = 'file://' .. authority:gsub(escPatt, esc) .. path:gsub(escPatt, esc)
+    return uri
 end
 
 -- file:///c%3A/my/files          --> c:\my\files
@@ -63,52 +63,52 @@ end
 --- @param uri string
 --- @return string path
 function M.decode(uri)
-  local scheme, authority, path = uri:match('([^:]*):?/?/?([^/]*)(.*)')
-  if not scheme then
-    return ''
-  end
-  scheme = normalize(scheme)
-  authority = normalize(authority)
-  path = normalize(path)
-  local value
-  if scheme == 'file' and #authority > 0 and #path > 1 then
-    value = '//' .. authority .. path
-  elseif path:match('/%a:') then
-    value = path:sub(2, 2):upper() .. path:sub(3)
-  else
-    value = path
-  end
-  if platform.os == 'windows' then
-    value = value:gsub('/', '\\')
-  end
-  return value
+    local scheme, authority, path = uri:match('([^:]*):?/?/?([^/]*)(.*)')
+    if not scheme then
+        return ''
+    end
+    scheme = normalize(scheme)
+    authority = normalize(authority)
+    path = normalize(path)
+    local value
+    if scheme == 'file' and #authority > 0 and #path > 1 then
+        value = '//' .. authority .. path
+    elseif path:match('/%a:') then
+        value = path:sub(2, 2):upper() .. path:sub(3)
+    else
+        value = path
+    end
+    if platform.os == 'windows' then
+        value = value:gsub('/', '\\')
+    end
+    return value
 end
 
 function M.split(uri)
-  return uri:match('([^:]*):/?/?([^/]*)(.*)')
+    return uri:match('([^:]*):/?/?([^/]*)(.*)')
 end
 
 --- @param uri string
 --- @return boolean
 function M.isValid(uri)
-  local scheme, _, path = M.split(uri)
-  if not scheme or scheme == '' then
-    return false
-  end
-  if path == '' then
-    return false
-  end
-  if scheme ~= 'file' then
-    return false
-  end
-  return true
+    local scheme, _, path = M.split(uri)
+    if not scheme or scheme == '' then
+        return false
+    end
+    if path == '' then
+        return false
+    end
+    if scheme ~= 'file' then
+        return false
+    end
+    return true
 end
 
 function M.normalize(uri)
-  if not M.isValid(uri) then
-    return uri
-  end
-  return M.encode(M.decode(uri))
+    if not M.isValid(uri) then
+        return uri
+    end
+    return M.encode(M.decode(uri))
 end
 
 return M

@@ -31,9 +31,9 @@ end
 
 -- add elements to exemption list
 config.set(nil, 'Lua.diagnostics.globals', {
-  'GLOBAL1',
-  'GLOBAL2',
-  'GLOBAL_CLOSURE',
+    'GLOBAL1',
+    'GLOBAL2',
+    'GLOBAL_CLOSURE',
 })
 
 TEST([[

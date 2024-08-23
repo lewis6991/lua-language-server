@@ -3,40 +3,40 @@ local util = require('utility')
 rawset(_G, 'TEST', true)
 
 local function removeEmpty(lines)
-  local removeLines = {}
-  for i, v in ipairs(lines) do
-    if v ~= '\n' then
-      removeLines[#removeLines + 1] = v:gsub('^%s+', '')
+    local removeLines = {}
+    for i, v in ipairs(lines) do
+        if v ~= '\n' then
+            removeLines[#removeLines + 1] = v:gsub('^%s+', '')
+        end
     end
-  end
-  return removeLines
+    return removeLines
 end
 
 local function formatLines(lines)
-  if not lines or #lines == 0 then
-    return {}
-  end
-  table.remove(lines, 1)
-  return removeEmpty(lines)
+    if not lines or #lines == 0 then
+        return {}
+    end
+    table.remove(lines, 1)
+    return removeEmpty(lines)
 end
 
 ---@param str string
 local function splitLines(str)
-  local lines = {}
-  local i = 1
-  for line in str:gmatch('[^\r\n]+') do
-    lines[i] = line
-    i = i + 1
-  end
-  return lines
+    local lines = {}
+    local i = 1
+    for line in str:gmatch('[^\r\n]+') do
+        lines[i] = line
+        i = i + 1
+    end
+    return lines
 end
 
 function TEST(wanted)
-  wanted = removeEmpty(splitLines(wanted))
-  return function(script)
-    local lines = formatLines(ffi.compileCodes({ script }))
-    assert(util.equal(wanted, lines), util.dump(lines))
-  end
+    wanted = removeEmpty(splitLines(wanted))
+    return function(script)
+        local lines = formatLines(ffi.compileCodes({ script }))
+        assert(util.equal(wanted, lines), util.dump(lines))
+    end
 end
 
 TEST([[

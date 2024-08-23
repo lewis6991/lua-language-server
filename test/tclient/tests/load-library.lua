@@ -10,49 +10,49 @@ local libraryFilePath = LOGPATH .. '/load-library/library-file.lua'
 
 ---@async
 lclient():start(function(client)
-  client:registerFakers()
+    client:registerFakers()
 
-  client:register('workspace/configuration', function()
-    return {
-      {
-        ['workspace.library'] = { libraryPath },
-      },
-    }
-  end)
+    client:register('workspace/configuration', function()
+        return {
+            {
+                ['workspace.library'] = { libraryPath },
+            },
+        }
+    end)
 
-  fs.create_directories(fs.path(libraryPath))
-  if not fs.exists(fs.path(libraryFilePath)) then
-    util.saveFile(libraryFilePath, 'LIBRARY_FILE = true')
-  end
+    fs.create_directories(fs.path(libraryPath))
+    if not fs.exists(fs.path(libraryFilePath)) then
+        util.saveFile(libraryFilePath, 'LIBRARY_FILE = true')
+    end
 
-  client:initialize()
+    client:initialize()
 
-  client:notify('textDocument/didOpen', {
-    textDocument = {
-      uri = furi.encode('abc/1.lua'),
-      languageId = 'lua',
-      version = 0,
-      text = [[
+    client:notify('textDocument/didOpen', {
+        textDocument = {
+            uri = furi.encode('abc/1.lua'),
+            languageId = 'lua',
+            version = 0,
+            text = [[
 require 'library-file'
 print(LIBRARY_FILE)
 ]],
-    },
-  })
+        },
+    })
 
-  ws.awaitReady()
+    ws.awaitReady()
 
-  local locations = client:awaitRequest('textDocument/definition', {
-    textDocument = { uri = furi.encode('abc/1.lua') },
-    position = { line = 0, character = 10 },
-  })
+    local locations = client:awaitRequest('textDocument/definition', {
+        textDocument = { uri = furi.encode('abc/1.lua') },
+        position = { line = 0, character = 10 },
+    })
 
-  assert(util.equal(locations, {
-    {
-      uri = furi.encode(libraryFilePath),
-      range = {
-        start = { line = 0, character = 0 },
-        ['end'] = { line = 0, character = 0 },
-      },
-    },
-  }))
+    assert(util.equal(locations, {
+        {
+            uri = furi.encode(libraryFilePath),
+            range = {
+                start = { line = 0, character = 0 },
+                ['end'] = { line = 0, character = 0 },
+            },
+        },
+    }))
 end)

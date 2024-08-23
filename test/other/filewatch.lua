@@ -14,7 +14,7 @@ fsu.saveFile(path / 'test.txt', 'test')
 
 local events
 fw.event(function(ev, filename)
-  events[#events + 1] = { ev, filename }
+    events[#events + 1] = { ev, filename }
 end)
 
 thread.sleep(1000)
