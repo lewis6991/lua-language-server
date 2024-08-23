@@ -5,10 +5,14 @@ local lookBackward = require('core.look-backward')
 local util = require('utility')
 local client = require('client')
 
---- @param state parser.state
+--- @param uri uri
 --- @param change table
-local function removeSpacesAfterEnter(state, change)
-    if not change.text:match('^\r?\n[\t ]+\r?\n$') then
+local function removeSpacesAfterEnter(uri, change)
+    if not change.text:match '^\r?\n[\t ]+\r?\n$' then
+        return false
+    end
+    local state = files.getState(uri)
+    if not state then
         return false
     end
     local lines = state.originLines or state.lines
@@ -16,7 +20,7 @@ local function removeSpacesAfterEnter(state, change)
     ---@cast text -?
 
     local edits = {}
-    -- 清除前置空格
+    -- Clear leading spaces
     local startPos = guide.positionOf(change.range.start.line, change.range.start.character)
     local startOffset = guide.positionToOffsetByLines(lines, startPos)
     local leftOffset
@@ -36,7 +40,7 @@ local function removeSpacesAfterEnter(state, change)
         }
     end
 
-    -- 清除后置空格
+    -- Clear trailing spaces
     local endOffset = startOffset + #change.text
     local _, rightOffset = text:find('^[\t ]+', endOffset + 1)
     if rightOffset then
@@ -60,62 +64,29 @@ local function getIndent(state, row)
     return indent
 end
 
-local function isInBlock(state, position)
-    local block = guide.eachSourceContain(state.ast, position, function(source)
-        if source.type == 'ifblock' or source.type == 'elseifblock' then
-            if source.keyword[4] and source.keyword[4] <= position then
-                return true
-            end
+--- @param state parser.state
+--- @param pos integer
+--- @return parser.object
+local function getBlock(state, pos)
+    local block
+    guide.eachSourceContain(state.ast, pos, function (src)
+        if not src.bstart then
+            return
         end
-        if source.type == 'else' then
-            if source.keyword[2] and source.keyword[2] <= position then
-                return true
-            end
-        end
-        if source.type == 'while' then
-            if source.keyword[4] and source.keyword[4] <= position then
-                return true
-            end
-        end
-        if source.type == 'repeat' then
-            if source.keyword[2] and source.keyword[2] <= position then
-                return true
-            end
-        end
-        if source.type == 'loop' then
-            if source.keyword[4] and source.keyword[4] <= position then
-                return true
-            end
-        end
-        if source.type == 'in' then
-            if source.keyword[6] and source.keyword[6] <= position then
-                return true
-            end
-        end
-        if source.type == 'do' then
-            if source.keyword[2] and source.keyword[2] <= position then
-                return true
-            end
-        end
-        if source.type == 'function' then
-            if source.args and source.args.finish <= position then
-                return true
-            end
-            if not source.keyword[3] or source.keyword[3] >= position then
-                return true
-            end
-        end
-        if source.type == 'table' then
-            if source.start + 1 == position then
-                return true
-            end
+        if not block or block.bstart < src.bstart then
+            block = src
         end
     end)
-    return block ~= nil
+    return block
 end
 
-local function fixWrongIndent(state, change)
-    if not change.text:match('^\r?\n[\t ]+$') then
+--- @param uri uri
+local function fixWrongIndent(uri, change)
+    if not change.text:match '^\r?\n[\t ]+$' then
+        return false
+    end
+    local state = files.getState(uri)
+    if not state then
         return false
     end
     local position = guide.positionOf(change.range.start.line, change.range.start.character)
@@ -135,7 +106,8 @@ local function fixWrongIndent(state, change)
     if not util.stringStartWith(myIndent, lastIndent) then
         return
     end
-    if isInBlock(state, lastPosition) then
+    local myBlock = getBlock(state, lastPosition)
+    if myBlock.bstart >= lastPosition then
         return
     end
 
@@ -152,9 +124,14 @@ local function fixWrongIndent(state, change)
     return edits
 end
 
---- @param state parser.state
-local function applyEdits(state, edits)
+--- @param uri uri
+local function applyEdits(uri, edits)
     if #edits == 0 then
+        return
+    end
+
+    local state = files.getState(uri)
+    if not state then
         return
     end
 
@@ -195,17 +172,13 @@ return function(uri, changes)
     if not client.getOption('fixIndents') then
         return
     end
-    local state = files.compileState(uri)
-    if not state then
-        return
-    end
 
     local firstChange = changes[1]
     if firstChange.range then
-        local edits = removeSpacesAfterEnter(state, firstChange)
-            or fixWrongIndent(state, firstChange)
+        local edits = removeSpacesAfterEnter(uri, firstChange)
+                or    fixWrongIndent(uri, firstChange)
         if edits then
-            applyEdits(state, edits)
+            applyEdits(uri, edits)
         end
     end
 end

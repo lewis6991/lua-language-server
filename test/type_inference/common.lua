@@ -3608,7 +3608,7 @@ TEST('-2|-3|1')([[
 local <?n?>
 ]])
 
-TEST('table')([[
+TEST('enum A')([[
 ---@enum A
 local m = {}
 

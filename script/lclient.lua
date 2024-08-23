@@ -156,13 +156,16 @@ function LanguageClient:remove()
     self._gc:remove()
 end
 
+--- @async
 function LanguageClient:notify(method, params)
     proto.doMethod({
         method = method,
         params = params,
     })
+    await.sleep(0.1)
 end
 
+--- @async
 function LanguageClient:request(method, params, callback)
     local id = counter()
     self._waiting[id] = {
@@ -175,16 +178,20 @@ function LanguageClient:request(method, params, callback)
         method = method,
         params = params,
     })
+    await.sleep(0.1)
 end
 
 --- @async
 function LanguageClient:awaitRequest(method, params)
     return await.wait(function(waker)
-        self:request(method, params, function(result)
-            if result == json.null then
-                result = nil
-            end
-            waker(result)
+        --- @async
+        await.call(function()
+            self:request(method, params, function(result)
+                if result == json.null then
+                    result = nil
+                end
+                waker(result)
+            end)
         end)
     end)
 end

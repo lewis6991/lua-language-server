@@ -111,6 +111,7 @@ local ChunkFinishMap = {
 
 --- @class parser.object.main : parser.object.base
 --- @field type 'main'
+--- @field bstart integer
 --- @field returns? parser.object.return[]
 
 --- @class parser.object.return : parser.object.base
@@ -332,6 +333,7 @@ local ChunkFinishMap = {
 
 --- @class parser.object.block.common : parser.object.base
 --- @field bstart integer Block start
+--- @field bfinish integer Block end
 --- @field parent? parser.object.block
 --- @field labels? table<string,parser.object.label>
 --- @field locals parser.object.local[]
@@ -1923,6 +1925,7 @@ do -- P.Table
         end
 
         local tbl = initObj('table') --- @type parser.object.table
+        tbl.bstart = tbl.finish
         Token.next()
         local index = 0
         local tindex = 0
@@ -1931,6 +1934,7 @@ do -- P.Table
             skipSpace(true)
             local token = Token.get()
             if token == '}' then
+                tbl.bfinish = Token.left()
                 Token.next()
                 break
             elseif token == ',' or token == ';' then
@@ -1998,6 +2002,8 @@ do -- P.Table
                         end
                     else
                         Error.missSymbol('}')
+                        skipSpace()
+                        tbl.bfinish = Token.left()
                         break
                     end
                 end
@@ -2740,6 +2746,7 @@ do -- P.Function | P.Lambda
 
         P.Actions()
         Chunk.pop()
+        func.bfinish = Token.left()
         parseEnd(func)
         Chunk.localCount = lastLocalCount
 
@@ -2833,6 +2840,7 @@ do -- P.Function | P.Lambda
             lambda.finish = lastRightPosition()
             Error.missExp()
         end
+        lambda.bfinish = Token.left()
         Chunk.localCount = LastLocalCount
         return lambda
     end
@@ -3437,6 +3445,7 @@ function P.Do()
     Chunk.push(obj)
     P.Actions()
     Chunk.pop()
+    obj.bfinish = Token.left()
     parseEnd(obj)
 
     Chunk.localCount = Chunk.localCount - #(obj.locals or {})
@@ -3622,6 +3631,7 @@ function P.IfBlock(parent)
     P.Actions()
     Chunk.pop()
     obj.finish = Token.left()
+    obj.bfinish = obj.finish
     Chunk.localCount = Chunk.localCount - #(obj.locals or {})
     return obj
 end
@@ -3647,6 +3657,7 @@ function P.elseIfBlock(parent)
     P.Actions()
     Chunk.pop()
     obj.finish = Token.left()
+    obj.bfinish = obj.finish
     Chunk.localCount = Chunk.localCount - #(obj.locals or {})
     return obj
 end
@@ -3662,6 +3673,7 @@ function P.elseBlock(parent)
     P.Actions()
     Chunk.pop()
     obj.finish = Token.left()
+    obj.bfinish = obj.finish
     Chunk.localCount = Chunk.localCount - #(obj.locals or {})
     return obj
 end
@@ -3887,6 +3899,7 @@ function P.For()
     P.Actions()
     Chunk.pop()
     skipSpace()
+    obj.bfinish = Token.left()
     parseEnd(obj)
 
     Chunk.localCount = Chunk.localCount - #(obj.locals or {})
@@ -3921,6 +3934,7 @@ function P.While()
     P.Actions()
     Chunk.pop()
     skipSpace()
+    action.bfinish = Token.left()
     parseEnd(action)
     Chunk.localCount = Chunk.localCount - #(action.locals or {})
 
@@ -3940,8 +3954,9 @@ function P.Repeat()
     P.Actions()
     skipSpace()
 
+    local start, finish = Token.getLeftRight()
+    obj.bfinish = start
     if Token.get('until') then
-        local start, finish = Token.getLeftRight()
         obj.finish = finish
         obj.keyword[#obj.keyword + 1] = start
         obj.keyword[#obj.keyword + 1] = finish
@@ -4128,7 +4143,7 @@ end
 --- @return parser.object.main
 function P.Lua()
     --- @type parser.object.main
-    local main = { type = 'main', start = 0, finish = 0 }
+    local main = { type = 'main', start = 0, finish = 0, bstart = 0 }
     Chunk.push(main)
     createLocal({
         type = 'local',
@@ -4153,6 +4168,7 @@ function P.Lua()
     end
     Chunk.pop()
     main.finish = getPosition(#Lua, 'right')
+    main.bfinish = main.finish
 
     return main
 end

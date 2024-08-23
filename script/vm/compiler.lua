@@ -184,6 +184,38 @@ local function searchFieldSwitchTable(suri, source, key, pushResult)
             end
         end
     end
+
+    local docs = source.bindDocs
+    if not docs then
+        return
+    end
+
+    for _, doc in ipairs(docs) do
+        if doc.type == 'doc.enum' then
+            if not vm.docHasAttr(doc, 'partial') then
+                return
+            end
+            for _, def in ipairs(vm.getDefs(doc)) do
+                if def.type == 'doc.enum' then
+                    local tbl = def.bindSource
+                    if not tbl then
+                        return
+                    end
+                    for _, field in ipairs(tbl) do
+                        if
+                            field.value
+                            and (field.type == 'tablefield' or field.type == 'tableindex')
+                        then
+                            local fieldKey = guide.getKeyName(field)
+                            if key == vm.ANY or key == fieldKey then
+                                pushResult(field)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 --- @param suri string

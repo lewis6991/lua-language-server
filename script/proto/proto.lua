@@ -8,6 +8,7 @@ local inspect = require('inspect')
 local platform = require('bee.platform')
 local fs = require('bee.filesystem')
 local net = require('service.net')
+local timer      = require 'timer'
 
 local reqCounter = util.counter()
 
@@ -159,7 +160,9 @@ local secretOption = {
     end,
 }
 
-function M.doMethod(proto)
+M.methodQueue = {}
+
+function M.applyMethod(proto)
     logRecieve(proto)
     local method, optional = M.getMethodName(proto)
     local abil = M.ability[method]
@@ -213,6 +216,30 @@ function M.doMethod(proto)
         ok, res = xpcall(abil, log.error, proto.params, proto.id)
         await.delay()
     end)
+end
+
+function M.applyMethodQueue()
+    local queue = M.methodQueue
+    M.methodQueue = {}
+    local canceled = {}
+    for _, proto in ipairs(queue) do
+        if proto.method == '$/cancelRequest' then
+            canceled[proto.params.id] = true
+        end
+    end
+    for _, proto in ipairs(queue) do
+        if not canceled[proto.id] then
+            M.applyMethod(proto)
+        end
+    end
+end
+
+function M.doMethod(proto)
+    M.methodQueue[#M.methodQueue+1] = proto
+    if #M.methodQueue > 1 then
+        return
+    end
+    timer.wait(0, M.applyMethodQueue)
 end
 
 function M.close(id, reason, message)
