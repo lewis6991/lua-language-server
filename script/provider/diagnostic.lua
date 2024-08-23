@@ -141,8 +141,8 @@ local function mergeDiags(a, b, c)
             local severity = diag.severity
             if
                 severity ~= define.DiagnosticSeverity.Hint
-                and severity ~= define.DiagnosticSeverity.Information
-                and #t <= 10000
+                    and severity ~= define.DiagnosticSeverity.Information
+                or #t <= 10000
             then
                 t[#t + 1] = diag
             end
