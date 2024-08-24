@@ -184,37 +184,32 @@ function M.applyMethod(proto)
             await.setID('proto:' .. proto.id)
         end
         local clock = os.clock()
-        local ok = false
-        local res
-        -- The task may be interrupted during execution and captured by close
-        local response <close> = function()
-            local passed = os.clock() - clock
-            if passed > 0.5 then
-                log.warn(
-                    ('Method [%s] takes [%.3f]sec. %s'):format(
-                        method,
-                        passed,
-                        inspect(proto, secretOption)
-                    )
-                )
-            end
-            --log.debug('Finish method:', method)
-            if not proto.id then
-                return
-            end
-            await.close('proto:' .. proto.id)
-            if ok then
-                M.response(proto.id, res)
-            else
-                M.responseErr(
-                    proto.id,
-                    proto._closeReason or define.ErrorCodes.InternalError,
-                    proto._closeMessage or res
-                )
-            end
-        end
-        ok, res = xpcall(abil, log.error, proto.params, proto.id)
+        local ok, res = xpcall(abil, log.error, proto.params, proto.id)
         await.delay()
+        local passed = os.clock() - clock
+        if passed > 0.5 then
+            log.warn(
+                ('Method [%s] takes [%.3f]sec. %s'):format(
+                    method,
+                    passed,
+                    inspect(proto, secretOption)
+                )
+            )
+        end
+        --log.debug('Finish method:', method)
+        if not proto.id then
+            return
+        end
+        await.close('proto:' .. proto.id)
+        if ok then
+            M.response(proto.id, res)
+        else
+            M.responseErr(
+                proto.id,
+                proto._closeReason or define.ErrorCodes.InternalError,
+                proto._closeMessage or res
+            )
+        end
     end)
 end
 

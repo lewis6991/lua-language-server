@@ -453,14 +453,12 @@ function M.pack(t)
     return pack(1)
 end
 
---- defer
-local deferMT = {
-    __close = function(self)
-        self[1]()
-    end,
-}
 function M.defer(callback)
-    return setmetatable({ callback }, deferMT)
+    return setmetatable({ callback }, {
+        __close = function(self)
+            self[1]()
+        end,
+    })
 end
 
 function M.enableCloseFunction()

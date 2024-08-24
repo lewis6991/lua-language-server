@@ -563,7 +563,7 @@ local function fileSync(source, target, option)
     end
 end
 
---- 文件列表
+--- File list
 function M.fileList(option)
     option = option or buildOption(option)
     local keyMap = {}
@@ -602,7 +602,7 @@ function M.fileList(option)
     })
 end
 
---- 删除文件（夹）
+--- Delete files (folders)
 function M.fileRemove(path, option)
     option = buildOption(option)
     path = fsAbsolute(path, option)
@@ -612,7 +612,7 @@ function M.fileRemove(path, option)
     return option
 end
 
---- 复制文件（夹）
+--- Copy files (folders)
 --- @param source string|fs.path|dummyfs
 --- @param target string|fs.path|dummyfs
 --- @return table
@@ -626,7 +626,7 @@ function M.fileCopy(source, target, option)
     return option
 end
 
---- 同步文件（夹）
+--- Synchronize files (folders)
 --- @param source string|fs.path|dummyfs
 --- @param target string|fs.path|dummyfs
 --- @return table

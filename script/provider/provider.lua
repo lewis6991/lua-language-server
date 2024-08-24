@@ -139,7 +139,7 @@ M.register('initialized')({
         local registrations = {}
 
         if client.getAbility('workspace.didChangeConfiguration.dynamicRegistration') then
-            -- 监视配置变化
+            -- Monitor configuration changes
             registrations[#registrations + 1] = {
                 id = 'workspace/didChangeConfiguration',
                 method = 'workspace/didChangeConfiguration',

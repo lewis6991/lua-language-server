@@ -194,11 +194,9 @@ function M.eventLoop()
     end
 
     while true do
-        if doSomething() then
-            goto CONTINUE
+        if not doSomething() then
+            sleep()
         end
-        sleep()
-        ::CONTINUE::
     end
 end
 
