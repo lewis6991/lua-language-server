@@ -17,14 +17,14 @@ local function loadVersion()
     return version
 end
 
-local m = {}
+local M = {}
 
-function m.getVersion()
-    if not m.version then
-        m.version = loadVersion() or '<Unknown>'
+function M.getVersion()
+    if not M.version then
+        M.version = loadVersion() or '<Unknown>'
     end
 
-    return m.version
+    return M.version
 end
 
-return m
+return M

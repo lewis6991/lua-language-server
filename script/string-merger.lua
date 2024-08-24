@@ -1,16 +1,16 @@
 --- @class string.merger.diff
---- @field start  integer # 替换开始的字节
---- @field finish integer # 替换结束的字节
---- @field text   string  # 替换的文本
+--- @field start integer Replace the starting byte
+--- @field finish integer Replace the ending byte
+--- @field text string Replacement text
 
 --- @class string.merger.info: string.merger.diff
---- @field cstart  integer # 转换后的开始字节
---- @field cfinish integer # 转换后的结束字节
+--- @field cstart integer Converted start byte
+--- @field cfinish integer Converted end byte
 
 --- @alias string.merger.diffs string.merger.diff[]
 --- @alias string.merger.infos string.merger.info[]
 
--- 根据二分法找到最近的开始位置
+--- Find the nearest starting position based on the bisection method
 --- @param diffs  table
 --- @param offset any
 --- @return string.merger.info
@@ -41,14 +41,14 @@ local function getNearDiff(diffs, offset, key)
     return diffs[min]
 end
 
-local m = {}
+local M = {}
 
----把文本与差异进行合并
+--- Merge text with differences
 --- @param text  string
 --- @param diffs string.merger.diffs
 --- @return string
 --- @return string.merger.infos
-function m.mergeDiff(text, diffs)
+function M.mergeDiff(text, diffs)
     local info = {}
     for i, diff in ipairs(diffs) do
         info[i] = {
@@ -75,12 +75,12 @@ function m.mergeDiff(text, diffs)
     return table.concat(buf), info
 end
 
----根据转换前的位置获取转换后的位置
+--- Get the converted position based on the position before conversion
 --- @param info   string.merger.infos
 --- @param offset integer
 --- @return integer start
 --- @return integer finish
-function m.getOffset(info, offset)
+function M.getOffset(info, offset)
     local diff = getNearDiff(info, offset, 'start')
     if not diff then
         return offset, offset
@@ -108,12 +108,12 @@ function m.getOffset(info, offset)
     return pos, pos
 end
 
----根据转换后的位置获取转换前的位置
+--- Get the position before conversion based on the converted position
 --- @param info   string.merger.infos
 --- @param offset integer
 --- @return integer start
 --- @return integer finish
-function m.getOffsetBack(info, offset)
+function M.getOffsetBack(info, offset)
     local diff = getNearDiff(info, offset, 'cstart')
     if not diff then
         return offset, offset
@@ -144,4 +144,4 @@ function m.getOffsetBack(info, offset)
     return pos, pos
 end
 
-return m
+return M

@@ -26,7 +26,7 @@ mt._dirty = true
 mt._updated = 0.0
 mt._onCancel = nil
 
----移除进度条
+--- Remove progress bar
 function mt:remove()
     if self._removed then
         return
@@ -50,8 +50,8 @@ function mt:isRemoved()
     return self._removed == true
 end
 
----设置描述
---- @param message string # 描述
+--- Setting description
+--- @param message string # Description
 function mt:setMessage(message)
     if self._message == message then
         return
@@ -61,8 +61,8 @@ function mt:setMessage(message)
     self:update()
 end
 
----设置百分比
---- @param per number # 百分比（1-100）
+--- Set percentage
+--- @param per number Percentage (1-100)
 function mt:setPercentage(per)
     if self._percentage == per then
         return
@@ -72,7 +72,7 @@ function mt:setPercentage(per)
     self:update()
 end
 
----取消事件
+--- Cancel event
 function mt:onCancel(callback)
     self._onCancel = callback
     self:update()
@@ -147,10 +147,10 @@ function M.update()
     end
 end
 
----创建一个进度条
+--- Create a progress bar
 --- @param uri?  string
---- @param title string # 标题
---- @param delay number # 至少经过这么久之后才会显示出来
+--- @param title string # Title
+--- @param delay number # It will be displayed after at least this long.
 function M.create(uri, title, delay)
     local token = nextToken()
     local prog = setmetatable({
@@ -166,7 +166,7 @@ function M.create(uri, title, delay)
     return prog
 end
 
----取消一个进度条
+--- Cancel a progress bar
 function M.cancel(token)
     local prog = M.map[token]
     if not prog then

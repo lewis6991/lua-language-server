@@ -23,7 +23,6 @@ local mathHuge = math.huge
 local inf = 1 / 0
 local nan = 0 / 0
 local error = error
-local assert = assert
 
 _ENV = nil
 
@@ -36,7 +35,9 @@ local function isInteger(n)
 end
 
 local function formatNumber(n)
-    if n == inf or n == -inf or n == nan or n ~= n then -- IEEE 标准中，NAN 不等于自己。但是某些实现中没有遵守这个规则
+    -- In the IEEE standard, NAN is not equal to itself. But some
+    -- implementations do not follow this rule
+    if n == inf or n == -inf or n == nan or n ~= n then
         return ('%q'):format(n)
     end
     if isInteger(n) then
@@ -79,13 +80,13 @@ local RESERVED = {
     ['while'] = true,
 }
 
-local m = {}
+local M = {}
 
 ---Print table structure
 --- @param tbl any
 --- @param option? table
 --- @return string
-function m.dump(tbl, option)
+function M.dump(tbl, option)
     if not option then
         option = {}
     end
@@ -96,18 +97,18 @@ function m.dump(tbl, option)
     local mark = {}
     local stack = {}
     lines[#lines + 1] = '{'
-    local function unpack(tbl)
+    local function unpack(t)
         local deep = #stack
-        mark[tbl] = (mark[tbl] or 0) + 1
+        mark[t] = (mark[t] or 0) + 1
         local keys = {}
         local keymap = {}
         local integerFormat = '[%d]'
         local alignment = 0
-        if #tbl >= 10 then
-            local width = #tostring(#tbl)
+        if #t >= 10 then
+            local width = #tostring(#t)
             integerFormat = ('[%%0%dd]'):format(mathCeil(width))
         end
-        for key in pairs(tbl) do
+        for key in pairs(t) do
             if type(key) == 'string' then
                 if not key:match('^[%a_][%w_]*$') or RESERVED[key] or option['longStringKey'] then
                     keymap[key] = ('[%q]'):format(key)
@@ -126,7 +127,7 @@ function m.dump(tbl, option)
                 end
             end
         end
-        local mt = getmetatable(tbl)
+        local mt = getmetatable(t)
         if not mt or not mt.__pairs then
             if option['sorter'] then
                 option['sorter'](keys, keymap)
@@ -138,7 +139,7 @@ function m.dump(tbl, option)
         end
         for _, key in ipairs(keys) do
             local keyWord = keymap[key]
-            if option['noArrayKey'] and isInteger(key) and key <= #tbl then
+            if option['noArrayKey'] and isInteger(key) and key <= #t then
                 keyWord = ''
             else
                 if #keyWord < alignment then
@@ -147,7 +148,7 @@ function m.dump(tbl, option)
                     keyWord = keyWord .. ' = '
                 end
             end
-            local value = tbl[key]
+            local value = t[key]
             local tp = type(value)
             local format = option['format'] and option['format'][key]
             if format then
@@ -183,7 +184,7 @@ function m.dump(tbl, option)
                 lines[#lines + 1] = ('%s%s%s,'):format(TAB[deep + 1], keyWord, tostring(value))
             end
         end
-        mark[tbl] = mark[tbl] - 1
+        mark[t] = mark[t] - 1
     end
     unpack(tbl)
     lines[#lines + 1] = '}'
@@ -194,7 +195,7 @@ end
 --- @param valueA any
 --- @param valueB any
 --- @return boolean
-function m.equal(valueA, valueB)
+function M.equal(valueA, valueB)
     local hasChecked = {}
 
     local function equal(a, b)
@@ -291,7 +292,7 @@ end
 --- Create an ordered list
 --- @param tbl? table
 --- @return table
-function m.container(tbl)
+function M.container(tbl)
     return sortTable(tbl)
 end
 
@@ -300,7 +301,7 @@ end
 --- @param keepBom? boolean
 --- @return string? text
 --- @return string? errMsg
-function m.loadFile(path, keepBom)
+function M.loadFile(path, keepBom)
     local f, e = ioOpen(path, 'rb')
     if not f then
         return nil, e
@@ -326,7 +327,7 @@ end
 --- @param content string
 --- @return boolean ok
 --- @return string? errMsg
-function m.saveFile(path, content)
+function M.saveFile(path, content)
     local f, e = ioOpen(path, 'wb')
 
     if f then
@@ -342,7 +343,7 @@ end
 --- @param init? integer
 --- @param step? integer
 --- @return fun():integer
-function m.counter(init, step)
+function M.counter(init, step)
     if not step then
         step = 1
     end
@@ -358,7 +359,7 @@ end
 --- @param t table<K, V>
 --- @param sorter? fun(a: K, b: K): boolean
 --- @return fun(): K, V
-function m.sortPairs(t, sorter)
+function M.sortPairs(t, sorter)
     local keys = {}
     for k in pairs(t) do
         keys[#keys + 1] = k
@@ -376,7 +377,7 @@ end
 --- @param source  table
 --- @param target? table
 --- @return table
-function m.deepCopy(source, target)
+function M.deepCopy(source, target)
     local mark = {}
     local function copy(a, b)
         if type(a) ~= 'table' then
@@ -400,7 +401,7 @@ end
 --- 序列化
 --- @param t table
 --- @return table
-function m.unpack(t)
+function M.unpack(t)
     local result = {}
     local tid = 0
     local cache = {}
@@ -429,7 +430,7 @@ end
 --- 反序列化
 --- @param t table
 --- @return table
-function m.pack(t)
+function M.pack(t)
     local cache = {}
     local function pack(id)
         local o = cache[id]
@@ -458,11 +459,11 @@ local deferMT = {
         self[1]()
     end,
 }
-function m.defer(callback)
+function M.defer(callback)
     return setmetatable({ callback }, deferMT)
 end
 
-function m.enableCloseFunction()
+function M.enableCloseFunction()
     setmetatable(function() end, {
         __close = function(f)
             f()
@@ -477,7 +478,7 @@ local esc = {
     ['\n'] = '\\\n',
 }
 
-function m.viewString(str, quo)
+function M.viewString(str, quo)
     if not quo then
         if str:find('[\r\n]') then
             quo = '[['
@@ -505,23 +506,23 @@ function m.viewString(str, quo)
             return quo .. str .. fsymb
         end
         for i = 0, 10 do
-            local fsymb = ']' .. ('='):rep(i) .. ']'
-            if not str:find(fsymb, 1, true) then
+            local fsymb0 = ']' .. ('='):rep(i) .. ']'
+            if not str:find(fsymb0, 1, true) then
                 local ssymb = '[' .. ('='):rep(i) .. '['
                 str = str:gsub('[\000-\008\011-\012\014-\031\127]', '')
-                return ssymb .. str .. fsymb
+                return ssymb .. str .. fsymb0
             end
         end
-        return m.viewString(str, '"')
+        return M.viewString(str, '"')
     end
 end
 
-function m.viewLiteral(v)
+function M.viewLiteral(v)
     local tp = type(v)
     if tp == 'nil' then
         return 'nil'
     elseif tp == 'string' then
-        return m.viewString(v)
+        return M.viewString(v)
     elseif tp == 'boolean' then
         return tostring(v)
     elseif tp == 'number' then
@@ -534,7 +535,7 @@ function m.viewLiteral(v)
     return nil
 end
 
-function m.utf8Len(str, start, finish)
+function M.utf8Len(str, start, finish)
     local len = 0
     for _ = 1, 10000 do
         local clen, pos = utf8Len(str, start, finish, true)
@@ -549,10 +550,10 @@ function m.utf8Len(str, start, finish)
     return len
 end
 
--- 把数组中的元素顺序*原地*反转
+--- Reverse the order of elements in the array *in place*
 --- @param arr any[]
 --- @return any[]
-function m.revertArray(arr)
+function M.revertArray(arr)
     local len = #arr
     if len <= 1 then
         return arr
@@ -564,11 +565,11 @@ function m.revertArray(arr)
     return arr
 end
 
--- 创建一个value-key表
+--- Create a value-key table
 --- @generic K, V
 --- @param t table<K, V>
 --- @return table<V, K>
-function m.revertMap(t)
+function M.revertMap(t)
     local nt = {}
     for k, v in pairs(t) do
         nt[v] = k
@@ -576,7 +577,7 @@ function m.revertMap(t)
     return nt
 end
 
-function m.randomSortTable(t, max)
+function M.randomSortTable(t, max)
     local len = #t
     if len <= 1 then
         return t
@@ -591,7 +592,7 @@ function m.randomSortTable(t, max)
     return t
 end
 
-function m.tableMultiRemove(t, index)
+function M.tableMultiRemove(t, index)
     local mark = {}
     for i = 1, #index do
         local v = index[i]
@@ -619,11 +620,11 @@ function m.tableMultiRemove(t, index)
     end
 end
 
----遍历文本的每一行
+--- Traverse each line of text
 --- @param text string
---- @param keepNL? boolean # 保留换行符
+--- @param keepNL? boolean Keep newlines
 --- @return fun():string?, integer?
-function m.eachLine(text, keepNL)
+function M.eachLine(text, keepNL)
     local offset = 1
     local lineCount = 0
     local lastLine
@@ -664,10 +665,10 @@ end
 
 --- @alias SortByScoreCallback fun(o: any): integer
 
--- 按照分数排序，分数越高越靠前
+--- Sort by score, the higher the score, the higher it is
 --- @param tbl any[]
 --- @param callbacks SortByScoreCallback | SortByScoreCallback[]
-function m.sortByScore(tbl, callbacks)
+function M.sortByScore(tbl, callbacks)
     if type(callbacks) ~= 'table' then
         callbacks = { callbacks }
     end
@@ -696,9 +697,9 @@ end
 
 --- @param arr any[]
 --- @return SortByScoreCallback
-function m.sortCallbackOfIndex(arr)
+function M.sortCallbackOfIndex(arr)
     ---@type table<any, integer>
-    local indexMap = m.revertMap(arr)
+    local indexMap = M.revertMap(arr)
     return function(v)
         return -indexMap[v]
     end
@@ -707,7 +708,7 @@ end
 --- @param datas any[]
 --- @param scores integer[]
 --- @return SortByScoreCallback
-function m.sortCallbackOfScore(datas, scores)
+function M.sortCallbackOfScore(datas, scores)
     local map = {}
     for i = 1, #datas do
         local data = datas[i]
@@ -719,11 +720,11 @@ function m.sortCallbackOfScore(datas, scores)
     end
 end
 
----裁剪字符串
+--- Cut the string
 --- @param str string
 --- @param mode? '"left"'|'"right"'
 --- @return string
-function m.trim(str, mode)
+function M.trim(str, mode)
     if mode == 'left' then
         return (str:gsub('^%s+', ''))
     end
@@ -733,7 +734,7 @@ function m.trim(str, mode)
     return (str:match('^%s*(.-)%s*$'))
 end
 
-function m.expandPath(path)
+function M.expandPath(path)
     if path:sub(1, 1) == '~' then
         local home = getenv('HOME')
         if not home then -- has to be Windows
@@ -747,7 +748,7 @@ function m.expandPath(path)
     return path
 end
 
-function m.arrayToHash(l)
+function M.arrayToHash(l)
     local t = {}
     for i = 1, #l do
         t[l[i]] = true
@@ -812,7 +813,7 @@ function switchMT:__call(name, ...)
 end
 
 --- @return switch
-function m.switch()
+function M.switch()
     local obj = setmetatable({
         map = {},
         cachedCases = {},
@@ -822,7 +823,7 @@ end
 
 --- @param t table<string|string[],function>
 --- @return fun(ty: string): function
-function m.switch2(t)
+function M.switch2(t)
     return function(ty)
         -- Defer table expansion until first miss
         if not t[ty] then
@@ -845,7 +846,7 @@ end
 --- @param f async fun()
 --- @param name string
 --- @return any, boolean
-function m.getUpvalue(f, name)
+function M.getUpvalue(f, name)
     for i = 1, 999 do
         local uname, value = getupvalue(f, i)
         if not uname then
@@ -858,15 +859,15 @@ function m.getUpvalue(f, name)
     return nil, false
 end
 
-function m.stringStartWith(str, head)
+function M.stringStartWith(str, head)
     return str:sub(1, #head) == head
 end
 
-function m.stringEndWith(str, tail)
+function M.stringEndWith(str, tail)
     return str:sub(-#tail) == tail
 end
 
-function m.defaultTable(default)
+function M.defaultTable(default)
     return setmetatable({}, {
         __index = function(t, k)
             if k == nil then
@@ -879,7 +880,7 @@ function m.defaultTable(default)
     })
 end
 
-function m.multiTable(count, default)
+function M.multiTable(count, default)
     local current
     if default then
         current = setmetatable({}, {
@@ -922,7 +923,7 @@ end
 --- @param t table
 --- @param sorter boolean|function
 --- @return any[]
-function m.getTableKeys(t, sorter)
+function M.getTableKeys(t, sorter)
     local keys = {}
     for k in pairs(t) do
         keys[#keys + 1] = k
@@ -935,7 +936,7 @@ function m.getTableKeys(t, sorter)
     return keys
 end
 
-function m.arrayHas(array, value)
+function M.arrayHas(array, value)
     for i = 1, #array do
         if array[i] == value then
             return true
@@ -944,7 +945,7 @@ function m.arrayHas(array, value)
     return false
 end
 
-function m.arrayIndexOf(array, value)
+function M.arrayIndexOf(array, value)
     for i = 1, #array do
         if array[i] == value then
             return i
@@ -953,13 +954,13 @@ function m.arrayIndexOf(array, value)
     return nil
 end
 
-function m.arrayInsert(array, value)
-    if not m.arrayHas(array, value) then
+function M.arrayInsert(array, value)
+    if not M.arrayHas(array, value) then
         array[#array + 1] = value
     end
 end
 
-function m.arrayRemove(array, value)
+function M.arrayRemove(array, value)
     for i = 1, #array do
         if array[i] == value then
             tableRemove(array, i)
@@ -968,14 +969,14 @@ function m.arrayRemove(array, value)
     end
 end
 
-m.MODE_K = { __mode = 'k' }
-m.MODE_V = { __mode = 'v' }
-m.MODE_KV = { __mode = 'kv' }
+M.MODE_K = { __mode = 'k' }
+M.MODE_V = { __mode = 'v' }
+M.MODE_KV = { __mode = 'kv' }
 
 --- @generic T: fun(param: any):any
 --- @param func T
 --- @return T
-function m.cacheReturn(func)
+function M.cacheReturn(func)
     local cache = {}
     return function(param)
         if cache[param] == nil then
@@ -988,7 +989,7 @@ end
 --- @param a table
 --- @param b table
 --- @return table
-function m.tableMerge(a, b)
+function M.tableMerge(a, b)
     for k, v in pairs(b) do
         a[k] = v
     end
@@ -998,11 +999,11 @@ end
 --- @param a any[]
 --- @param b any[]
 --- @return any[]
-function m.arrayMerge(a, b)
+function M.arrayMerge(a, b)
     for i = 1, #b do
         a[#a + 1] = b[i]
     end
     return a
 end
 
-return m
+return M

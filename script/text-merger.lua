@@ -1,4 +1,3 @@
-local files = require('files')
 local util = require('utility')
 local encoder = require('encoder')
 local client = require('client')
@@ -67,7 +66,7 @@ local function mergeRows(rows, change)
     local newEndLine = startLine + #insertRows - 1
     local left = getLeft(rows[startLine], startChar)
     local right = getRight(rows[endLine], endChar)
-    -- 先把双方的行数调整成一致
+    -- First adjust the number of rows on both sides to be consistent
     if endLine > #rows then
         log.error('NMD, WSM `endLine > #rows` ?')
         for i = #rows + 1, endLine do
@@ -77,21 +76,21 @@ local function mergeRows(rows, change)
     local delta = #insertRows - (endLine - startLine + 1)
     if delta ~= 0 then
         table.move(rows, endLine, #rows, endLine + delta)
-        -- 如果行数变少了，要清除多余的行
+        -- If the number of rows becomes less, clear the excess rows
         if delta < 0 then
             for i = #rows, #rows + delta + 1, -1 do
                 rows[i] = nil
             end
         end
     end
-    -- 先处理第一行和最后一行
+    -- Process the first and last lines first
     if startLine == newEndLine then
         rows[startLine] = left .. insertRows[1] .. right
     else
         rows[startLine] = left .. insertRows[1]
         rows[newEndLine] = insertRows[#insertRows] .. right
     end
-    -- 修改中间的每一行
+    -- Modify each line in the middle
     for i = 2, #insertRows - 1 do
         local currentLine = startLine + i - 1
         local insertText = insertRows[i] or ''
