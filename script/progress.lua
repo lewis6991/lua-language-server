@@ -13,18 +13,19 @@ M.map = {}
 --- @class progress
 --- @field _uri   string
 --- @field _token integer
-local mt = {}
+local mt = {
+    _title = nil,
+    _message = nil,
+    _removed = false,
+    _clock = 0.0,
+    _delay = 0.0,
+    _percentage = 0.0,
+    _showed = false,
+    _dirty = true,
+    _updated = 0.0,
+    _onCancel = nil,
+}
 mt.__index = mt
-mt._title = nil
-mt._message = nil
-mt._removed = false
-mt._clock = 0.0
-mt._delay = 0.0
-mt._percentage = 0.0
-mt._showed = false
-mt._dirty = true
-mt._updated = 0.0
-mt._onCancel = nil
 
 --- Remove progress bar
 function mt:remove()

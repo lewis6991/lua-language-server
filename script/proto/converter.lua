@@ -93,8 +93,7 @@ local function rawUnpackPosition(state, position)
             end
         end
     end
-    local pos = guide.positionOf(row, col)
-    return pos
+    return guide.positionOf(row, col)
 end
 
 --- @param state parser.state
@@ -114,8 +113,7 @@ local function diffedUnpackPosition(state, position)
     local originPos = guide.positionOf(row, col)
     local originOffset = guide.positionToOffsetByLines(state.originLines, originPos)
     local offset = files.diffedOffset(state, originOffset)
-    local pos = guide.offsetToPosition(state, offset)
-    return pos
+    return guide.offsetToPosition(state, offset)
 end
 
 --- @param state    parser.state
@@ -207,9 +205,9 @@ function M.setOffsetEncoding(encoding)
     offsetEncoding = encoding:lower():gsub('%-', '')
 end
 
---- @param s        string
---- @param i?       integer
---- @param j?       integer
+--- @param s string
+--- @param i? integer
+--- @param j? integer
 --- @return integer
 function M.len(s, i, j)
     return encoder.len(offsetEncoding, s, i, j)

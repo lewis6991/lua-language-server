@@ -85,12 +85,12 @@ function M.getRealUri(uri)
     -- normalize uri
     uri = furi.encode(filename)
     local path = fs.path(filename)
-    local suc, exists = pcall(fs.exists, path)
-    if not suc or not exists then
+    local exists_ok, exists = pcall(fs.exists, path)
+    if not exists_ok or not exists then
         return uri
     end
-    local suc, res = pcall(fs.canonical, path)
-    if not suc then
+    local ok, res = pcall(fs.canonical, path)
+    if not ok then
         return uri
     end
     filename = res:string()
@@ -829,19 +829,7 @@ end
 --- @return boolean
 function M.isDll(uri)
     local ext = uri:match('%.([^%.%/%\\]+)$')
-    if not ext then
-        return false
-    end
-    if platform.os == 'windows' then
-        if ext == 'dll' then
-            return true
-        end
-    else
-        if ext == 'so' then
-            return true
-        end
-    end
-    return false
+    return ext == (platform.os == 'windows' and 'dll' or 'so')
 end
 
 --- Save dll, makes opens and words, discard content
@@ -877,23 +865,17 @@ function M.saveDll(uri, content)
 end
 
 --- @param uri string
---- @return string[]|nil
+--- @return string[]?
 function M.getDllOpens(uri)
     local file = M.dllMap[uri]
-    if not file then
-        return nil
-    end
-    return file.opens
+    return file and file.opens or nil
 end
 
 --- @param uri string
---- @return string[]|nil
+--- @return string[]?
 function M.getDllWords(uri)
     local file = M.dllMap[uri]
-    if not file then
-        return nil
-    end
-    return file.words
+    return file and file.words or nil
 end
 
 --- @return integer
@@ -911,8 +893,7 @@ function M.normalize(path)
     path = path:gsub('%$%{(.-)%}', function(key)
         if key == '3rd' then
             return (ROOT / 'meta' / '3rd'):string()
-        end
-        if key:sub(1, 4) == 'env:' then
+        elseif key:sub(1, 4) == 'env:' then
             local env = os.getenv(key:sub(5))
             return env
         end

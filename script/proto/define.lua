@@ -2,7 +2,7 @@ local diag = require('proto.diagnostic')
 
 local M = {}
 
---- 诊断等级
+--- Diagnostic level
 M.DiagnosticSeverity = {
     Error = 1,
     Warning = 2,
@@ -16,10 +16,11 @@ M.DiagnosticFileStatus = {
     None = 3,
 }
 
---- 诊断类型与默认等级
+--- Diagnosis type and default level
 M.DiagnosticDefaultSeverity = diag.getDefaultSeverity()
 
---- 诊断类型与需要的文件状态(可以控制只分析打开的文件、还是所有文件)
+--- Diagnosis type and required file status
+--- (you can control whether to analyze only open files or all files)
 M.DiagnosticDefaultNeededFileStatus = diag.getDefaultStatus()
 
 M.DiagnosticDefaultGroupSeverity = diag.getGroupSeverity()
