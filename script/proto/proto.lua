@@ -8,7 +8,7 @@ local inspect = require('inspect')
 local platform = require('bee.platform')
 local fs = require('bee.filesystem')
 local net = require('service.net')
-local timer      = require 'timer'
+local timer = require('timer')
 
 local reqCounter = util.counter()
 
@@ -230,7 +230,7 @@ function M.applyMethodQueue()
 end
 
 function M.doMethod(proto)
-    M.methodQueue[#M.methodQueue+1] = proto
+    M.methodQueue[#M.methodQueue + 1] = proto
     if #M.methodQueue > 1 then
         return
     end
@@ -263,54 +263,62 @@ function M.doResponse(proto)
     waiting.resume(proto.result)
 end
 
+local function listenStdio()
+    log.info('Listen Mode: stdio')
+    if platform.os == 'windows' then
+        local windows = require('bee.windows')
+        windows.filemode(io.stdin, 'b')
+        windows.filemode(io.stdout, 'b')
+    end
+    io.stdin:setvbuf('no')
+    io.stdout:setvbuf('no')
+    pub.task('loadProtoByStdio')
+end
+
+local function listenSocket(socketPort)
+    local unixFolder = LOGPATH .. '/unix'
+    fs.create_directories(fs.path(unixFolder))
+    local unixPath = unixFolder .. '/' .. tostring(socketPort)
+
+    local server = net.listen('unix', unixPath)
+
+    log.info('Listen Mode: socket')
+    log.info('Listen Port:', socketPort)
+    log.info('Listen Path:', unixPath)
+
+    assert(server)
+
+    local dummyClient = {
+        buf = '',
+        write = function(self, data)
+            self.buf = self.buf .. data
+        end,
+        update = function() end,
+    }
+    M.client = dummyClient
+
+    function server:on_accepted(client)
+        M.client = client
+        client:write(dummyClient.buf)
+        return true
+    end
+
+    function server:on_error(...)
+        log.error(...)
+    end
+
+    pub.task('loadProtoBySocket', {
+        port = socketPort,
+        unixPath = unixPath,
+    })
+end
+
 function M.listen(mode, socketPort)
     M.mode = mode
     if mode == 'stdio' then
-        log.info('Listen Mode: stdio')
-        if platform.os == 'windows' then
-            local windows = require('bee.windows')
-            windows.filemode(io.stdin, 'b')
-            windows.filemode(io.stdout, 'b')
-        end
-        io.stdin:setvbuf('no')
-        io.stdout:setvbuf('no')
-        pub.task('loadProtoByStdio')
+        listenStdio()
     elseif mode == 'socket' then
-        local unixFolder = LOGPATH .. '/unix'
-        fs.create_directories(fs.path(unixFolder))
-        local unixPath = unixFolder .. '/' .. tostring(socketPort)
-
-        local server = net.listen('unix', unixPath)
-
-        log.info('Listen Mode: socket')
-        log.info('Listen Port:', socketPort)
-        log.info('Listen Path:', unixPath)
-
-        assert(server)
-
-        local dummyClient = {
-            buf = '',
-            write = function(self, data)
-                self.buf = self.buf .. data
-            end,
-            update = function() end,
-        }
-        M.client = dummyClient
-
-        function server:on_accepted(client)
-            M.client = client
-            client:write(dummyClient.buf)
-            return true
-        end
-
-        function server:on_error(...)
-            log.error(...)
-        end
-
-        pub.task('loadProtoBySocket', {
-            port = socketPort,
-            unixPath = unixPath,
-        })
+        listenSocket(socketPort)
     end
 end
 
