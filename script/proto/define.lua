@@ -27,7 +27,7 @@ M.DiagnosticDefaultGroupSeverity = diag.getGroupSeverity()
 
 M.DiagnosticDefaultGroupFileStatus = diag.getGroupStatus()
 
---- 诊断报告标签
+--- Diagnostic report label
 M.DiagnosticTag = {
     Unnecessary = 1,
     Deprecated = 2,

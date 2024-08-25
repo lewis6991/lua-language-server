@@ -14,7 +14,6 @@ local scope = require('workspace.scope')
 local lazy = require('lazytable')
 local cacher = require('lazy-cacher')
 local sp = require('bee.subprocess')
-local pub = require('pub')
 
 --- @class file
 --- @field uri           string
@@ -533,9 +532,111 @@ function M.getLazyCache()
     return M.lazyCache
 end
 
---- @param state parser.state
---- @param file file
-function M.compileStateThen(state, file)
+--- @param uri string
+--- @return boolean
+function M.checkPreload(uri)
+    local file = M.fileMap[uri]
+    if not file then
+        return false
+    end
+    local ws = require('workspace')
+    local client = require('client')
+    if
+        M.isOpen(uri)
+        or M.isLibrary(uri)
+        or #file.text < config.get(uri, 'Lua.workspace.preloadFileSize') * 1000
+    then
+        return true
+    end
+
+    if not M.notifyCache['preloadFileSize'] then
+        M.notifyCache['preloadFileSize'] = {}
+        M.notifyCache['skipLargeFileCount'] = 0
+    end
+
+    if not M.notifyCache['preloadFileSize'][uri] then
+        M.notifyCache['preloadFileSize'][uri] = true
+        M.notifyCache['skipLargeFileCount'] = M.notifyCache['skipLargeFileCount'] + 1
+        local message = lang.script(
+            'WORKSPACE_SKIP_LARGE_FILE',
+            ws.getRelativePath(uri),
+            config.get(uri, 'Lua.workspace.preloadFileSize'),
+            #file.text / 1000
+        )
+        if M.notifyCache['skipLargeFileCount'] <= 1 then
+            client.showMessage('Info', message)
+        else
+            client.logMessage('Info', message)
+        end
+    end
+    return false
+end
+
+local function pluginOnTransformAst(uri, state)
+    local plugin = require('plugin')
+    ---TODO: maybe deepcopy astNode
+    local suc, result = plugin.dispatch('OnTransformAst', uri, state.ast)
+    if not suc then
+        return state
+    end
+    state.ast = result or state.ast
+    return state
+end
+
+--- @param uri string
+--- @return parser.state?
+function M.compileState(uri)
+    local file = M.fileMap[uri]
+    if not file then
+        return
+    end
+    if M.stateMap[uri] then
+        return M.stateMap[uri]
+    end
+    if not M.checkPreload(uri) then
+        return
+    end
+
+    local ws = require('workspace')
+    local client = require('client')
+    if not client.isReady() then
+        log.error('Client not ready!', uri)
+    end
+
+    local prog <close> = progress.create(uri, lang.script.WINDOW_COMPILING, 0.5)
+
+    prog:setMessage(ws.getRelativePath(uri))
+    log.trace('Compile State:', uri)
+
+    local clock = os.clock()
+    local state, err = parser.compile(file.text, 'Lua', config.get(uri, 'Lua.runtime.version'), {
+        special = config.get(uri, 'Lua.runtime.special'),
+        unicodeName = config.get(uri, 'Lua.runtime.unicodeName'),
+        nonstandardSymbol = util.arrayToHash(config.get(uri, 'Lua.runtime.nonstandardSymbol')),
+    })
+
+    local passed = os.clock() - clock
+    if passed > 0.1 then
+        log.warn(
+            ('Compile [%s] takes [%.3f] sec, size [%.3f] kb.'):format(
+                uri,
+                passed,
+                #file.text / 1000
+            )
+        )
+    end
+
+    if not state then
+        log.error('Compile failed:', uri, err)
+        return
+    end
+
+    state = pluginOnTransformAst(uri, state)
+    if not state then
+        log.error('pluginOnTransformAst failed! discard the file state')
+        return
+    end
+
     M.stateTrace[state] = true
     M.stateMap[file.uri] = state
     state.uri = file.uri
@@ -545,9 +646,9 @@ function M.compileStateThen(state, file)
     state.originLines = file.originLines
     state.originText = file.originText
 
-    local clock = os.clock()
+    clock = os.clock()
     parser.luadoc(state)
-    local passed = os.clock() - clock
+    passed = os.clock() - clock
     if passed > 0.1 then
         log.warn(
             ('Parse LuaDoc of [%s] takes [%.3f] sec, size [%.3f] kb.'):format(
@@ -582,154 +683,6 @@ function M.compileStateThen(state, file)
     end
 
     M.onWatch('compile', file.uri)
-end
-
---- @param uri string
---- @return boolean
-function M.checkPreload(uri)
-    local file = M.fileMap[uri]
-    if not file then
-        return false
-    end
-    local ws = require('workspace')
-    local client = require('client')
-    if
-        not M.isOpen(uri)
-        and not M.isLibrary(uri)
-        and #file.text >= config.get(uri, 'Lua.workspace.preloadFileSize') * 1000
-    then
-        if not M.notifyCache['preloadFileSize'] then
-            M.notifyCache['preloadFileSize'] = {}
-            M.notifyCache['skipLargeFileCount'] = 0
-        end
-        if not M.notifyCache['preloadFileSize'][uri] then
-            M.notifyCache['preloadFileSize'][uri] = true
-            M.notifyCache['skipLargeFileCount'] = M.notifyCache['skipLargeFileCount'] + 1
-            local message = lang.script(
-                'WORKSPACE_SKIP_LARGE_FILE',
-                ws.getRelativePath(uri),
-                config.get(uri, 'Lua.workspace.preloadFileSize'),
-                #file.text / 1000
-            )
-            if M.notifyCache['skipLargeFileCount'] <= 1 then
-                client.showMessage('Info', message)
-            else
-                client.logMessage('Info', message)
-            end
-        end
-        return false
-    end
-    return true
-end
-
---- @param uri string
---- @param callback fun(state: parser.state?)
-function M.compileStateAsync(uri, callback)
-    local file = M.fileMap[uri]
-    if not file then
-        callback(nil)
-        return
-    end
-    if M.stateMap[uri] then
-        callback(M.stateMap[uri])
-        return
-    end
-
-    ---@type brave.param.compile.options
-    local options = {
-        special = config.get(uri, 'Lua.runtime.special'),
-        unicodeName = config.get(uri, 'Lua.runtime.unicodeName'),
-        nonstandardSymbol = util.arrayToHash(config.get(uri, 'Lua.runtime.nonstandardSymbol')),
-    }
-
-    ---@type brave.param.compile
-    local params = {
-        uri = uri,
-        text = file.text,
-        mode = 'Lua',
-        version = config.get(uri, 'Lua.runtime.version'),
-        options = options,
-    }
-    pub.task('compile', params, function(result)
-        if file.text ~= params.text then
-            return
-        end
-        if not result.state then
-            log.error('Compile failed:', uri, result.err)
-            callback(nil)
-            return
-        end
-        M.compileStateThen(result.state, file)
-        callback(result.state)
-    end)
-end
-
-local function pluginOnTransformAst(uri, state)
-    local plugin = require('plugin')
-    ---TODO: maybe deepcopy astNode
-    local suc, result = plugin.dispatch('OnTransformAst', uri, state.ast)
-    if not suc then
-        return state
-    end
-    state.ast = result or state.ast
-    return state
-end
-
---- @param uri string
---- @return parser.state?
-function M.compileState(uri)
-    local file = M.fileMap[uri]
-    if not file then
-        return
-    end
-    if M.stateMap[uri] then
-        return M.stateMap[uri]
-    end
-    if not M.checkPreload(uri) then
-        return
-    end
-
-    ---@type brave.param.compile.options
-    local options = {
-        special = config.get(uri, 'Lua.runtime.special'),
-        unicodeName = config.get(uri, 'Lua.runtime.unicodeName'),
-        nonstandardSymbol = util.arrayToHash(config.get(uri, 'Lua.runtime.nonstandardSymbol')),
-    }
-
-    local ws = require('workspace')
-    local client = require('client')
-    if not client.isReady() then
-        log.error('Client not ready!', uri)
-    end
-    local prog <close> = progress.create(uri, lang.script.WINDOW_COMPILING, 0.5)
-    prog:setMessage(ws.getRelativePath(uri))
-    log.trace('Compile State:', uri)
-    local clock = os.clock()
-    local state, err =
-        parser.compile(file.text, 'Lua', config.get(uri, 'Lua.runtime.version'), options)
-    local passed = os.clock() - clock
-    if passed > 0.1 then
-        log.warn(
-            ('Compile [%s] takes [%.3f] sec, size [%.3f] kb.'):format(
-                uri,
-                passed,
-                #file.text / 1000
-            )
-        )
-    end
-
-    if not state then
-        log.error('Compile failed:', uri, err)
-        return nil
-    end
-
-    state = pluginOnTransformAst(uri, state)
-    if not state then
-        log.error('pluginOnTransformAst failed! discard the file state')
-        return nil
-    end
-
-    M.compileStateThen(state, file)
 
     return state
 end

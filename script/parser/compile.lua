@@ -73,6 +73,7 @@ local ChunkFinishMap = {
 --- @field special? string
 --- @field state? parser.state
 --- @field next? parser.object.union
+--- @field uri? string
 --- @field hasExit? true
 
 --- @class parser.object.break : parser.object.base
