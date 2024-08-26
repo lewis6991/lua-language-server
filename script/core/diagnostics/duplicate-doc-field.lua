@@ -44,7 +44,7 @@ return function(uri, callback)
 
     local cachedKeys = {}
 
-    ---@param field parser.object
+    ---@param field parser.object.base
     ---@return string?
     local function viewKey(field)
         if not cachedKeys[field] then
@@ -61,7 +61,7 @@ return function(uri, callback)
     end
 
     ---@async
-    ---@param myField parser.object
+    ---@param myField parser.object.base
     local function checkField(myField)
         await.delay()
         local myView = viewKey(myField)

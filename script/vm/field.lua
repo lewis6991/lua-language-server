@@ -33,8 +33,8 @@ local function searchByNode(source, pushResult, mark)
     end)
 end
 
---- @param source parser.object
---- @return       parser.object[]
+--- @param source parser.object.base
+--- @return       parser.object.base[]
 function vm.getFields(source)
     local results = {}
     local mark = {}

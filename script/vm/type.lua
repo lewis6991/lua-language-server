@@ -90,7 +90,7 @@ local function checkParentEnum(parentName, child, uri, mark, errs)
         end
         return false
     else
-        ---@cast child parser.object
+        ---@cast child parser.object.base
         local childName = vm.getNodeName(child)
         if
             childName == 'number'
@@ -224,8 +224,8 @@ local function checkValue(parent, child, mark, errs)
             if child == parent then
                 return true
             end
-            ---@cast parent parser.object
-            ---@cast child parser.object
+            ---@cast parent parser.object.base
+            ---@cast child parser.object.base
             local uri = guide.getUri(parent)
             local tnode = vm.compileNode(child)
             for _, pfield in ipairs(parent.fields) do
@@ -296,7 +296,7 @@ local function checkTableShape(parent, child, uri, mark, errs)
             if not key then
                 local fieldnode = vm.compileNode(field.field)[1]
                 if fieldnode and fieldnode.type == 'doc.type.integer' then
-                    ---@cast fieldnode parser.object
+                    ---@cast fieldnode parser.object.base
                     key = vm.getKeyName(fieldnode)
                 end
             end
@@ -830,7 +830,7 @@ end
 
 --- @param name string
 --- @param uri string
---- @return parser.object[]?
+--- @return parser.object.base[]?
 function vm.getOverloadsByTypeName(name, uri)
     local global = vm.getGlobal('type', name)
     if not global then

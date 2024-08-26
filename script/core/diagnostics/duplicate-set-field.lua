@@ -10,8 +10,8 @@ local sourceTypes = {
     'setindex',
 }
 
---- @param source parser.object
---- @return parser.object?
+--- @param source parser.object.base
+--- @return parser.object.base?
 local function getTopFunctionOfIf(source)
     while true do
         if

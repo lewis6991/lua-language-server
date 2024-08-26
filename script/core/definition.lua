@@ -111,7 +111,7 @@ local function convertIndex(source)
 end
 
 --- @async
---- @param source parser.object
+--- @param source parser.object.base
 --- @param results table
 local function checkSee(source, results)
     if source.type ~= 'doc.see.name' then

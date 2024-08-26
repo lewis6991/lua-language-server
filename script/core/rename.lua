@@ -249,7 +249,7 @@ local function ofDocParamName(source, newname, callback)
 end
 
 --- @async
---- @param source parser.object
+--- @param source parser.object.base
 --- @param newname string
 --- @param callback function
 --- @return table?

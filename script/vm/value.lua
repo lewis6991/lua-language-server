@@ -2,7 +2,7 @@ local guide = require('parser.guide')
 --- @class vm
 local vm = require('vm.vm')
 
---- @param source parser.object?
+--- @param source parser.object.base?
 --- @return boolean|nil
 function vm.testCondition(source)
     if not source then
@@ -65,17 +65,17 @@ local function getUnique(v)
         end
         return ('num:%s'):format(v[1])
     elseif v.type == 'table' then
-        ---@cast v parser.object
+        ---@cast v parser.object.base
         return ('table:%s@%d'):format(guide.getUri(v), v.start)
     elseif v.type == 'function' then
-        ---@cast v parser.object
+        ---@cast v parser.object.base
         return ('func:%s@%d'):format(guide.getUri(v), v.start)
     end
     return false
 end
 
---- @param a parser.object?
---- @param b parser.object?
+--- @param a parser.object.base?
+--- @param b parser.object.base?
 --- @return boolean|nil
 function vm.equal(a, b)
     if not a or not b then

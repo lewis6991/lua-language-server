@@ -2,7 +2,7 @@ local guide = require('parser.guide')
 local furi = require('file-uri')
 local ws = require('workspace')
 
---- @param doc parser.object
+--- @param doc parser.object.base
 --- @return string
 local function parseUri(doc)
     local uri

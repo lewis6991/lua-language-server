@@ -4,6 +4,88 @@ local guide = require('parser.guide')
 local compile = require('parser.compile')
 local util = require('utility')
 
+--- @class parser.object.doc.base
+--- @field start integer
+--- @field finish integer
+
+--- @class parser.object.doc.alias : parser.object.doc.base
+--- @class parser.object.doc.async : parser.object.doc.base
+--- @class parser.object.doc.cast : parser.object.doc.base
+
+--- @class parser.object.doc.class : parser.object.doc.base
+--- @field type 'doc.class'
+--- @field class? parser.object.doc.class.name
+--- @field docAttr? parser.object.doc.attr
+--- @field fields unknown
+--- @field operators unknown
+--- @field calls unknown
+--- @field signs unknown
+--- @field extends parser.object.doc.extends.name[]
+
+--- @class parser.object.doc.class.name : parser.object.doc.base
+--- @field type 'doc.class.name'
+
+--- @class parser.object.doc.extends.name : parser.object.doc.base
+--- @field type 'doc.extends.name'
+
+--- @class parser.object.doc.comment : parser.object.doc.base
+--- @class parser.object.doc.deprecated : parser.object.doc.base
+--- @class parser.object.doc.diagnostic : parser.object.doc.base
+--- @class parser.object.doc.field : parser.object.doc.base
+
+--- @class parser.object.doc.generic : parser.object.doc.base
+--- @field type 'doc.generic'
+--- @field generics parser.object.doc.generic.object[]
+
+--- @class parser.object.doc.generic.object
+--- @field type 'doc.generic.object'
+--- @field parent parser.object.doc.generic
+--- @field generic parser.object.doc.generic.name
+
+--- @class parser.object.doc.generic.name : parser.object.doc.base
+--- @field type 'doc.generic.name'
+--- @field parent parser.object.doc.generic.object
+--- @field [1] string
+
+--- @class parser.object.doc.module : parser.object.doc.base
+--- @class parser.object.doc.nodiscard : parser.object.doc.base
+--- @class parser.object.doc.operator : parser.object.doc.base
+--- @class parser.object.doc.overload : parser.object.doc.base
+--- @class parser.object.doc.package : parser.object.doc.base
+--- @class parser.object.doc.param : parser.object.doc.base
+--- @class parser.object.doc.private : parser.object.doc.base
+--- @class parser.object.doc.protected : parser.object.doc.base
+--- @class parser.object.doc.public : parser.object.doc.base
+--- @class parser.object.doc.return : parser.object.doc.base
+--- @class parser.object.doc.see : parser.object.doc.base
+--- @class parser.object.doc.source : parser.object.doc.base
+--- @class parser.object.doc.tailcomment : parser.object.doc.base
+--- @class parser.object.doc.attr : parser.object.doc.base
+
+--- @alias parser.object.doc.type.unit
+--- | parser.object.doc.type.boolean
+--- | parser.object.doc.type.string
+--- | parser.object.doc.type.integer
+--- | parser.object.doc.type.table
+--- | parser.object.doc.type.code
+--- | parser.object.doc.type.function
+
+--- @class parser.object.doc.type : parser.object.doc.base
+--- @field type 'doc.type'
+--- @field parent unknown
+--- @field types parser.object.doc.type.unit[]
+
+--- @class parser.object.doc.type.code : parser.object.doc.base
+--- @class parser.object.doc.type.name : parser.object.doc.base
+--- @class parser.object.doc.type.boolean : parser.object.doc.base
+--- @class parser.object.doc.type.string : parser.object.doc.base
+--- @class parser.object.doc.type.integer : parser.object.doc.base
+--- @class parser.object.doc.type.table : parser.object.doc.base
+--- @class parser.object.doc.type.function : parser.object.doc.base
+
+--- @class parser.object.doc.vararg : parser.object.doc.base
+--- @class parser.object.doc.version : parser.object.doc.base
+
 local TokenTypes, TokenStarts, TokenFinishs, TokenContents, TokenMarks
 --- @type integer
 local Ci
@@ -143,24 +225,23 @@ Symbol              <-  ({} {
 
 --- @alias parser.visibleType 'public' | 'protected' | 'private' | 'package'
 
---- @class parser.object
+--- @class parser.object.old
 --- @field literal           boolean
---- @field signs             parser.object[]
---- @field originalComment   parser.object
---- @field as?               parser.object
+--- @field signs             parser.object.base[]
+--- @field originalComment   parser.object.base
+--- @field as?               parser.object.base
 --- @field touch?            integer
 --- @field module?           string
 --- @field async?            boolean
 --- @field versions?         table[]
---- @field names?            parser.object[]
+--- @field names?            parser.object.base[]
 --- @field path?             string
---- @field bindComments?     parser.object[]
+--- @field bindComments?     parser.object.base[]
 --- @field visible?          parser.visibleType
---- @field operators?        parser.object[]
---- @field calls?            parser.object[]
---- @field generics?         parser.object[]
---- @field generic?          parser.object
---- @field docAttr?          parser.object
+--- @field operators?        parser.object.base[]
+--- @field calls?            parser.object.base[]
+--- @field generic?          parser.object.base
+--- @field docAttr?          parser.object.base
 --- @field pattern?          string
 
 local function parseTokens(text, offset)
@@ -257,6 +338,7 @@ local function nextSymbolOrError(symbol)
     return false
 end
 
+--- @return parser.object.doc.attr?
 local function parseDocAttr(parent)
     if not checkToken('symbol', '(', 1) then
         return
@@ -290,6 +372,7 @@ local function parseDocAttr(parent)
     return attrs
 end
 
+--- @return parser.object.doc.type?
 local function parseIndexField(parent)
     if not checkToken('symbol', '[', 1) then
         return
@@ -300,6 +383,7 @@ local function parseIndexField(parent)
     return field
 end
 
+--- @return parser.object.doc.type.table?
 local function parseTable(parent)
     if not checkToken('symbol', '{', 1) then
         return
@@ -483,6 +567,7 @@ local function parseDots(tp, parent)
     return dots
 end
 
+--- @return parser.object.doc.type.function?
 local function parseTypeUnitFunction(parent)
     if not checkToken('name', 'fun', 1) then
         return
@@ -660,6 +745,7 @@ local function parseTypeUnitSign(parent, node)
     return result
 end
 
+--- @return parser.object.doc.type.string?
 local function parseString(parent)
     local tp, content = peekToken()
     if not tp or tp ~= 'string' then
@@ -686,6 +772,7 @@ local function parseString(parent)
     return str
 end
 
+--- @return parser.object.doc.type.code?
 local function parseCode(parent)
     local tp, content = peekToken()
     if not tp or tp ~= 'code' then
@@ -702,6 +789,7 @@ local function parseCode(parent)
     return code
 end
 
+--- @return parser.object.doc.type.code?
 local function parseCodePattern(parent)
     local tp, pattern = peekToken()
     if not tp or tp ~= 'name' then
@@ -735,7 +823,7 @@ local function parseCodePattern(parent)
         end
     end
     local start = getStart()
-    for i = 2, finishOffset do
+    for _ = 2, finishOffset do
         nextToken()
     end
     local code = {
@@ -749,6 +837,7 @@ local function parseCodePattern(parent)
     return code
 end
 
+--- @return parser.object.doc.type.integer?
 local function parseInteger(parent)
     local tp, content = peekToken()
     if not tp or tp ~= 'integer' then
@@ -756,16 +845,16 @@ local function parseInteger(parent)
     end
 
     nextToken()
-    local integer = {
+    return {
         type = 'doc.type.integer',
         start = getStart(),
         finish = getFinish(),
         parent = parent,
         [1] = content,
     }
-    return integer
 end
 
+--- @return parser.object.doc.type.boolean?
 local function parseBoolean(parent)
     local tp, content = peekToken()
     if not tp or tp ~= 'name' or (content ~= 'true' and content ~= 'false') then
@@ -773,14 +862,13 @@ local function parseBoolean(parent)
     end
 
     nextToken()
-    local boolean = {
+    return {
         type = 'doc.type.boolean',
         start = getStart(),
         finish = getFinish(),
         parent = parent,
         [1] = content == 'true' and true or false,
     }
-    return boolean
 end
 
 local function parseParen(parent)
@@ -793,6 +881,7 @@ local function parseParen(parent)
     return tp
 end
 
+--- @return parser.object.doc.type.unit
 function parseTypeUnit(parent)
     local result = parseFunction(parent)
         or parseTable(parent)
@@ -852,6 +941,7 @@ end
 
 local lockResume = false
 
+--- @return parser.object.doc.type?
 function parseType(parent)
     local result = {
         type = 'doc.type',
@@ -2233,7 +2323,7 @@ local function luadoc(state)
     end
 
     if ast.state.pluginDocs then
-        for i, doc in ipairs(ast.state.pluginDocs) do
+        for _, doc in ipairs(ast.state.pluginDocs) do
             insertDoc(doc, doc.originalComment)
         end
         ---@param a unknown
@@ -2267,7 +2357,6 @@ return {
             ast.state.pluginDocs = pluginDocs
             return doc
         end
-        return
     end,
     luadoc = luadoc,
 }

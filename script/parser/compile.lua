@@ -53,28 +53,33 @@ local ChunkFinishMap = {
 
 --- Nodes
 
---- @alias parser.object.union
+--- @alias parser.object
 --- | parser.object.block
---- | parser.object.break
+--- | parser.object.action
 --- | parser.object.expr
 --- | parser.object.forlist
---- | parser.object.goto
---- | parser.object.local
 --- | parser.object.main
 --- | parser.object.name
 --- | parser.object.funcargs
---- | parser.object.return
 --- | parser.object.callargs
+--- | parser.object.old
 
 --- @class parser.object.base
 --- @field start integer
 --- @field finish integer
---- @field parent? parser.object.union
 --- @field special? string
 --- @field state? parser.state
---- @field next? parser.object.union
+--- @field next? parser.object
 --- @field uri? string
 --- @field hasExit? true
+--- @field parent? parser.object
+
+--- @class parser.object.setfield : parser.object.base
+--- @field type 'setfield'
+
+--- @class parser.object.setmethod : parser.object.base
+--- @field type 'setmethod'
+--- @field node unknown
 
 --- @class parser.object.break : parser.object.base
 --- @field type 'break'
@@ -90,7 +95,7 @@ local ChunkFinishMap = {
 
 --- @class parser.object.localattrs : parser.object.base
 --- @field type 'localattrs'
---- @field parent? parser.object.union
+--- @field parent? parser.object
 --- @field [integer] parser.object.localattr
 
 --- @class parser.object.localattr : parser.object.base
@@ -107,6 +112,7 @@ local ChunkFinishMap = {
 --- @field [1] string Name of local variable
 
 --- @class parser.object.self : parser.object.local
+--- @field parent parser.object.callargs|parser.object.funcargs
 --- @field type 'self'
 
 --- @class parser.object.return : parser.object.base
@@ -114,6 +120,9 @@ local ChunkFinishMap = {
 
 --- @class parser.object.dot : parser.object.base
 --- @field type 'dot'
+
+--- @class parser.object.colon : parser.object.base
+--- @field type ':'
 
 --- @class parser.object.name : parser.object.base
 --- @field type 'name'
@@ -129,6 +138,7 @@ local ChunkFinishMap = {
 --- @class parser.object.getmethod : parser.object.base
 --- @field type 'getmethod'
 --- @field node parser.object.expr
+--- @field colon parser.object.colon
 
 --- @alias parser.object.simple
 --- | parser.object.name
@@ -201,6 +211,7 @@ local ChunkFinishMap = {
 
 --- @class parser.object.callargs : parser.object.base
 --- @field type 'callargs'
+--- @field parent parser.object.call
 --- @field [integer] parser.object.expr
 
 --- @class parser.object.call : parser.object.base
@@ -260,9 +271,16 @@ local ChunkFinishMap = {
 --- @field node parser.object.local
 --- @field [1] string Name
 
+--- @class parser.object.setlocal : parser.object.base
+--- @field type 'setlocal'
+--- @field node parser.object.local|parser.object.self
+
+--- @class parser.object.setindex : parser.object.base
+--- @field type 'setindex'
+
 --- @class parser.object.getlocal : parser.object.base
 --- @field type 'getlocal'
---- @field node parser.object.local
+--- @field node parser.object.local|parser.object.self
 --- @field [1] string Name
 
 --- @class parser.object.label : parser.object.base
@@ -313,6 +331,10 @@ local ChunkFinishMap = {
 --- | parser.object.break
 --- | parser.object.return
 --- | parser.object.goto
+--- | parser.object.setlocal
+--- | parser.object.setfield
+--- | parser.object.setmethod
+--- | parser.object.setindex
 
 --- @alias parser.object.block
 --- | parser.object.main
@@ -332,7 +354,6 @@ local ChunkFinishMap = {
 --- @class parser.object.block.base : parser.object.base
 --- @field bstart integer Block start
 --- @field bfinish? integer Block end
---- @field parent? parser.object.block
 --- @field labels? table<string,parser.object.label>
 --- @field locals parser.object.local[]
 --- @field gotos parser.object.goto[]
@@ -340,7 +361,7 @@ local ChunkFinishMap = {
 --- @field hasGoTo? true
 --- @field hasReturn? true
 --- @field hasBreak? true
---- @field [integer] parser.object.union
+--- @field [integer] parser.object
 
 --- @class parser.object.main : parser.object.block.base
 --- @field type 'main'
@@ -352,6 +373,7 @@ local ChunkFinishMap = {
 
 --- @class parser.object.funcargs : parser.object.base
 --- @field type 'funcargs'
+--- @field parent parser.object.function
 --- @field [integer] parser.object.local|parser.object.self|parser.object.vararg
 
 --- @class parser.object.vararg : parser.object.base
@@ -458,7 +480,7 @@ local ChunkFinishMap = {
 --- @field ENVMode '@fenv' | '_ENV'
 --- @field errs parser.state.err[]
 --- @field specials? table<string,parser.object.base[]>
---- @field ast? parser.object.union
+--- @field ast? parser.object
 --- @field comms parser.object.comment[]
 
 local State --- @type parser.state
@@ -2126,6 +2148,7 @@ end
 --- @param lastMethod parser.object.getmethod?
 --- @return parser.object.getmethod, parser.object.getmethod?
 local function parseGetMethod(node, lastMethod)
+    --- @type parser.object.colon
     local colon = {
         type = ':',
         start = getPosition(Token.getPos(), 'left'),
@@ -2723,7 +2746,7 @@ do -- P.Function | P.Lambda
                     finish = finish,
                     parent = params,
                     [1] = 'self',
-                })
+                }) --[[@as parser.object.self]]
                 params[1].type = 'self'
             end
         end
@@ -3129,9 +3152,9 @@ function P.Exp(asAction, level)
     return exp
 end
 
---- @return parser.object.union?   first
---- @return parser.object.union?   second
---- @return parser.object.union[]? rest
+--- @return parser.object?   first
+--- @return parser.object?   second
+--- @return parser.object[]? rest
 local function parseSetValues()
     skipSpace()
     local first = P.Exp()
@@ -3178,8 +3201,8 @@ local function parseSetValues()
     end
 end
 
---- @return parser.object.union?   second
---- @return parser.object.union[]? rest
+--- @return parser.object?   second
+--- @return parser.object[]? rest
 local function parseVarTails(parser, isLocal)
     if Token.get() ~= ',' then
         return
@@ -4050,7 +4073,7 @@ end
 
 --- function a()
 --- end
---- @return parser.object.function?
+--- @return parser.object.function|parser.object.setlocal|parser.object.setmethod|parser.object.setindex|parser.object.setfield
 function P.FunctionAction()
     local func = P.Function(false, true)
     if func then

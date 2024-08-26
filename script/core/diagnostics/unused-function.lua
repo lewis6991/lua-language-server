@@ -19,7 +19,7 @@ local function isToBeClosed(source)
     return false
 end
 
---- @param source parser.object?
+--- @param source parser.object.base?
 --- @return boolean
 local function isValidFunction(source)
     if not source then

@@ -15,7 +15,7 @@ local subString = require('core.substring')
 --- @field start integer
 --- @field end integer
 
---- @param astNode parser.object
+--- @param astNode parser.object.base
 --- @param state parser.state
 --- @return psi.view.node | nil
 local function toPsiNode(astNode, state)
@@ -45,7 +45,7 @@ local function toPsiNode(astNode, state)
     }
 end
 
---- @param astNode parser.object
+--- @param astNode parser.object.base
 --- @return psi.view.node | nil
 local function collectPsi(astNode, state)
     local psiNode = toPsiNode(astNode, state)

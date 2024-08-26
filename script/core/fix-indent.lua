@@ -66,7 +66,7 @@ end
 
 --- @param state parser.state
 --- @param pos integer
---- @return parser.object
+--- @return parser.object.base
 local function getBlock(state, pos)
     local block
     guide.eachSourceContain(state.ast, pos, function (src)

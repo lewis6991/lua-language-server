@@ -469,7 +469,7 @@ local function tyrDocParamComment(source)
     end
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 local function tryDocEnum(source)
     if source.type ~= 'doc.enum' then
         return

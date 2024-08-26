@@ -16,7 +16,7 @@ local checkTypes = {
     'tableexp',
 }
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return boolean
 local function hasMarkType(source)
     if not source.bindDocs then
@@ -30,7 +30,7 @@ local function hasMarkType(source)
     return false
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return boolean
 local function hasMarkClass(source)
     if not source.bindDocs then

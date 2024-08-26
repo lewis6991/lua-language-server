@@ -148,7 +148,7 @@ viewNodeSwitch = util.switch()
         local node = vm.compileNode(source)
         for c in node:eachObject() do
             if guide.isLiteral(c) then
-                ---@cast c parser.object
+                ---@cast c parser.object.base
                 local view = vm.getInfer(c):view(uri)
                 if view then
                     infer._drop[view] = true
@@ -555,7 +555,7 @@ function vm.viewObject(source, uri)
     return viewNodeSwitch(source.type, source, infer, uri)
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @param uri string
 --- @return string?
 --- @return string|number|boolean|nil

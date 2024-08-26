@@ -11,7 +11,7 @@ local client = require('client')
 
 --- @class codeLens.resolving
 --- @field mode    'reference'
---- @field source? parser.object
+--- @field source? parser.object.base
 
 --- @class codeLens.result
 --- @field position integer
@@ -84,7 +84,7 @@ function mt:collectReferences()
 end
 
 --- @async
---- @param source parser.object
+--- @param source parser.object.base
 --- @return proto.command?
 function mt:resolveReference(source)
     local refs = getRef(self.uri, source.finish, false)

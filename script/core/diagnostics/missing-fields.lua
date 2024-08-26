@@ -60,7 +60,7 @@ return function(uri, callback)
                         if not key then
                             local fieldnode = vm.compileNode(field.field)[1]
                             if fieldnode and fieldnode.type == 'doc.type.integer' then
-                                ---@cast fieldnode parser.object
+                                ---@cast fieldnode parser.object.base
                                 key = vm.getKeyName(fieldnode)
                             end
                         end

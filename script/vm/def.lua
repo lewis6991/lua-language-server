@@ -2,8 +2,8 @@
 local vm = require('vm.vm')
 local guide = require('parser.guide')
 
---- @param source  parser.object
---- @param pushResult fun(src: parser.object)
+--- @param source  parser.object.base
+--- @param pushResult fun(src: parser.object.base)
 local function searchBySimple(source, pushResult)
     if source.type == 'goto' then
         if source.node then
@@ -19,8 +19,8 @@ local function searchBySimple(source, pushResult)
     end
 end
 
---- @param source  parser.object
---- @param pushResult fun(src: parser.object)
+--- @param source  parser.object.base
+--- @param pushResult fun(src: parser.object.base)
 local function searchByLocalID(source, pushResult)
     local idSources = vm.getVariableSets(source)
     if not idSources then
@@ -45,8 +45,8 @@ local function searchByNode(source, pushResult)
     end
 end
 
---- @param source parser.object
---- @return       parser.object[]
+--- @param source parser.object.base
+--- @return       parser.object.base[]
 function vm.getDefs(source)
     local results = {}
     local mark = {}
@@ -89,7 +89,7 @@ local function checkHasDef(checkFunc, source, pushResult)
     return err == HAS_DEF_ERR
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 function vm.hasDef(source)
     local mark = {}
     local hasLocal

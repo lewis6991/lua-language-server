@@ -79,8 +79,8 @@ local function buildAsConst(uri, keys, nodeMap, reachMax)
     return table.concat(lines, '\n')
 end
 
---- @param source parser.object
---- @param fields parser.object[]
+--- @param source parser.object.base
+--- @param fields parser.object.base[]
 local function getVisibleKeyMap(source, fields)
     local uri = guide.getUri(source)
     local keys = {}

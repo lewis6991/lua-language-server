@@ -34,7 +34,7 @@ local diagnosticModes = {
 local stackID = 0
 local stacks = {}
 
---- @param callback async fun(newSource: parser.object): table
+--- @param callback async fun(newSource: parser.object.base): table
 local function stack(oldSource, callback)
     stackID = stackID + 1
     local uri = guide.getUri(oldSource)
@@ -75,7 +75,7 @@ local function trim(str)
 end
 
 local function findNearestSource(state, position)
-    ---@type parser.object
+    ---@type parser.object.base
     local source
     guide.eachSourceContain(state.ast, position, function (src)
         source = src
@@ -684,7 +684,7 @@ local function checkGlobal(state, word, startPos, position, parent, oop, results
 end
 
 --- @async
---- @param parent parser.object
+--- @param parent parser.object.base
 local function checkField(state, word, start, position, parent, oop, results)
     if parent.tag == '_ENV' or parent.special == '_G' then
         local globals = vm.getGlobalSets(state.uri, 'variable')
@@ -1331,7 +1331,7 @@ local function insertEnum(state, pos, src, enums, isInArray, mark)
     if src.type == 'doc.type.string'
     or src.type == 'doc.type.integer'
     or src.type == 'doc.type.boolean' then
-        ---@cast src parser.object
+        ---@cast src parser.object.base
         enums[#enums+1] = {
             label       = vm.getInfer(src):view(state.uri),
             description = src.comment,
@@ -1344,7 +1344,7 @@ local function insertEnum(state, pos, src, enums, isInArray, mark)
             kind        = define.CompletionItemKind.EnumMember,
         }
     elseif src.type == 'doc.type.function' then
-        ---@cast src parser.object
+        ---@cast src parser.object.base
         local insertText = buildInsertDocFunction(src)
         local description
         if src.comment then
@@ -1364,7 +1364,7 @@ local function insertEnum(state, pos, src, enums, isInArray, mark)
             insertText  = insertText,
         }
     elseif src.type == 'doc.enum' then
-        ---@cast src parser.object
+        ---@cast src parser.object.base
         if vm.docHasAttr(src, 'key') then
             insertDocEnumKey(state, pos, src, enums)
         else
@@ -1831,7 +1831,7 @@ local function getluaDocByContain(state, position)
     return result
 end
 
---- @return parser.state.err?, parser.object?
+--- @return parser.state.err?, parser.object.base?
 local function getluaDocByErr(state, start, position)
     local targetError
     for _, err in ipairs(state.errs) do

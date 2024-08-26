@@ -16,7 +16,7 @@ function M.push(chunk)
     chunks[#chunks + 1] = chunk
 end
 
----@param x parser.object.union
+---@param x parser.object
 function M.pushIntoCurrent(x)
     local chunk = chunks[#chunks]
     if chunk then

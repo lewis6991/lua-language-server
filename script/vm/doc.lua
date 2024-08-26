@@ -4,17 +4,17 @@ local guide = require('parser.guide')
 local vm = require('vm.vm')
 local config = require('config')
 
---- @class parser.object
---- @field package _castTargetHead? parser.object | vm.global | false
+--- @class parser.object.base
+--- @field package _castTargetHead? parser.object.base | vm.global | false
 --- @field package _validVersions? table<string, boolean>
---- @field package _deprecated? parser.object | false
+--- @field package _deprecated? parser.object.base | false
 --- @field package _async? boolean
 --- @field package _nodiscard? boolean
 
 --- Get class and alias
 --- @param suri string
 --- @param name? string
---- @return parser.object[]
+--- @return parser.object.base[]
 function vm.getDocSets(suri, name)
     if name then
         local global = vm.getGlobal('type', name)
@@ -80,7 +80,7 @@ function vm.isMetaFileRequireable(uri)
     return vm.getMetaName(uri) ~= '_'
 end
 
---- @param doc parser.object
+--- @param doc parser.object.base
 --- @return table<string, boolean>?
 function vm.getValidVersions(doc)
     if doc.type ~= 'doc.version' then
@@ -124,8 +124,8 @@ function vm.getValidVersions(doc)
     return valids
 end
 
---- @param value parser.object
---- @return parser.object?
+--- @param value parser.object.base
+--- @return parser.object.base?
 local function getDeprecated(value)
     if not value.bindDocs then
         return nil
@@ -156,9 +156,9 @@ local function getDeprecated(value)
     return nil
 end
 
---- @param value parser.object
+--- @param value parser.object.base
 --- @param deep boolean?
---- @return parser.object?
+--- @return parser.object.base?
 function vm.getDeprecated(value, deep)
     if not deep then
         return getDeprecated(value)
@@ -183,7 +183,7 @@ function vm.getDeprecated(value, deep)
     return deprecated
 end
 
---- @param  value parser.object
+--- @param  value parser.object.base
 --- @return boolean
 local function isAsync(value)
     if value.type == 'function' then
@@ -208,7 +208,7 @@ local function isAsync(value)
     return value.async == true
 end
 
---- @param value parser.object
+--- @param value parser.object.base
 --- @param deep  boolean?
 --- @return boolean
 function vm.isAsync(value, deep)
@@ -225,7 +225,7 @@ function vm.isAsync(value, deep)
     return false
 end
 
---- @param value parser.object
+--- @param value parser.object.base
 --- @return boolean
 local function isNoDiscard(value)
     if value.type == 'function' then
@@ -247,7 +247,7 @@ local function isNoDiscard(value)
     return false
 end
 
---- @param value parser.object
+--- @param value parser.object.base
 --- @param deep boolean?
 --- @return boolean
 function vm.isNoDiscard(value, deep)
@@ -264,7 +264,7 @@ function vm.isNoDiscard(value, deep)
     return false
 end
 
---- @param param parser.object
+--- @param param parser.object.base
 --- @return boolean
 local function isCalledInFunction(param)
     if not param.ref then
@@ -292,7 +292,7 @@ local function isCalledInFunction(param)
     return false
 end
 
---- @param node parser.object
+--- @param node parser.object.base
 --- @param index integer
 --- @return boolean
 local function isLinkedCall(node, index)
@@ -309,14 +309,14 @@ local function isLinkedCall(node, index)
     return false
 end
 
---- @param node parser.object
+--- @param node parser.object.base
 --- @param index integer
 --- @return boolean
 function vm.isLinkedCall(node, index)
     return isLinkedCall(node, index)
 end
 
---- @param call parser.object
+--- @param call parser.object.base
 --- @return boolean
 function vm.isAsyncCall(call)
     if vm.isAsync(call.node, true) then
@@ -333,7 +333,7 @@ function vm.isAsyncCall(call)
     return false
 end
 
---- @param doc parser.object
+--- @param doc parser.object.base
 --- @param results table[]
 local function makeDiagRange(doc, results)
     local names
@@ -437,8 +437,8 @@ function vm.isDiagDisabledAt(uri, position, name, err)
     return count > 0
 end
 
---- @param doc parser.object
---- @return (parser.object | vm.global)?
+--- @param doc parser.object.base
+--- @return (parser.object.base | vm.global)?
 function vm.getCastTargetHead(doc)
     if doc._castTargetHead ~= nil then
         return doc._castTargetHead or nil
@@ -461,7 +461,7 @@ function vm.getCastTargetHead(doc)
     return nil
 end
 
---- @param doc parser.object
+--- @param doc parser.object.base
 --- @param key string
 --- @return boolean
 function vm.docHasAttr(doc, key)

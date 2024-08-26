@@ -3,8 +3,8 @@ local vm = require('vm.vm')
 local guide = require('parser.guide')
 local util = require('utility')
 
---- @param arg parser.object
---- @return parser.object?
+--- @param arg parser.object.base
+--- @return parser.object.base?
 local function getDocParam(arg)
     if not arg.bindDocs then
         return nil
@@ -17,7 +17,7 @@ local function getDocParam(arg)
     return nil
 end
 
---- @param func parser.object
+--- @param func parser.object.base
 --- @return integer min
 --- @return number  max
 --- @return integer def
@@ -60,7 +60,7 @@ function vm.countParamsOfFunction(func)
     return min, max, def
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return integer min
 --- @return number  max
 --- @return integer def
@@ -80,7 +80,7 @@ function vm.countParamsOfSource(source)
     for nd in vm.compileNode(source):eachObject() do
         if nd.type == 'doc.type.function' and not overloads[nd] then
             hasDocFunction = true
-            ---@cast nd parser.object
+            ---@cast nd parser.object.base
             local dmin, dmax, ddef = vm.countParamsOfFunction(nd)
             if dmin > min then
                 min = dmin
@@ -116,7 +116,7 @@ function vm.countParamsOfNode(node)
     local min, max, def
     for n in node:eachObject() do
         if n.type == 'function' or n.type == 'doc.type.function' then
-            ---@cast n parser.object
+            ---@cast n parser.object.base
             local fmin, fmax, fdef = vm.countParamsOfFunction(n)
             if not min or fmin < min then
                 min = fmin
@@ -132,7 +132,7 @@ function vm.countParamsOfNode(node)
     return min or 0, max or math.huge, def or 0
 end
 
---- @param func parser.object
+--- @param func parser.object.base
 --- @param onlyDoc? boolean
 --- @param mark? table
 --- @return integer min
@@ -202,7 +202,7 @@ function vm.countReturnsOfFunction(func, onlyDoc, mark)
     error('not a function')
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return integer min
 --- @return number  max
 --- @return integer def
@@ -229,7 +229,7 @@ function vm.countReturnsOfSource(source)
     end
     for nd in vm.compileNode(source):eachObject() do
         if nd.type == 'doc.type.function' and not overloads[nd] then
-            ---@cast nd parser.object
+            ---@cast nd parser.object.base
             hasDocFunction = true
             local dmin, dmax, ddef = vm.countReturnsOfFunction(nd)
             if not min or dmin < min then
@@ -258,7 +258,7 @@ function vm.countReturnsOfSource(source)
     return min, max, def
 end
 
---- @param func parser.object
+--- @param func parser.object.base
 --- @param mark? table
 --- @return integer min
 --- @return number  max
@@ -285,7 +285,7 @@ function vm.countReturnsOfCall(func, args, mark)
     return min or 0, max or math.huge, def or 0
 end
 
---- @param list parser.object[]?
+--- @param list parser.object.base[]?
 --- @param mark? table
 --- @return integer min
 --- @return number  max
@@ -334,7 +334,7 @@ function vm.countList(list, mark)
 end
 
 --- @param uri string
---- @param args parser.object[]
+--- @param args parser.object.base[]
 --- @return boolean
 local function isAllParamMatched(uri, args, params)
     if not params then
@@ -353,9 +353,9 @@ local function isAllParamMatched(uri, args, params)
     return true
 end
 
---- @param func parser.object
---- @param args? parser.object[]
---- @return parser.object[]?
+--- @param func parser.object.base
+--- @param args? parser.object.base[]
+--- @return parser.object.base[]?
 function vm.getExactMatchedFunctions(func, args)
     local funcs = vm.getMatchedFunctions(func, args)
     if not args or not funcs then
@@ -384,10 +384,10 @@ function vm.getExactMatchedFunctions(func, args)
     return funcs
 end
 
---- @param func parser.object
---- @param args? parser.object[]
+--- @param func parser.object.base
+--- @param args? parser.object.base[]
 --- @param mark? table
---- @return parser.object[]?
+--- @return parser.object.base[]?
 function vm.getMatchedFunctions(func, args, mark)
     local funcs = {}
     local node = vm.compileNode(func)
@@ -451,7 +451,7 @@ function vm.isVarargFunctionWithOverloads(func)
     return false
 end
 
---- @param func parser.object
+--- @param func parser.object.base
 --- @return boolean
 function vm.isEmptyFunction(func)
     if #func > 0 then

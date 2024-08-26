@@ -3,31 +3,31 @@ local vm = require('vm.vm')
 local guide = require('parser.guide')
 local util = require('utility')
 
---- @class parser.object
+--- @class parser.object.base
 --- @field package _tracer? vm.tracer
---- @field package _casts?  parser.object[]
+--- @field package _casts?  parser.object.base[]
 
 --- @alias tracer.mode 'local' | 'global'
 
 --- @class vm.tracer
 --- @field mode      tracer.mode
 --- @field name      string
---- @field source    parser.object | vm.variable
---- @field assigns   (parser.object | vm.variable)[]
---- @field assignMap table<parser.object, true>
---- @field getMap    table<parser.object, true>
---- @field careMap   table<parser.object, true>
---- @field mark      table<parser.object, true>
---- @field casts     parser.object[]
---- @field nodes     table<parser.object, vm.node|false>
---- @field main      parser.object
+--- @field source    parser.object.base | vm.variable
+--- @field assigns   (parser.object.base | vm.variable)[]
+--- @field assignMap table<parser.object.base, true>
+--- @field getMap    table<parser.object.base, true>
+--- @field careMap   table<parser.object.base, true>
+--- @field mark      table<parser.object.base, true>
+--- @field casts     parser.object.base[]
+--- @field nodes     table<parser.object.base, vm.node|false>
+--- @field main      parser.object.base
 --- @field uri       string
 --- @field castIndex integer?
 local Tracer = {}
 Tracer.__index = Tracer
 Tracer.fastCalc = true
 
---- @return parser.object[]
+--- @return parser.object.base[]
 function Tracer:getCasts()
     local root = guide.getRoot(self.main)
     if not root._casts then
@@ -42,7 +42,7 @@ function Tracer:getCasts()
     return root._casts
 end
 
---- @param obj parser.object
+--- @param obj parser.object.base
 function Tracer:collectAssign(obj)
     while true do
         local block = guide.getParentBlock(obj)
@@ -61,7 +61,7 @@ function Tracer:collectAssign(obj)
     end
 end
 
---- @param obj parser.object
+--- @param obj parser.object.base
 function Tracer:collectCare(obj)
     while true do
         if self.careMap[obj] then
@@ -171,7 +171,7 @@ end
 
 --- @param start  integer
 --- @param finish integer
---- @return parser.object?
+--- @return parser.object.base?
 function Tracer:getLastAssign(start, finish)
     local lastAssign
     for _, assign in ipairs(self.assigns) do
@@ -180,7 +180,7 @@ function Tracer:getLastAssign(start, finish)
             ---@cast assign vm.variable
             obj = assign.base
         else
-            ---@cast assign parser.object
+            ---@cast assign parser.object.base
             obj = assign
         end
         if obj.start >= start then
@@ -256,7 +256,7 @@ local lookIntoChild = util
     :case('getlocal')
     :case('getglobal')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -276,7 +276,7 @@ local lookIntoChild = util
     :case('for')
     :case('do')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -303,7 +303,7 @@ local lookIntoChild = util
     )
     :case('in')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -324,7 +324,7 @@ local lookIntoChild = util
     )
     :case('while')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -360,7 +360,7 @@ local lookIntoChild = util
     )
     :case('if')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -413,7 +413,7 @@ local lookIntoChild = util
     )
     :case('getfield')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -432,7 +432,7 @@ local lookIntoChild = util
     )
     :case('getmethod')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -451,7 +451,7 @@ local lookIntoChild = util
     )
     :case('getindex')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -471,7 +471,7 @@ local lookIntoChild = util
     :case('setfield')
     :case('setmethod')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -486,7 +486,7 @@ local lookIntoChild = util
     :case('tablefield')
     :case('tableexp')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -497,7 +497,7 @@ local lookIntoChild = util
     )
     :case('setindex')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -510,7 +510,7 @@ local lookIntoChild = util
     )
     :case('tableindex')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -522,7 +522,7 @@ local lookIntoChild = util
     )
     :case('local')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -555,7 +555,7 @@ local lookIntoChild = util
     :case('callargs')
     :case('list')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -568,7 +568,7 @@ local lookIntoChild = util
     )
     :case('select')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -579,7 +579,7 @@ local lookIntoChild = util
     )
     :case('function')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -590,7 +590,7 @@ local lookIntoChild = util
     )
     :case('paren')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -601,7 +601,7 @@ local lookIntoChild = util
     )
     :case('call')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -619,7 +619,7 @@ local lookIntoChild = util
     )
     :case('binary')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -727,7 +727,7 @@ local lookIntoChild = util
     )
     :case('unary')
     ---@param tracer   vm.tracer
-    ---@param action   parser.object
+    ---@param action   parser.object.base
     ---@param topNode  vm.node
     ---@param outNode? vm.node
     :call(
@@ -746,7 +746,7 @@ local lookIntoChild = util
         end
     )
 
---- @param action   parser.object
+--- @param action   parser.object.base
 --- @param topNode  vm.node
 --- @param outNode? vm.node
 --- @return vm.node topNode
@@ -761,7 +761,7 @@ function Tracer:lookIntoChild(action, topNode, outNode)
     return topNode, outNode or topNode
 end
 
---- @param block parser.object
+--- @param block parser.object.base
 --- @param start integer
 --- @param node  vm.node
 function Tracer:lookIntoBlock(block, start, node)
@@ -798,7 +798,7 @@ function Tracer:lookIntoBlock(block, start, node)
     end
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 function Tracer:calcNode(source)
     if self.getMap[source] then
         local lastAssign = self:getLastAssign(0, source.finish)
@@ -823,7 +823,7 @@ function Tracer:calcNode(source)
     end
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return vm.node?
 function Tracer:getNode(source)
     local cache = self.nodes[source]
@@ -843,7 +843,7 @@ end
 --- @field package _tracer vm.tracer
 
 --- @param mode tracer.mode
---- @param source parser.object | vm.variable
+--- @param source parser.object.base | vm.variable
 --- @param name string
 --- @return vm.tracer?
 local function createTracer(mode, source, name)
@@ -857,7 +857,7 @@ local function createTracer(mode, source, name)
         ---@cast source vm.variable
         main = guide.getParentBlock(source.base)
     else
-        ---@cast source parser.object
+        ---@cast source parser.object.base
         main = guide.getParentBlock(source)
     end
     if not main then
@@ -888,7 +888,7 @@ local function createTracer(mode, source, name)
     return tracer
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return vm.node?
 function vm.traceNode(source)
     local mode, base, name

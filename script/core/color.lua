@@ -2,7 +2,7 @@ local files = require('files')
 local guide = require('parser.guide')
 
 local colorPattern = string.rep('%x', 8)
---- @param source parser.object
+--- @param source parser.object.base
 --- @return boolean
 local function isColor(source)
     ---@type string

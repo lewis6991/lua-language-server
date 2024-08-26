@@ -15,7 +15,7 @@ local m = {}
 m.validUris = {}
 
 --- @param state parser.state
---- @return parser.object?
+--- @return parser.object.base?
 function m.getTargetSource(state)
     local targetReturns = state.ast.returns
     if not targetReturns then

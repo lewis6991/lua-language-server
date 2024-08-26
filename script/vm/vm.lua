@@ -15,7 +15,7 @@ function M.getSpecial(source)
     end
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return string?
 function M.getKeyName(source)
     if not source then
@@ -43,8 +43,8 @@ function M.getKeyType(source)
     return guide.getKeyType(source)
 end
 
---- @param source parser.object
---- @return parser.object?
+--- @param source parser.object.base
+--- @return parser.object.base?
 function M.getObjectValue(source)
     if source.value then
         return source.value
@@ -55,8 +55,8 @@ function M.getObjectValue(source)
     return nil
 end
 
---- @param source parser.object
---- @return parser.object?
+--- @param source parser.object.base
+--- @return parser.object.base?
 function M.getObjectFunctionValue(source)
     local value = M.getObjectValue(source)
     if value == nil then

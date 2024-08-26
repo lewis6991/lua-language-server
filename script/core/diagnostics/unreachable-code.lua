@@ -5,7 +5,7 @@ local lang = require('language')
 local await = require('await')
 local define = require('proto.define')
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return boolean
 local function allLiteral(source)
     local result = true
@@ -18,7 +18,7 @@ local function allLiteral(source)
     return result
 end
 
---- @param block parser.object
+--- @param block parser.object.base
 --- @return boolean
 local function hasReturn(block)
     if block.hasReturn or block.hasExit then

@@ -150,7 +150,7 @@ local function collectTypes(global, results)
     ---@diagnostic disable-next-line: not-yieldable
     vm.getClassFields(ws.rootUri, global, vm.ANY, function (source)
         if source.type == 'doc.field' then
-            ---@cast source parser.object
+            ---@cast source parser.object.base
             if files.isLibrary(guide.getUri(source)) then
                 return
             end
@@ -173,7 +173,7 @@ local function collectTypes(global, results)
         end
         if source.type == 'setfield'
         or source.type == 'setmethod' then
-            ---@cast source parser.object
+            ---@cast source parser.object.base
             if files.isLibrary(guide.getUri(source)) then
                 return
             end
@@ -198,7 +198,7 @@ local function collectTypes(global, results)
             return
         end
         if source.type == 'tableindex' then
-            ---@cast source parser.object
+            ---@cast source parser.object.base
             if source.index.type ~= 'string' then
                 return
             end

@@ -7,7 +7,7 @@ local guide = require('parser.guide')
 local pattern, msg = nodeHelper.createFieldPattern('*.components')
 assert(pattern, msg)
 
----@param source parser.object
+---@param source parser.object.base
 function OnCompileFunctionParam(next, func, source)
     if next(func, source) then
         return true

@@ -23,7 +23,7 @@ local function deepCompare(source, pattern)
     return true
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @param pattern node.match.pattern
 --- @return boolean
 function M.matchPattern(source, pattern)

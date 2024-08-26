@@ -4,7 +4,7 @@ local vm = require('vm')
 local lang = require('language')
 local await = require('await')
 
---- @param block parser.object
+--- @param block parser.object.base
 --- @return boolean
 local function hasReturn(block)
     if block.hasReturn or block.hasExit then

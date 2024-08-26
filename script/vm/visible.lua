@@ -4,7 +4,7 @@ local guide = require('parser.guide')
 local config = require('config')
 local glob = require('glob')
 
---- @class parser.object
+--- @class parser.object.base
 --- @field package _visibleType? parser.visibleType
 
 local function globMatch(patterns, fieldName)
@@ -81,7 +81,7 @@ end
 --- @class vm.node
 --- @field package _visibleType parser.visibleType
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return parser.visibleType
 function vm.getVisibleType(source)
     local node = vm.compileNode(source)
@@ -99,7 +99,7 @@ function vm.getVisibleType(source)
     return 'public'
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return vm.global?
 function vm.getParentClass(source)
     if source.type == 'doc.field' then
@@ -119,7 +119,7 @@ function vm.getParentClass(source)
 end
 
 --- @param suri string
---- @param source parser.object
+--- @param source parser.object.base
 --- @return vm.global?
 function vm.getDefinedClass(suri, source)
     source = guide.getSelfNode(source) or source
@@ -149,7 +149,7 @@ function vm.getDefinedClass(suri, source)
     end
 end
 
---- @param source parser.object
+--- @param source parser.object.base
 --- @return vm.global?
 local function getEnvClass(source)
     local func = guide.getParentFunction(source)
@@ -164,8 +164,8 @@ local function getEnvClass(source)
     return nil
 end
 
---- @param parent parser.object
---- @param field parser.object
+--- @param parent parser.object.base
+--- @param field parser.object.base
 function vm.isVisible(parent, field)
     local visible = vm.getVisibleType(field)
     if visible == 'public' then

@@ -5,7 +5,7 @@ local vm = require('vm')
 local await = require('await')
 local util = require('utility')
 
---- @param func parser.object
+--- @param func parser.object.base
 --- @return vm.node[]?
 local function getDocReturns(func)
     ---@type table<integer, vm.node>
@@ -28,7 +28,7 @@ local function getDocReturns(func)
     end
     for nd in vm.compileNode(func):eachObject() do
         if nd.type == 'doc.type.function' then
-            ---@cast nd parser.object
+            ---@cast nd parser.object.base
             for i, ret in ipairs(nd.returns) do
                 returns[i]:merge(vm.compileNode(ret))
             end
@@ -48,7 +48,7 @@ return function(uri, callback)
     end
 
     ---@param docReturns vm.node[]
-    ---@param rets parser.object
+    ---@param rets parser.object.base
     local function checkReturn(docReturns, rets)
         for i, docRet in ipairs(docReturns) do
             local retNode, exp = vm.selectNode(rets, i)

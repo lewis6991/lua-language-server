@@ -6,11 +6,11 @@ local await = require('await')
 
 --- @param defNode  vm.node
 local function expandGenerics(defNode)
-    ---@type parser.object[]
+    ---@type parser.object.base[]
     local generics = {}
     for dn in defNode:eachObject() do
         if dn.type == 'doc.generic.name' then
-            ---@cast dn parser.object
+            ---@cast dn parser.object.base
             generics[#generics + 1] = dn
         end
     end
