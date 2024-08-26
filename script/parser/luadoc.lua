@@ -9,8 +9,13 @@ local util = require('utility')
 --- @field finish integer
 
 --- @class parser.object.doc.alias : parser.object.doc.base
+--- @field type 'doc.alias'
+
 --- @class parser.object.doc.async : parser.object.doc.base
+--- @field type 'doc.async'
+
 --- @class parser.object.doc.cast : parser.object.doc.base
+--- @field type 'doc.cast'
 
 --- @class parser.object.doc.class : parser.object.doc.base
 --- @field type 'doc.class'
@@ -29,9 +34,16 @@ local util = require('utility')
 --- @field type 'doc.extends.name'
 
 --- @class parser.object.doc.comment : parser.object.doc.base
+--- @field type 'doc.comment'
+
 --- @class parser.object.doc.deprecated : parser.object.doc.base
+--- @field type 'doc.deprecated'
+
 --- @class parser.object.doc.diagnostic : parser.object.doc.base
+--- @field type 'doc.diagnostic'
+
 --- @class parser.object.doc.field : parser.object.doc.base
+--- @field type 'doc.field'
 
 --- @class parser.object.doc.generic : parser.object.doc.base
 --- @field type 'doc.generic'
@@ -48,19 +60,46 @@ local util = require('utility')
 --- @field [1] string
 
 --- @class parser.object.doc.module : parser.object.doc.base
+--- @field type 'doc.module'
+
 --- @class parser.object.doc.nodiscard : parser.object.doc.base
+--- @field type 'doc.nodiscard'
+
 --- @class parser.object.doc.operator : parser.object.doc.base
+--- @field type 'doc.operator'
+
 --- @class parser.object.doc.overload : parser.object.doc.base
+--- @field type 'doc.overload'
+
 --- @class parser.object.doc.package : parser.object.doc.base
+--- @field type 'doc.package'
+
 --- @class parser.object.doc.param : parser.object.doc.base
+--- @field type 'doc.param'
+
 --- @class parser.object.doc.private : parser.object.doc.base
+--- @field type 'doc.private'
+
 --- @class parser.object.doc.protected : parser.object.doc.base
+--- @field type 'doc.protected'
+
 --- @class parser.object.doc.public : parser.object.doc.base
+--- @field type 'doc.public'
+
 --- @class parser.object.doc.return : parser.object.doc.base
+--- @field type 'doc.return'
+
 --- @class parser.object.doc.see : parser.object.doc.base
+--- @field type 'doc.see'
+
 --- @class parser.object.doc.source : parser.object.doc.base
+--- @field type 'doc.source'
+
 --- @class parser.object.doc.tailcomment : parser.object.doc.base
+--- @field type 'doc.tailcomment'
+
 --- @class parser.object.doc.attr : parser.object.doc.base
+--- @field type 'doc.attr'
 
 --- @alias parser.object.doc.type.unit
 --- | parser.object.doc.type.boolean
@@ -76,15 +115,31 @@ local util = require('utility')
 --- @field types parser.object.doc.type.unit[]
 
 --- @class parser.object.doc.type.code : parser.object.doc.base
+--- @field type 'doc.type.code'
+
 --- @class parser.object.doc.type.name : parser.object.doc.base
+--- @field type 'doc.type.name'
+
 --- @class parser.object.doc.type.boolean : parser.object.doc.base
+--- @field type 'doc.type.boolean'
+
 --- @class parser.object.doc.type.string : parser.object.doc.base
+--- @field type 'doc.type.string'
+
 --- @class parser.object.doc.type.integer : parser.object.doc.base
+--- @field type 'doc.type.integer'
+
 --- @class parser.object.doc.type.table : parser.object.doc.base
+--- @field type 'doc.type.table'
+
 --- @class parser.object.doc.type.function : parser.object.doc.base
+--- @field type 'doc.type.function'
 
 --- @class parser.object.doc.vararg : parser.object.doc.base
+--- @field type 'doc.type.vararg'
+
 --- @class parser.object.doc.version : parser.object.doc.base
+--- @field type 'doc.type.version'
 
 local TokenTypes, TokenStarts, TokenFinishs, TokenContents, TokenMarks
 --- @type integer
