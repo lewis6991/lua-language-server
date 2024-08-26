@@ -131,15 +131,26 @@ local util = require('utility')
 
 --- @class parser.object.doc.type.table : parser.object.doc.base
 --- @field type 'doc.type.table'
+--- @field fields parser.object.doc.type.field[]
 
 --- @class parser.object.doc.type.function : parser.object.doc.base
 --- @field type 'doc.type.function'
 
+--- @class parser.object.doc.type.field : parser.object.doc.base
+--- @field type 'doc.type.field'
+--- @field parent parser.object.doc.type.table
+--- @field name? parser.object.doc.field.name
+--- @field extends? parser.object.doc.type
+--- @field optional? true
+
+--- @class parser.object.doc.field.name : parser.object.doc.base
+--- @field type 'doc.field.name'
+
 --- @class parser.object.doc.vararg : parser.object.doc.base
---- @field type 'doc.type.vararg'
+--- @field type 'doc.vararg'
 
 --- @class parser.object.doc.version : parser.object.doc.base
---- @field type 'doc.type.version'
+--- @field type 'doc.version'
 
 local TokenTypes, TokenStarts, TokenFinishs, TokenContents, TokenMarks
 --- @type integer
@@ -444,6 +455,7 @@ local function parseTable(parent)
         return
     end
     nextToken()
+    --- @type parser.object.doc.type.table
     local typeUnit = {
         type = 'doc.type.table',
         start = getStart(),
@@ -456,6 +468,7 @@ local function parseTable(parent)
             nextToken()
             break
         end
+        --- @type parser.object.doc.type.field
         local field = {
             type = 'doc.type.field',
             parent = typeUnit,
@@ -476,9 +489,7 @@ local function parseTable(parent)
                 })
                 break
             end
-            if not field.start then
-                field.start = field.name.start
-            end
+            field.start = field.start or field.name.start
             if checkToken('symbol', '?', 1) then
                 nextToken()
                 field.optional = true
