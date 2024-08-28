@@ -7,6 +7,14 @@ local util = require('utility')
 --- @class parser.object.doc.base
 --- @field start integer
 --- @field finish integer
+--- @field parent? parser.object.doc
+
+--- @alias parser.object.doc
+--- | parser.object.doc.alias
+--- | parser.object.doc.async
+--- | parser.object.doc.cast
+--- | parser.object.doc.type.name
+--- | parser.object.doc.field.name
 
 --- @class parser.object.doc.alias : parser.object.doc.base
 --- @field type 'doc.alias'
@@ -113,6 +121,7 @@ local util = require('utility')
 --- @field type 'doc.type'
 --- @field parent unknown
 --- @field types parser.object.doc.type.unit[]
+--- @field optional? true
 
 --- @class parser.object.doc.type.code : parser.object.doc.base
 --- @field type 'doc.type.code'
@@ -122,12 +131,15 @@ local util = require('utility')
 
 --- @class parser.object.doc.type.boolean : parser.object.doc.base
 --- @field type 'doc.type.boolean'
+--- @field [1] boolean
 
 --- @class parser.object.doc.type.string : parser.object.doc.base
 --- @field type 'doc.type.string'
+--- @field [1] string
 
 --- @class parser.object.doc.type.integer : parser.object.doc.base
 --- @field type 'doc.type.integer'
+--- @field [1] integer
 
 --- @class parser.object.doc.type.table : parser.object.doc.base
 --- @field type 'doc.type.table'
@@ -411,6 +423,7 @@ local function parseDocAttr(parent)
     end
     nextToken()
 
+    --- @type parser.object.doc.attr
     local attrs = {
         type = 'doc.attr',
         parent = parent,
@@ -525,6 +538,7 @@ local function parseTuple(parent)
         return
     end
     nextToken()
+    --- @type parser.object.doc.type.table
     local typeUnit = {
         type = 'doc.type.table',
         start = getStart(),
@@ -539,6 +553,7 @@ local function parseTuple(parent)
             nextToken()
             break
         end
+        --- @type parser.object.doc.type.field
         local field = {
             type = 'doc.type.field',
             parent = typeUnit,
@@ -550,14 +565,18 @@ local function parseTuple(parent)
                 nextToken()
                 needCloseParen = true
             end
+            --- @type parser.object.doc.type
             field.name = {
                 type = 'doc.type',
                 start = getFinish(),
                 firstFinish = getFinish(),
                 finish = getFinish(),
                 parent = field,
+                types = {},
             }
+            --- @diagnostic disable-next-line:inject-field
             field.name.types = {
+                --- @type parser.object.doc.type.integer
                 [1] = {
                     type = 'doc.type.integer',
                     start = getFinish(),
@@ -888,11 +907,15 @@ local function parseCodePattern(parent)
             pattern = pattern .. nextContent
         end
     end
+
     local start = getStart()
+
     for _ = 2, finishOffset do
         nextToken()
     end
-    local code = {
+
+    --- @type parser.object.doc.type.code
+    return {
         type = 'doc.type.code',
         start = start,
         finish = getFinish(),
@@ -900,7 +923,6 @@ local function parseCodePattern(parent)
         pattern = pattern,
         [1] = content,
     }
-    return code
 end
 
 --- @return parser.object.doc.type.integer?
@@ -911,6 +933,7 @@ local function parseInteger(parent)
     end
 
     nextToken()
+    --- @type parser.object.doc.type.integer
     return {
         type = 'doc.type.integer',
         start = getStart(),
@@ -928,12 +951,14 @@ local function parseBoolean(parent)
     end
 
     nextToken()
+
+    --- @type parser.object.doc.type.boolean
     return {
         type = 'doc.type.boolean',
         start = getStart(),
         finish = getFinish(),
         parent = parent,
-        [1] = content == 'true' and true or false,
+        [1] = content == 'true',
     }
 end
 
@@ -947,7 +972,7 @@ local function parseParen(parent)
     return tp
 end
 
---- @return parser.object.doc.type.unit
+--- @return parser.object.doc.type.unit?
 function parseTypeUnit(parent)
     local result = parseFunction(parent)
         or parseTable(parent)
@@ -958,6 +983,7 @@ function parseTypeUnit(parent)
         or parseBoolean(parent)
         or parseParen(parent)
         or parseCodePattern(parent)
+
     if not result then
         result = parseName('doc.type.name', parent) or parseDots('doc.type.name', parent)
         if not result then
@@ -967,6 +993,7 @@ function parseTypeUnit(parent)
             result[1] = 'unknown'
         end
     end
+
     while true do
         local newResult = parseTypeUnitSign(parent, result)
         if not newResult then
@@ -974,6 +1001,7 @@ function parseTypeUnit(parent)
         end
         result = newResult
     end
+
     while true do
         local newResult = parseTypeUnitArray(parent, result)
         if not newResult then
@@ -981,10 +1009,12 @@ function parseTypeUnit(parent)
         end
         result = newResult
     end
+
     return result
 end
 
 local function parseResume(parent)
+    --- Used by alias an enum to mark default and additional types
     local default, additional
     if checkToken('symbol', '>', 1) then
         nextToken()
@@ -1007,13 +1037,77 @@ end
 
 local lockResume = false
 
+--- @param result parser.object.doc.type
+local function doResume(result)
+    if lockResume then
+        return
+    end
+
+    lockResume = true
+
+    local row = guide.rowColOf(result.finish)
+
+    local function pushResume()
+        local comments --- @type string[]?
+        for i = 0, 100 do
+            local nextComm = NextComment(i, 'peek')
+            if not nextComm then
+                return false
+            end
+
+            local text, start = nextComm.text, nextComm.start
+
+            local nextCommRow = guide.rowColOf(start)
+            local currentRow = row + i + 1
+            if currentRow < nextCommRow then
+                return false
+            end
+
+            if text:match('^%-%s*%@') then
+                return false
+            end
+
+            local resumeHead = text:match('^%-%s*%|')
+            if resumeHead then
+                NextComment(i)
+                row = row + i + 1
+                local finishPos = text:find('#', #resumeHead + 1) or #text
+                parseTokens(text:sub(#resumeHead + 1, finishPos), start + #resumeHead + 1)
+                local resume = parseResume(result)
+                if resume then
+                    if comments then
+                        resume.comment = table.concat(comments, '\n')
+                    else
+                        resume.comment = text:match('%s*#?%s*(.+)', resume.finish - start)
+                    end
+                    result.types[#result.types + 1] = resume
+                    result.finish = resume.finish
+                end
+                comments = nil
+                return true
+            else
+                comments = comments or {}
+                comments[#comments + 1] = text:sub(2)
+            end
+        end
+        return false
+    end
+
+    while pushResume() do
+    end
+
+    lockResume = false
+end
+
 --- @return parser.object.doc.type?
 function parseType(parent)
+    --- @type parser.object.doc.type
     local result = {
         type = 'doc.type',
         parent = parent,
         types = {},
     }
+
     while true do
         local typeUnit = parseTypeUnit(result)
         if not typeUnit then
@@ -1030,9 +1124,9 @@ function parseType(parent)
         end
         nextToken()
     end
-    if not result.start then
-        result.start = getFinish()
-    end
+
+    result.start = result.start or getFinish()
+
     if checkToken('symbol', '?', 1) then
         nextToken()
         result.optional = true
@@ -1040,60 +1134,7 @@ function parseType(parent)
     result.finish = getFinish()
     result.firstFinish = result.finish
 
-    local row = guide.rowColOf(result.finish)
-
-    local function pushResume()
-        local comments
-        for i = 0, 100 do
-            local nextComm = NextComment(i, 'peek')
-            if not nextComm then
-                return false
-            end
-            local nextCommRow = guide.rowColOf(nextComm.start)
-            local currentRow = row + i + 1
-            if currentRow < nextCommRow then
-                return false
-            end
-            if nextComm.text:match('^%-%s*%@') then
-                return false
-            else
-                local resumeHead = nextComm.text:match('^%-%s*%|')
-                if resumeHead then
-                    NextComment(i)
-                    row = row + i + 1
-                    local finishPos = nextComm.text:find('#', #resumeHead + 1) or #nextComm.text
-                    parseTokens(
-                        nextComm.text:sub(#resumeHead + 1, finishPos),
-                        nextComm.start + #resumeHead + 1
-                    )
-                    local resume = parseResume(result)
-                    if resume then
-                        if comments then
-                            resume.comment = table.concat(comments, '\n')
-                        else
-                            resume.comment =
-                                nextComm.text:match('%s*#?%s*(.+)', resume.finish - nextComm.start)
-                        end
-                        result.types[#result.types + 1] = resume
-                        result.finish = resume.finish
-                    end
-                    comments = nil
-                    return true
-                else
-                    comments = comments or {}
-                    comments[#comments + 1] = nextComm.text:sub(2)
-                end
-            end
-        end
-        return false
-    end
-
-    if not lockResume then
-        lockResume = true
-        while pushResume() do
-        end
-        lockResume = false
-    end
+    doResume(result)
 
     if #result.types == 0 then
         pushWarning({
@@ -1108,6 +1149,7 @@ end
 
 local docSwitch = {
     ['class'] = function()
+        --- @type parser.object.doc.class
         local result = {
             type = 'doc.class',
             fields = {},
@@ -1202,7 +1244,9 @@ local docSwitch = {
         return result
     end,
 
+    --- @return parser.object.doc.param?
     ['param'] = function()
+        --- @type parser.object.doc.param
         local result = {
             type = 'doc.param',
         }
@@ -2268,6 +2312,7 @@ local bindDocAccept = {
     '...',
 }
 
+--- @param state parser.state
 local function bindDocs(state)
     local text = state.lua
     local sources = {}
@@ -2304,8 +2349,9 @@ local function bindDocs(state)
     end
 end
 
+--- @param state parser.state
 local function findTouch(state, doc)
-    local text = state.lua
+    local text = assert(state.lua)
     local pos = guide.positionToOffset(state, doc.originalComment.start)
     for i = pos - 2, 1, -1 do
         local c = text:sub(i, i)
@@ -2318,6 +2364,7 @@ local function findTouch(state, doc)
     end
 end
 
+--- @param state parser.state
 local function luadoc(state)
     local ast = state.ast
     local comments = state.comms
