@@ -49,18 +49,18 @@ local function insertVariableID(id, source, base)
     return variable
 end
 
-local compileVariables, getLoc
+local compileVariables, getLocal
 
 --- @type table<string|string[], fun(source: parser.object): parser.object?>
 local leftswitch_table = {
     [{ 'field', 'method' }] = function(source)
-        return getLoc(source.parent)
+        return getLocal(source.parent)
     end,
 
     [{ 'getfield', 'setfield', 'getmethod', 'setmethod', 'getindex', 'setindex' }] = function(
         source
     )
-        return getLoc(source.node)
+        return getLocal(source.node)
     end,
 
     ['getlocal'] = function(source)
@@ -76,7 +76,7 @@ local leftswitch = util.switch2(leftswitch_table)
 
 --- @param source parser.object
 --- @return parser.object?
-function getLoc(source)
+function getLocal(source)
     return leftswitch(source.type)(source)
 end
 
@@ -147,25 +147,13 @@ function mt:getFields(includeGets)
     return fields
 end
 
---- @param source parser.object.base
---- @param base parser.object.base
-local function compileGetSetLocal(source, base)
-    local id = ('%d'):format(source.node.start)
-    local variable = insertVariableID(id, source, base)
-    source._variableNode = variable
-    compileVariables(source.next, base)
-end
-
 --- @type table<string|string[], fun(source: parser.object, base: parser.object)>
 local variableCompilers_table = {
     [{ 'self', 'local' }] = function(source, base)
         local id = ('%d'):format(source.start)
         local variable = insertVariableID(id, source, base)
         source._variableNode = variable
-        if not source.ref then
-            return
-        end
-        for _, ref in ipairs(source.ref) do
+        for _, ref in ipairs(source.ref or {}) do
             compileVariables(ref, base)
         end
     end,
@@ -177,7 +165,7 @@ local variableCompilers_table = {
         compileVariables(source.next, base)
     end,
 
-    [{ 'getfield', 'setfield' }] = function(source, base)
+    [{ 'getfield', 'setfield', 'getmethod', 'setmethod', 'getindex', 'setindex' }] = function(source, base)
         local parentNode = source.node._variableNode
         if not parentNode then
             return
@@ -189,44 +177,16 @@ local variableCompilers_table = {
         local id = parentNode.id .. vm.ID_SPLITE .. key
         local variable = insertVariableID(id, source, base)
         source._variableNode = variable
-        source.field._variableNode = variable
-        if source.type == 'getfield' then
-            compileVariables(source.next, base)
-        end
-    end,
 
-    [{ 'getmethod', 'setmethod' }] = function(source, base)
-        local parentNode = source.node._variableNode
-        if not parentNode then
-            return
+        if source.type == 'getmethod' or source.type == 'setmethod' then
+            source.method._variableNode = variable
+        elseif source.type == 'getfield' or source.type == 'setfield' then
+            source.field._variableNode = variable
+        else
+            source.index._variableNode = variable
         end
-        local key = guide.getKeyName(source)
-        if type(key) ~= 'string' then
-            return
-        end
-        local id = parentNode.id .. vm.ID_SPLITE .. key
-        local variable = insertVariableID(id, source, base)
-        source._variableNode = variable
-        source.method._variableNode = variable
-        if source.type == 'getmethod' then
-            compileVariables(source.next, base)
-        end
-    end,
 
-    [{ 'getindex', 'setindex' }] = function(source, base)
-        local parentNode = source.node._variableNode
-        if not parentNode then
-            return
-        end
-        local key = guide.getKeyName(source)
-        if type(key) ~= 'string' then
-            return
-        end
-        local id = parentNode.id .. vm.ID_SPLITE .. key
-        local variable = insertVariableID(id, source, base)
-        source._variableNode = variable
-        source.index._variableNode = variable
-        if source.type == 'setindex' then
+        if source.type == 'setindex' or source.type == 'getmethod' or source.type == 'getfield' then
             compileVariables(source.next, base)
         end
     end,
@@ -254,9 +214,9 @@ local function getVariableNode(source)
     end
 
     source._variableNode = false
-    local loc = getLoc(source)
+    local loc = getLocal(source)
     if not loc then
-        return nil
+        return
     end
     compileVariables(loc, loc)
     return source._variableNode or nil
@@ -278,14 +238,14 @@ end
 function vm.getVariable(source, key)
     local variable = getVariableNode(source)
     if not variable then
-        return nil
+        return
     end
     if not key then
         return variable
     end
     local root = guide.getRoot(source)
     if not root._variableNodes then
-        return nil
+        return
     end
     local id = variable.id .. vm.ID_SPLITE .. key
     return root._variableNodes[id]
