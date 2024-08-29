@@ -62,7 +62,7 @@ local ChunkFinishMap = {
 --- | parser.object.name
 --- | parser.object.funcargs
 --- | parser.object.callargs
---- | parser.object.old
+---- | parser.object.old
 
 --- @class parser.object.base
 --- @field start integer
@@ -73,6 +73,7 @@ local ChunkFinishMap = {
 --- @field uri? string
 --- @field hasExit? true
 --- @field parent? parser.object
+--- @field docs? parser.object.doc.main
 
 --- @class parser.object.setfield : parser.object.base
 --- @field type 'setfield'

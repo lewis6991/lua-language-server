@@ -13,8 +13,23 @@ local util = require('utility')
 --- | parser.object.doc.alias
 --- | parser.object.doc.async
 --- | parser.object.doc.cast
---- | parser.object.doc.type.name
+--- | parser.object.doc.class
+--- | parser.object.doc.deprecated
+--- | parser.object.doc.field
 --- | parser.object.doc.field.name
+--- | parser.object.doc.generic
+--- | parser.object.doc.meta
+--- | parser.object.doc.overload
+--- | parser.object.doc.param
+--- | parser.object.doc.return
+--- | parser.object.doc.type
+--- | parser.object.doc.type.name
+--- | parser.object.doc.vararg
+
+--- @class parser.object.doc.main
+--- @field type 'doc'
+--- @field parent parser.object
+--- @field groups unknown
 
 --- @class parser.object.doc.alias : parser.object.doc.base
 --- @field type 'doc.alias'
@@ -46,6 +61,9 @@ local util = require('utility')
 
 --- @class parser.object.doc.deprecated : parser.object.doc.base
 --- @field type 'doc.deprecated'
+
+--- @class parser.object.doc.meta : parser.object.doc.base
+--- @field type 'doc.meta'
 
 --- @class parser.object.doc.diagnostic : parser.object.doc.base
 --- @field type 'doc.diagnostic'
@@ -122,6 +140,7 @@ local util = require('utility')
 --- @field parent unknown
 --- @field types parser.object.doc.type.unit[]
 --- @field optional? true
+--- @field firstFinish integer
 
 --- @class parser.object.doc.type.code : parser.object.doc.base
 --- @field type 'doc.type.code'
@@ -147,6 +166,8 @@ local util = require('utility')
 
 --- @class parser.object.doc.type.function : parser.object.doc.base
 --- @field type 'doc.type.function'
+--- @field async? true
+--- @field asyncPos? integer
 
 --- @class parser.object.doc.type.field : parser.object.doc.base
 --- @field type 'doc.type.field'
@@ -763,14 +784,13 @@ local function parseFunction(parent)
         nextToken()
         local pos = getStart()
         local tp, cont = peekToken()
-        if tp == 'name' then
-            if cont == 'fun' then
-                local func = parseTypeUnit(parent)
-                if func then
-                    func.async = true
-                    func.asyncPos = pos
-                    return func
-                end
+        if tp == 'name' and cont == 'fun' then
+            local func = parseTypeUnit(parent)
+            --- @cast func parser.object.doc.type.function
+            if func then
+                func.async = true
+                func.asyncPos = pos
+                return func
             end
         end
     elseif content == 'fun' then
@@ -1028,7 +1048,9 @@ local function parseResume(parent)
 
     local result = parseTypeUnit(parent)
     if result then
+        --- @diagnostic disable-next-line:inject-field
         result.default = default
+        --- @diagnostic disable-next-line:inject-field
         result.additional = additional
     end
 
@@ -1147,6 +1169,7 @@ function parseType(parent)
     return result
 end
 
+--- @type table<string,fun():parser.object.doc?, parser.object.doc[]?>
 local docSwitch = {
     ['class'] = function()
         --- @type parser.object.doc.class
@@ -1216,6 +1239,7 @@ local docSwitch = {
     end,
 
     ['alias'] = function()
+        --- @type parser.object.doc.alias
         local result = {
             type = 'doc.alias',
         }
@@ -1244,7 +1268,6 @@ local docSwitch = {
         return result
     end,
 
-    --- @return parser.object.doc.param?
     ['param'] = function()
         --- @type parser.object.doc.param
         local result = {
@@ -1280,6 +1303,7 @@ local docSwitch = {
     end,
 
     ['return'] = function()
+        --- @type parser.object.doc.return
         local result = {
             type = 'doc.return',
             returns = {},
@@ -1321,6 +1345,7 @@ local docSwitch = {
     end,
 
     ['field'] = function()
+        --- @type parser.object.doc.field
         local result = {
             type = 'doc.field',
         }
@@ -1375,6 +1400,7 @@ local docSwitch = {
     end,
 
     ['generic'] = function()
+       --- @type parser.object.doc.generic
         local result = {
             type = 'doc.generic',
             generics = {},
@@ -1413,6 +1439,7 @@ local docSwitch = {
     end,
 
     ['vararg'] = function()
+        --- @type parser.object.doc.vararg
         local result = {
             type = 'doc.vararg',
         }
@@ -1440,6 +1467,7 @@ local docSwitch = {
             })
             return
         end
+        --- @type parser.object.doc.overload
         local result = {
             type = 'doc.overload',
         }
@@ -1454,6 +1482,7 @@ local docSwitch = {
     end,
 
     ['deprecated'] = function()
+        --- @type parser.object.doc.deprecated
         return {
             type = 'doc.deprecated',
             start = getFinish(),
@@ -1462,6 +1491,7 @@ local docSwitch = {
     end,
 
     ['meta'] = function()
+        --- @type parser.object.doc.meta
         local meta = {
             type = 'doc.meta',
             start = getFinish(),
@@ -1836,6 +1866,7 @@ local docSwitch = {
     end,
 }
 
+--- @return parser.object.doc?
 local function convertTokens(doc)
     local tp, text = nextToken()
     if not tp then
@@ -1872,11 +1903,15 @@ local function trimTailComment(text)
     return util.trim(comment)
 end
 
+--- @param comment parser.object.comment
+--- @return parser.object.doc.comment
+--- @return unknown?
 local function buildLuaDoc(comment)
     local text = comment.text
     local startPos = (comment.type == 'comment.short' and text:match('^%-%s*@()'))
         or (comment.type == 'comment.long' and text:match('^@()'))
     if not startPos then
+        --- @type parser.object.doc.comment
         return {
             type = 'doc.comment',
             start = comment.start,
@@ -2366,7 +2401,7 @@ end
 
 --- @param state parser.state
 local function luadoc(state)
-    local ast = state.ast
+    local ast = assert(state.ast)
     local comments = state.comms
     table.sort(comments, function(a, b)
         return a.start < b.start
