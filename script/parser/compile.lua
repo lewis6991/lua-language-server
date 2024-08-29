@@ -63,6 +63,8 @@ local ChunkFinishMap = {
 --- | parser.object.funcargs
 --- | parser.object.callargs
 --- | parser.object.doc
+--- | parser.object.field
+--- | parser.object.method
 ---- | parser.object.old
 
 --- @class parser.object.base
@@ -75,6 +77,7 @@ local ChunkFinishMap = {
 --- @field hasExit? true
 --- @field parent? parser.object
 --- @field docs? parser.object.doc.main
+--- @field bindDocs? parser.object.doc[]
 
 --- @class parser.object.setfield : parser.object.base
 --- @field type 'setfield'
@@ -141,6 +144,7 @@ local ChunkFinishMap = {
 --- @field type 'getmethod'
 --- @field node parser.object.expr
 --- @field colon parser.object.colon
+--- @field method? parser.object.method
 
 --- @alias parser.object.simple
 --- | parser.object.name
@@ -223,6 +227,7 @@ local ChunkFinishMap = {
 --- @field type 'getfield'
 --- @field dot parser.object.dot
 --- @field field? parser.object.field
+--- @field node parser.object.expr
 
 --- @class parser.object.callargs : parser.object.base
 --- @field type 'callargs'
@@ -407,6 +412,7 @@ local ChunkFinishMap = {
 --- @field args? parser.object.funcargs
 --- @field name? parser.object.simple
 --- @field returns? parser.object.return[]
+--- @field parent parser.object
 
 --- @class parser.object.lambda : parser.object.block.base
 --- @field args? parser.object.funcargs

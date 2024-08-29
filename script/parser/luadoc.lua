@@ -2280,9 +2280,7 @@ local function bindDoc(source, binded)
                     ok = true
                 end
             elseif doc.type == 'doc.overload' then
-                if not source.bindDocs then
-                    source.bindDocs = {}
-                end
+                source.bindDocs = source.bindDocs or {}
                 source.bindDocs[#source.bindDocs + 1] = doc
                 if source.type == 'function' then
                     bindDocWithSource(doc, source)

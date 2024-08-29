@@ -43,16 +43,16 @@ function M.getKeyType(source)
     return guide.getKeyType(source)
 end
 
---- @param source parser.object.base
---- @return parser.object.base?
+--- @param source parser.object
+--- @return parser.object?
 function M.getObjectValue(source)
     if source.value then
         return source.value
     end
     if source.special == 'rawset' then
-        return source.args and source.args[3]
+        --- @cast source parser.object.call
+        return source.args and source.args[3] or nil
     end
-    return nil
 end
 
 --- @param source parser.object.base

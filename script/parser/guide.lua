@@ -416,8 +416,8 @@ function M.getParentTypes(obj, wants)
 end
 
 --- Find the root block
---- @param obj parser.object.base
---- @return parser.object.base
+--- @param obj parser.object
+--- @return parser.object
 function M.getRoot(obj)
     local source = obj
     if source._root then

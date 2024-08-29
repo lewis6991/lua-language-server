@@ -1341,19 +1341,17 @@ local function compileTableFieldOrIndex(source)
     end
 
     local key = guide.getKeyName(source)
-    if not hasMarkDoc then
-        if key then
-            vm.compileByParentNode(source.node, key, function(src)
-                if
-                    src.type == 'doc.field'
-                    or src.type == 'doc.type.field'
-                    or src.type == 'doc.type.name'
-                then
-                    hasMarkDoc = true
-                    vm.setNode(source, vm.compileNode(src))
-                end
-            end)
-        end
+    if not hasMarkDoc and key then
+        vm.compileByParentNode(source.node, key, function(src)
+            if
+                src.type == 'doc.field'
+                or src.type == 'doc.type.field'
+                or src.type == 'doc.type.name'
+            then
+                hasMarkDoc = true
+                vm.setNode(source, vm.compileNode(src))
+            end
+        end)
     end
 
     if not hasMarkDoc and source.type == 'tableindex' then
@@ -1380,7 +1378,7 @@ local function compileTableFieldOrIndex(source)
     end
 end
 
---- @type table<string|string[],fun(source:vm.node.object)>
+--- @type table<string|string[],fun(source:parser.object)>
 local nodeCompilers_table = {
     ['nil'] = setNode,
     ['boolean'] = setNode,
@@ -1441,24 +1439,25 @@ local nodeCompilers_table = {
         end
     end,
 
+    --- @param source parser.object.function
     ['function'] = function(source)
         vm.setNode(source, source)
 
-        if source.bindDocs then
-            for _, doc in ipairs(source.bindDocs) do
-                if doc.type == 'doc.overload' then
-                    vm.setNode(source, vm.compileNode(doc))
-                end
+        for _, doc in ipairs(source.bindDocs or {}) do
+            if doc.type == 'doc.overload' then
+                vm.setNode(source, vm.compileNode(doc))
             end
         end
 
         local parent = source.parent
 
         if parent.type == 'callargs' then
+            --- @cast parent parser.object.callargs
             -- table.sort(string[], function (<?x?>) end)
             local call = parent.parent
             vm.compileCallArg(source, call)
         elseif parent.type == 'return' then
+            --- @cast parent parser.object.return
             -- function f() return function (<?x?>) end end
             for i, ret in ipairs(parent) do
                 if ret == source then
@@ -1975,7 +1974,7 @@ local nodeCompilers_table = {
 
 local nodeCompilers = util.switch2(nodeCompilers_table)
 
---- @param source vm.node.object
+--- @param source parser.object
 local function compileByNode(source)
     nodeCompilers(source.type)(source)
 end
@@ -2066,7 +2065,7 @@ function vm.compileNode(source)
     end
 
     vm.setNode(source, vm.createNode(), true)
-    ---@cast source parser.object
+    --- @cast source parser.object
     vm.compileByGlobal(source)
     vm.compileByVariable(source)
     compileByNode(source)

@@ -300,21 +300,26 @@ local function traceEq(tracer, action, topNode, outNode)
         and handler.args[1]
         and tracer.getMap[handler.args[1]]
     then
+        --- @cast checker parser.object.string
+        --- @cast handler parser.object.call
         -- if type(x) == 'string' then
         tracer:lookIntoChild(handler, topNode)
         topNode = topNode:copy()
+        local checkerName = checker[1]
         if action.op.type == '==' then
-            topNode:narrow(tracer.uri, checker[1])
+            topNode:narrow(tracer.uri, checkerName)
             if outNode then
-                outNode:remove(checker[1])
+                outNode:remove(checkerName)
             end
         else
-            topNode:remove(checker[1])
+            topNode:remove(checkerName)
             if outNode then
-                outNode:narrow(tracer.uri, checker[1])
+                outNode:narrow(tracer.uri, checkerName)
             end
         end
     elseif handler.type == 'getlocal' and checker.type == 'string' then
+        --- @cast checker parser.object.string
+        --- @cast handler parser.object.getlocal
         -- `local tp = type(x);if tp == 'string' then`
         local nodeValue = vm.getObjectValue(handler.node)
         if nodeValue and nodeValue.type == 'select' and nodeValue.sindex == 1 then
@@ -326,15 +331,16 @@ local function traceEq(tracer, action, topNode, outNode)
                 and call.args
                 and tracer.getMap[call.args[1]]
             then
+                local checkerName = checker[1]
                 if action.op.type == '==' then
-                    topNode:narrow(tracer.uri, checker[1])
+                    topNode:narrow(tracer.uri, checkerName)
                     if outNode then
-                        outNode:remove(checker[1])
+                        outNode:remove(checkerName)
                     end
                 else
-                    topNode:remove(checker[1])
+                    topNode:remove(checkerName)
                     if outNode then
-                        outNode:narrow(tracer.uri, checker[1])
+                        outNode:narrow(tracer.uri, checkerName)
                     end
                 end
             end
@@ -526,7 +532,7 @@ local lookIntoChild = util.switch()
     :case('getmethod')
     :call(
         ---@param tracer   vm.tracer
-        ---@param action   parser.object
+        ---@param action   parser.object.getmethod
         ---@param topNode  vm.node
         ---@param outNode? vm.node
         function(tracer, action, topNode, outNode)
@@ -770,6 +776,7 @@ function Tracer:lookIntoChild(action, topNode, outNode)
     if not self.careMap[action] or self.mark[action] then
         return topNode, outNode or topNode
     end
+    --- @cast action -?
     self.mark[action] = true
     topNode = self:fastWardCasts(action.start, topNode)
     topNode, outNode = lookIntoChild(action.type, self, action, topNode, outNode)
