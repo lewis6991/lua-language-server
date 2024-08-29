@@ -276,6 +276,10 @@ local ChunkFinishMap = {
 --- @field type 'setlocal'
 --- @field node parser.object.local|parser.object.self
 
+--- @class parser.object.setglobal : parser.object.base
+--- @field type 'setglobal'
+--- @field value parser.object.expr
+
 --- @class parser.object.setindex : parser.object.base
 --- @field type 'setindex'
 
@@ -476,13 +480,14 @@ local ChunkFinishMap = {
 --- @field lua? string
 --- @field uri? string
 --- @field lines integer[]
---- @field version 'Lua 5.1' | 'Lua 5.2' | 'Lua 5.3' | 'Lua 5.4' | 'LuaJIT'
+--- @field version? 'Lua 5.1' | 'Lua 5.2' | 'Lua 5.3' | 'Lua 5.4' | 'LuaJIT'
 --- @field options table
 --- @field ENVMode '@fenv' | '_ENV'
 --- @field errs parser.state.err[]
 --- @field specials? table<string,parser.object.base[]>
 --- @field ast? parser.object
 --- @field comms parser.object.comment[]
+--- @field pluginDocs? parser.object.doc[]
 
 local State --- @type parser.state
 local Lua --- @type string
@@ -4074,7 +4079,7 @@ end
 
 --- function a()
 --- end
---- @return parser.object.function|parser.object.setlocal|parser.object.setmethod|parser.object.setindex|parser.object.setfield
+--- @return parser.object.function|parser.object.setlocal|parser.object.setmethod|parser.object.setindex|parser.object.setfield|parser.object.setglobal
 function P.FunctionAction()
     local func = P.Function(false, true)
     if func then
@@ -4218,8 +4223,8 @@ function P.Lua()
 end
 
 --- @param lua string
---- @param version string
---- @param options table
+--- @param version? string
+--- @param options? table
 local function initState(lua, version, options)
     Lua = lua
     Line = 0
@@ -4272,8 +4277,8 @@ end
 
 --- @param lua string
 --- @param mode 'Lua' | 'Nil' | 'Boolean' | 'String' | 'Number' | 'Name' | 'Exp' | 'Action'
---- @param version string
---- @param options table
+--- @param version? string
+--- @param options? table
 return function(lua, mode, version, options)
     Mode = mode
     initState(lua, version, options)

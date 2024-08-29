@@ -8,37 +8,89 @@ local util = require('utility')
 --- @field start integer
 --- @field finish integer
 --- @field parent? parser.object.doc
+--- @field comment? string|parser.object.comment|parser.object.doc.tailcomment
+--- @field range? integer
+--- @field virtual? true
+--- @field special? parser.object
+--- @field originalComment? parser.object.comment.short
+--- @field specialBindGroup? parser.object.doc[]
+--- @field bindGroup? parser.object.doc[]
 
 --- @alias parser.object.doc
 --- | parser.object.doc.alias
+--- | parser.object.doc.as
 --- | parser.object.doc.async
 --- | parser.object.doc.cast
 --- | parser.object.doc.class
 --- | parser.object.doc.deprecated
+--- | parser.object.doc.diagnostic
+--- | parser.object.doc.enum
 --- | parser.object.doc.field
 --- | parser.object.doc.field.name
 --- | parser.object.doc.generic
 --- | parser.object.doc.meta
+--- | parser.object.doc.module
+--- | parser.object.doc.nodiscard
+--- | parser.object.doc.operator
 --- | parser.object.doc.overload
+--- | parser.object.doc.package
+--- | parser.object.doc.see
 --- | parser.object.doc.param
+--- | parser.object.doc.private
+--- | parser.object.doc.protected
+--- | parser.object.doc.public
 --- | parser.object.doc.return
+--- | parser.object.doc.source
 --- | parser.object.doc.type
 --- | parser.object.doc.type.name
+--- | parser.object.doc.type.unit
+--- | parser.object.doc.type.field
 --- | parser.object.doc.vararg
+--- | parser.object.doc.version
+--- | parser.object.doc.comment
 
 --- @class parser.object.doc.main
 --- @field type 'doc'
 --- @field parent parser.object
 --- @field groups unknown
+--- @field start? integer
+--- @field finish? integer
 
 --- @class parser.object.doc.alias : parser.object.doc.base
 --- @field type 'doc.alias'
+--- @field alias? parser.object.doc.alias.name
+--- @field docAttr? parser.object.doc.attr
+--- @field extends? parser.object.doc.type
+--- @field signs? parser.object.doc.generic.name[]
+
+--- @class parser.object.doc.alias.name : parser.object.doc.base
+--- @field type 'doc.alias.name'
+--- @field [1] string
+
+--- @class parser.object.doc.as : parser.object.doc.base
+--- @field type 'doc.as'
+--- @field as? parser.object.doc.type
+
+--- @class parser.object.doc.enum : parser.object.doc.base
+--- @field type 'doc.enum'
 
 --- @class parser.object.doc.async : parser.object.doc.base
 --- @field type 'doc.async'
 
 --- @class parser.object.doc.cast : parser.object.doc.base
 --- @field type 'doc.cast'
+--- @field name? parser.object.doc.cast.name
+--- @field casts parser.object.doc.cast.block[]
+
+--- @class parser.object.doc.cast.name : parser.object.doc.base
+--- @field type 'doc.cast.name'
+--- @field [1] string
+
+--- @class parser.object.doc.cast.block : parser.object.doc.base
+--- @field type 'doc.cast.block'
+--- @field mode? '+'|'-'
+--- @field optional? true
+--- @field extends? parser.object.doc.type
 
 --- @class parser.object.doc.class : parser.object.doc.base
 --- @field type 'doc.class'
@@ -47,14 +99,23 @@ local util = require('utility')
 --- @field fields unknown
 --- @field operators unknown
 --- @field calls unknown
---- @field signs unknown
---- @field extends parser.object.doc.extends.name[]
+--- @field signs? parser.object.doc.generic.name[]
+--- @field extends? (parser.object.doc.extends.name|parser.object.doc.type.table)[]
 
 --- @class parser.object.doc.class.name : parser.object.doc.base
 --- @field type 'doc.class.name'
 
 --- @class parser.object.doc.extends.name : parser.object.doc.base
 --- @field type 'doc.extends.name'
+
+--- @class parser.object.doc.type.arg : parser.object.doc.base
+--- @field type 'doc.type.arg'
+--- @field name? parser.object.doc.type.arg.name
+--- @field optional? true
+--- @field extends? parser.object.doc.type
+---
+--- @class parser.object.doc.type.arg.name : parser.object.doc.base
+--- @field type 'doc.type.arg.name'
 
 --- @class parser.object.doc.comment : parser.object.doc.base
 --- @field type 'doc.comment'
@@ -64,12 +125,27 @@ local util = require('utility')
 
 --- @class parser.object.doc.meta : parser.object.doc.base
 --- @field type 'doc.meta'
+--- @field name? parser.object.doc.meta.name
+---
+--- @class parser.object.doc.meta.name : parser.object.doc.base
+--- @field type 'doc.meta.name'
+--- @field [1] string
 
 --- @class parser.object.doc.diagnostic : parser.object.doc.base
 --- @field type 'doc.diagnostic'
+--- @field mode? string
+--- @field names? parser.object.doc.diagnostic.name[]
+
+--- @class parser.object.doc.diagnostic.name : parser.object.doc.base
+--- @field type 'doc.diagnostic.name'
+--- @field [1] string
 
 --- @class parser.object.doc.field : parser.object.doc.base
 --- @field type 'doc.field'
+--- @field optional? true
+--- @field extends? parser.object.doc.type
+--- @field visible? 'public'|'protected'|'private'|'package'
+--- @field field? parser.object.doc.field.name|parser.object.doc.type
 
 --- @class parser.object.doc.generic : parser.object.doc.base
 --- @field type 'doc.generic'
@@ -83,25 +159,45 @@ local util = require('utility')
 --- @class parser.object.doc.generic.name : parser.object.doc.base
 --- @field type 'doc.generic.name'
 --- @field parent parser.object.doc.generic.object
+--- @field generic? parser.object.doc.generic.object
+--- @field literal? true
 --- @field [1] string
 
 --- @class parser.object.doc.module : parser.object.doc.base
 --- @field type 'doc.module'
+--- @field module? string
+--- @field smark? string
 
 --- @class parser.object.doc.nodiscard : parser.object.doc.base
 --- @field type 'doc.nodiscard'
 
 --- @class parser.object.doc.operator : parser.object.doc.base
 --- @field type 'doc.operator'
+--- @field op? parser.object.doc.operator.name
+--- @field exp? parser.object.doc.type
+--- @field extends? parser.object.doc.type
+
+--- @class parser.object.doc.operator.name : parser.object.doc.base
+--- @field type 'doc.operator.name'
+--- @field [1] string
 
 --- @class parser.object.doc.overload : parser.object.doc.base
 --- @field type 'doc.overload'
+--- @field overload? parser.object.doc.type.function
 
 --- @class parser.object.doc.package : parser.object.doc.base
 --- @field type 'doc.package'
 
 --- @class parser.object.doc.param : parser.object.doc.base
 --- @field type 'doc.param'
+--- @field param? parser.object.doc.param.name
+--- @field extends? parser.object.doc.type
+--- @field optional? true
+--- @field firstFinish? integer
+
+--- @class parser.object.doc.param.name : parser.object.doc.base
+--- @field type 'doc.param.name'
+--- @field [1] string
 
 --- @class parser.object.doc.private : parser.object.doc.base
 --- @field type 'doc.private'
@@ -115,8 +211,17 @@ local util = require('utility')
 --- @class parser.object.doc.return : parser.object.doc.base
 --- @field type 'doc.return'
 
+--- @class parser.object.doc.return.name : parser.object.doc.base
+--- @field type 'doc.return.name'
+--- @field [1] string
+
 --- @class parser.object.doc.see : parser.object.doc.base
 --- @field type 'doc.see'
+--- @field name? parser.object.doc.see.name
+
+--- @class parser.object.doc.see.name : parser.object.doc.base
+--- @field type 'doc.see.name'
+--- @field [1] string
 
 --- @class parser.object.doc.source : parser.object.doc.base
 --- @field type 'doc.source'
@@ -127,26 +232,40 @@ local util = require('utility')
 --- @class parser.object.doc.attr : parser.object.doc.base
 --- @field type 'doc.attr'
 
+--- @class parser.object.doc.attr.name : parser.object.doc.base
+--- @field type 'doc.attr.name'
+--- @field [1] string
+
 --- @alias parser.object.doc.type.unit
+--- | parser.object.doc.type
 --- | parser.object.doc.type.boolean
---- | parser.object.doc.type.string
---- | parser.object.doc.type.integer
---- | parser.object.doc.type.table
 --- | parser.object.doc.type.code
 --- | parser.object.doc.type.function
+--- | parser.object.doc.type.integer
+--- | parser.object.doc.type.name
+--- | parser.object.doc.type.string
+--- | parser.object.doc.type.table
+--- | parser.object.doc.type.array
 
 --- @class parser.object.doc.type : parser.object.doc.base
 --- @field type 'doc.type'
---- @field parent unknown
+--- @field parent parser.object.doc
 --- @field types parser.object.doc.type.unit[]
 --- @field optional? true
 --- @field firstFinish integer
+--- @field name? parser.object.doc.return.name
+
+--- @class parser.object.doc.type.array : parser.object.doc.base
+--- @field type 'doc.type.array'
+--- @field node parser.object.doc.type.unit
 
 --- @class parser.object.doc.type.code : parser.object.doc.base
 --- @field type 'doc.type.code'
+--- @field [1] string
 
 --- @class parser.object.doc.type.name : parser.object.doc.base
 --- @field type 'doc.type.name'
+--- @field [1] string
 
 --- @class parser.object.doc.type.boolean : parser.object.doc.base
 --- @field type 'doc.type.boolean'
@@ -172,7 +291,7 @@ local util = require('utility')
 --- @class parser.object.doc.type.field : parser.object.doc.base
 --- @field type 'doc.type.field'
 --- @field parent parser.object.doc.type.table
---- @field name? parser.object.doc.field.name
+--- @field name? parser.object.doc.field.name|parser.object.doc.type
 --- @field extends? parser.object.doc.type
 --- @field optional? true
 
@@ -181,11 +300,13 @@ local util = require('utility')
 
 --- @class parser.object.doc.vararg : parser.object.doc.base
 --- @field type 'doc.vararg'
+--- @field vararg? parser.object.doc.type
 
 --- @class parser.object.doc.version : parser.object.doc.base
 --- @field type 'doc.version'
 
-local TokenTypes, TokenStarts, TokenFinishs, TokenContents, TokenMarks
+local TokenTypes, TokenStarts, TokenFinishs, TokenContents
+local TokenMarks --- @type table<integer,string?>?
 --- @type integer
 local Ci
 --- @type integer
@@ -392,6 +513,7 @@ local function getFinish()
 end
 
 local function getMark()
+    --- @cast TokenMarks -?
     return TokenMarks[Ci]
 end
 
@@ -437,6 +559,81 @@ local function nextSymbolOrError(symbol)
     return false
 end
 
+local function parseDots(tp, parent)
+    if not checkToken('symbol', '...', 1) then
+        return
+    end
+    nextToken()
+    local dots = {
+        type = tp,
+        start = getStart(),
+        finish = getFinish(),
+        parent = parent,
+        [1] = '...',
+    }
+    return dots
+end
+
+--- @return parser.object.doc.attr.name?
+local function parseAttrName(parent)
+    return parseName('doc.attr.name', parent)
+end
+
+--- @return parser.object.doc.return.name?
+local function parseReturnName(parent)
+    return parseName('doc.return.name', parent) or parseDots('doc.return.name', parent)
+end
+
+--- @return parser.object.doc.type.name?
+local function parseTypeName(parent)
+    return parseName('doc.type.name', parent) or parseDots('doc.type.name', parent)
+end
+
+--- @return parser.object.doc.class.name?
+local function parseClassName(parent)
+    return parseName('doc.class.name', parent)
+end
+
+--- @return parser.object.doc.extends.name?
+local function parseExtendsName(parent)
+    return parseName('doc.extends.name', parent)
+end
+
+--- @return parser.object.doc.alias.name?
+local function parseAliasName(parent)
+    return parseName('doc.alias.name', parent)
+end
+
+--- @return parser.object.doc.field.name?
+local function parseFieldName(parent)
+    return parseName('doc.field.name', parent)
+end
+
+--- @return parser.object.doc.generic.name?
+local function parseGenericName(parent)
+    return parseName('doc.generic.name', parent)
+end
+
+--- @return parser.object.doc.param.name?
+local function parseParamName(parent)
+    return parseName('doc.param.name', parent) or parseDots('doc.param.name', parent)
+end
+
+--- @return parser.object.doc.type.arg.name?
+local function parseArgName(parent)
+    return parseName('doc.type.arg.name', parent) or parseDots('doc.type.arg.name', parent)
+end
+
+--- @return parser.object.doc.meta.name?
+local function parseMetaName(parent)
+    return parseName('doc.meta.name', parent)
+end
+
+--- @return parser.object.doc.see.name?
+local function parseSeeName(parent)
+    return parseName('doc.see.name', parent)
+end
+
 --- @return parser.object.doc.attr?
 local function parseDocAttr(parent)
     if not checkToken('symbol', '(', 1) then
@@ -457,7 +654,7 @@ local function parseDocAttr(parent)
         if checkToken('symbol', ',', 1) then
             nextToken()
         else
-            local name = parseName('doc.attr.name', attrs)
+            local name = parseAttrName(attrs)
             if not name then
                 break
             end
@@ -514,7 +711,7 @@ local function parseTable(parent)
                 nextToken()
                 needCloseParen = true
             end
-            field.name = parseName('doc.field.name', field) or parseIndexField(field)
+            field.name = parseFieldName(field) or parseIndexField(field)
             if not field.name then
                 pushWarning({
                     type = 'LUADOC_MISS_FIELD_NAME',
@@ -554,6 +751,7 @@ local function parseTable(parent)
     return typeUnit
 end
 
+--- @return parser.object.doc.type.table?
 local function parseTuple(parent)
     if not checkToken('symbol', '[', 1) then
         return
@@ -638,7 +836,7 @@ local function parseSigns(parent)
     nextToken()
     local signs = {}
     while true do
-        local sign = parseName('doc.generic.name', parent)
+        local sign = parseGenericName(parent)
         if not sign then
             pushWarning({
                 type = 'LUADOC_MISS_SIGN_NAME',
@@ -656,21 +854,6 @@ local function parseSigns(parent)
     end
     nextSymbolOrError('>')
     return signs
-end
-
-local function parseDots(tp, parent)
-    if not checkToken('symbol', '...', 1) then
-        return
-    end
-    nextToken()
-    local dots = {
-        type = tp,
-        start = getStart(),
-        finish = getFinish(),
-        parent = parent,
-        [1] = '...',
-    }
-    return dots
 end
 
 --- @return parser.object.doc.type.function?
@@ -694,11 +877,12 @@ local function parseTypeUnitFunction(parent)
             nextToken()
             break
         end
+        --- @type parser.object.doc.type.arg
         local arg = {
             type = 'doc.type.arg',
             parent = typeUnit,
         }
-        arg.name = parseName('doc.type.arg.name', arg) or parseDots('doc.type.arg.name', arg)
+        arg.name = parseArgName(arg)
         if not arg.name then
             pushWarning({
                 type = 'LUADOC_MISS_ARG_NAME',
@@ -738,8 +922,7 @@ local function parseTypeUnitFunction(parent)
         while true do
             local name
             try(function()
-                local returnName = parseName('doc.return.name', typeUnit)
-                    or parseDots('doc.return.name', typeUnit)
+                local returnName = parseReturnName(typeUnit)
                 if not returnName then
                     return false
                 end
@@ -778,6 +961,7 @@ local function parseTypeUnitFunction(parent)
     return typeUnit
 end
 
+--- @return parser.object.doc.type.function?
 local function parseFunction(parent)
     local _, content = peekToken()
     if content == 'async' then
@@ -798,11 +982,15 @@ local function parseFunction(parent)
     end
 end
 
+--- @param parent parser.object.doc
+--- @param node parser.object.doc.type.unit
+--- @return parser.object.doc.type.array?
 local function parseTypeUnitArray(parent, node)
     if not checkToken('symbol', '[]', 1) then
         return
     end
     nextToken()
+    --- @type parser.object.doc.type.array
     local result = {
         type = 'doc.type.array',
         start = node.start,
@@ -910,12 +1098,12 @@ local function parseCodePattern(parent)
                 finishOffset = i
                 break
             end
-            ---不连续的name，无效的
+            -- Discontinuous name, invalid
             return
         end
         if next == 'code' then
             if codeOffset and content ~= nextContent then
-                -- 暂时不支持多generic
+                -- Multiple generics are not supported for the time being.
                 return
             end
             codeOffset = i
@@ -982,6 +1170,7 @@ local function parseBoolean(parent)
     }
 end
 
+--- @return parser.object.doc.type?
 local function parseParen(parent)
     if not checkToken('symbol', '(', 1) then
         return
@@ -994,6 +1183,7 @@ end
 
 --- @return parser.object.doc.type.unit?
 function parseTypeUnit(parent)
+    --- @type parser.object.doc.type.unit?
     local result = parseFunction(parent)
         or parseTable(parent)
         or parseTuple(parent)
@@ -1005,7 +1195,7 @@ function parseTypeUnit(parent)
         or parseCodePattern(parent)
 
     if not result then
-        result = parseName('doc.type.name', parent) or parseDots('doc.type.name', parent)
+        result = parseTypeName(parent)
         if not result then
             return
         end
@@ -1128,6 +1318,7 @@ function parseType(parent)
         type = 'doc.type',
         parent = parent,
         types = {},
+        firstFinish = 0, -- suppress warning
     }
 
     while true do
@@ -1169,7 +1360,15 @@ function parseType(parent)
     return result
 end
 
---- @type table<string,fun():parser.object.doc?, parser.object.doc[]?>
+local function initObj(ty)
+    return {
+        type = ty,
+        start = getFinish(),
+        finish = getFinish(),
+    }
+end
+
+--- @type table<string,fun(doc:string):parser.object.doc?, parser.object.doc.type[]?>
 local docSwitch = {
     ['class'] = function()
         --- @type parser.object.doc.class
@@ -1180,7 +1379,7 @@ local docSwitch = {
             calls = {},
         }
         result.docAttr = parseDocAttr(result)
-        result.class = parseName('doc.class.name', result)
+        result.class = parseClassName(result)
         if not result.class then
             pushWarning({
                 type = 'LUADOC_MISS_CLASS_NAME',
@@ -1200,9 +1399,10 @@ local docSwitch = {
         result.extends = {}
 
         while true do
-            local extend = parseName('doc.extends.name', result)
+            local extend = parseExtendsName(result)
                 or parseTable(result)
                 or parseTuple(result)
+
             if not extend then
                 pushWarning({
                     type = 'LUADOC_MISS_CLASS_EXTENDS_NAME',
@@ -1244,7 +1444,7 @@ local docSwitch = {
             type = 'doc.alias',
         }
         result.docAttr = parseDocAttr(result)
-        result.alias = parseName('doc.alias.name', result)
+        result.alias = parseAliasName(result)
         if not result.alias then
             pushWarning({
                 type = 'LUADOC_MISS_ALIAS_NAME',
@@ -1273,7 +1473,7 @@ local docSwitch = {
         local result = {
             type = 'doc.param',
         }
-        result.param = parseName('doc.param.name', result) or parseDots('doc.param.name', result)
+        result.param = parseParamName(result)
         if not result.param then
             pushWarning({
                 type = 'LUADOC_MISS_PARAM_NAME',
@@ -1328,8 +1528,7 @@ local docSwitch = {
                 docType.name = dots
                 dots.parent = docType
             else
-                docType.name = parseName('doc.return.name', docType)
-                    or parseDots('doc.return.name', docType)
+                docType.name = parseReturnName(docType)
             end
             result.returns[#result.returns + 1] = docType
             if not checkToken('symbol', ',', 1) then
@@ -1370,6 +1569,7 @@ local docSwitch = {
             end
             return false
         end)
+        --- @type parser.object.doc.field.name|parser.object.doc.type?
         result.field = parseName('doc.field.name', result) or parseIndexField(result)
         if not result.field then
             pushWarning({
@@ -1400,7 +1600,7 @@ local docSwitch = {
     end,
 
     ['generic'] = function()
-       --- @type parser.object.doc.generic
+        --- @type parser.object.doc.generic
         local result = {
             type = 'doc.generic',
             generics = {},
@@ -1420,9 +1620,7 @@ local docSwitch = {
                 return
             end
             object.start = object.generic.start
-            if not result.start then
-                result.start = object.start
-            end
+            result.start = result.start or object.start
             if checkToken('symbol', ':', 1) then
                 nextToken()
                 object.extends = parseType(object)
@@ -1483,25 +1681,18 @@ local docSwitch = {
 
     ['deprecated'] = function()
         --- @type parser.object.doc.deprecated
-        return {
-            type = 'doc.deprecated',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        return initObj('doc.deprecated')
     end,
 
     ['meta'] = function()
         --- @type parser.object.doc.meta
-        local meta = {
-            type = 'doc.meta',
-            start = getFinish(),
-            finish = getFinish(),
-        }
-        meta.name = parseName('doc.meta.name', meta)
+        local meta = initObj('doc.meta')
+        meta.name = parseMetaName(meta)
         return meta
     end,
 
     ['version'] = function()
+        --- @type parser.object.doc.version
         local result = {
             type = 'doc.version',
             versions = {},
@@ -1556,10 +1747,11 @@ local docSwitch = {
     end,
 
     ['see'] = function()
+        --- @type parser.object.doc.see
         local result = {
             type = 'doc.see',
         }
-        result.name = parseName('doc.see.name', result)
+        result.name = parseSeeName(result)
         if not result.name then
             pushWarning({
                 type = 'LUADOC_MISS_SEE_NAME',
@@ -1574,6 +1766,7 @@ local docSwitch = {
     end,
 
     ['diagnostic'] = function()
+        --- @type parser.object.doc.diagnostic
         local result = {
             type = 'doc.diagnostic',
         }
@@ -1629,11 +1822,8 @@ local docSwitch = {
     end,
 
     ['module'] = function()
-        local result = {
-            type = 'doc.module',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.module
+        local result = initObj('doc.module')
         local tp, content = peekToken()
         if tp == 'string' then
             result.module = content
@@ -1652,40 +1842,28 @@ local docSwitch = {
     end,
 
     ['async'] = function()
-        return {
-            type = 'doc.async',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.async
+        return initObj('doc.async')
     end,
 
     ['nodiscard'] = function()
-        return {
-            type = 'doc.nodiscard',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.nodiscard
+        return initObj('doc.nodiscard')
     end,
 
     ['as'] = function()
-        local result = {
-            type = 'doc.as',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.as
+        local result = initObj('doc.as')
         result.as = parseType(result)
         result.finish = getFinish()
         return result
     end,
 
     ['cast'] = function()
-        local result = {
-            type = 'doc.cast',
-            start = getFinish(),
-            finish = getFinish(),
-            casts = {},
-        }
-
+        --- @type parser.object.doc.cast
+        local result = initObj('doc.cast')
+        result.casts = {}
+        --- @type parser.object.doc.cast.name?
         local loc = parseName('doc.cast.name', result)
         if not loc then
             pushWarning({
@@ -1746,12 +1924,10 @@ local docSwitch = {
     end,
 
     ['operator'] = function()
-        local result = {
-            type = 'doc.operator',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.operator
+        local result = initObj('doc.operator')
 
+        --- @type parser.object.doc.operator.name?
         local op = parseName('doc.operator.name', result)
         if not op then
             pushWarning({
@@ -1802,6 +1978,7 @@ local docSwitch = {
         source = source or fullSource
         line = tonumber(line) or 1
         char = tonumber(char) or 0
+        --- @type parser.object.doc.source
         local result = {
             type = 'doc.source',
             start = getStart(),
@@ -1819,6 +1996,7 @@ local docSwitch = {
         if not name then
             return
         end
+        --- @type parser.object.doc.enum
         local result = {
             type = 'doc.enum',
             start = name.start,
@@ -1834,39 +2012,28 @@ local docSwitch = {
     end,
 
     ['private'] = function()
-        return {
-            type = 'doc.private',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.private
+        return initObj('doc.private')
     end,
 
     ['protected'] = function()
-        return {
-            type = 'doc.protected',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.protected
+        return initObj('doc.protected')
     end,
 
     ['public'] = function()
-        return {
-            type = 'doc.public',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.public
+        return initObj('doc.public')
     end,
 
     ['package'] = function()
-        return {
-            type = 'doc.package',
-            start = getFinish(),
-            finish = getFinish(),
-        }
+        --- @type parser.object.doc.package
+        return initObj('doc.package')
     end,
 }
 
 --- @return parser.object.doc?
+--- @return parser.object.doc.type[]?
 local function convertTokens(doc)
     local tp, text = nextToken()
     if not tp then
@@ -1885,6 +2052,8 @@ local function convertTokens(doc)
     end
 end
 
+--- @param text string
+--- @return string
 local function trimTailComment(text)
     local comment = text
     if text:sub(1, 1) == '@' then
@@ -1904,8 +2073,8 @@ local function trimTailComment(text)
 end
 
 --- @param comment parser.object.comment
---- @return parser.object.doc.comment
---- @return unknown?
+--- @return parser.object.doc
+--- @return parser.object.doc.type[]?
 local function buildLuaDoc(comment)
     local text = comment.text
     local startPos = (comment.type == 'comment.short' and text:match('^%-%s*@()'))
@@ -1940,6 +2109,7 @@ local function buildLuaDoc(comment)
         end
         local cstart = text:find('%S', finish - comment.start)
         if cstart and cstart < comment.finish then
+            --- @type parser.object.doc.tailcomment
             result.comment = {
                 type = 'doc.tailcomment',
                 start = cstart + comment.start,
@@ -2021,7 +2191,7 @@ local function isNextLine(lastDoc, nextDoc)
 end
 
 local function bindGeneric(binded)
-    local generics = {}
+    local generics = {} --- @type table<string,parser.object.doc.generic.object>
     for _, doc in ipairs(binded) do
         if doc.type == 'doc.generic' then
             for _, obj in ipairs(doc.generics) do
@@ -2029,11 +2199,9 @@ local function bindGeneric(binded)
                 generics[name] = obj
             end
         elseif doc.type == 'doc.class' or doc.type == 'doc.alias' then
-            if doc.signs then
-                for _, sign in ipairs(doc.signs) do
-                    local name = sign[1]
-                    generics[name] = sign
-                end
+            for _, sign in ipairs(doc.signs or {}) do
+                local name = sign[1]
+                generics[name] = sign
             end
         end
 
@@ -2045,18 +2213,22 @@ local function bindGeneric(binded)
             or doc.type == 'doc.class'
             or doc.type == 'doc.alias'
         then
+            --- @param src parser.object.doc.type.name
             guide.eachSourceType(doc, 'doc.type.name', function(src)
                 local name = src[1]
                 if generics[name] then
-                    src.type = 'doc.generic.name'
-                    src.generic = generics[name]
+                    local g = src --[[@as parser.object.doc.generic.name]]
+                    g.type = 'doc.generic.name'
+                    g.generic = generics[name]
                 end
             end)
+            --- @param src parser.object.doc.type.code
             guide.eachSourceType(doc, 'doc.type.code', function(src)
                 local name = src[1]
                 if generics[name] then
-                    src.type = 'doc.generic.name'
-                    src.literal = true
+                    local c = src --[[@as parser.object.doc.generic.name]]
+                    c.type = 'doc.generic.name'
+                    c.literal = true
                 end
             end)
         end
@@ -2171,8 +2343,9 @@ local function bindDoc(source, binded)
     return ok
 end
 
+--- @param sources parser.bindDocAccept[]
 local function bindDocsBetween(sources, binded, start, finish)
-    -- 用二分法找到第一个
+    -- Find the first one using bisection method
     local max = #sources
     local index
     local left = 1
@@ -2195,7 +2368,7 @@ local function bindDocsBetween(sources, binded, start, finish)
     end
 
     local ok = false
-    -- 从前往后进行绑定
+    -- Binding from front to back
     for i = index, max do
         local src = sources[i]
         if src and src.start >= start then
@@ -2303,6 +2476,8 @@ local function bindCommentsAndFields(binded)
     end
 end
 
+--- @param sources parser.bindDocAccept[]
+--- @param binded? parser.object.doc[]
 local function bindDocWithSources(sources, binded)
     if not binded then
         return
@@ -2347,10 +2522,26 @@ local bindDocAccept = {
     '...',
 }
 
+--- @alias parser.bindDocAccept
+--- | parser.object.local
+--- | parser.object.setlocal
+--- | parser.object.setglobal
+--- | parser.object.setfield
+--- | parser.object.setmethod
+--- | parser.object.setindex
+--- | parser.object.tablefield
+--- | parser.object.tableindex
+--- | parser.object.self
+--- | parser.object.function
+--- | parser.object.return
+--- | parser.object.vararg
+
 --- @param state parser.state
 local function bindDocs(state)
     local text = state.lua
+    --- @type parser.bindDocAccept[]
     local sources = {}
+    --- @param src parser.bindDocAccept
     guide.eachSourceTypes(state.ast, bindDocAccept, function(src)
         sources[#sources + 1] = src
     end)
@@ -2493,6 +2684,9 @@ local function luadoc(state)
 end
 
 return {
+    --- @param src parser.object
+    --- @param comment parser.object.comment.short
+    --- @param group? parser.object.comment.short
     buildAndBindDoc = function(ast, src, comment, group)
         local doc = buildLuaDoc(comment)
         if doc then
