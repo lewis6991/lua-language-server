@@ -255,20 +255,20 @@ M.actionMap = {
 --- @return boolean
 function M.isLiteral(obj)
     local tp = obj.type
-    return tp == 'nil'
-        or tp == 'boolean'
-        or tp == 'string'
-        or tp == 'number'
-        or tp == 'integer'
-        or tp == 'table'
+    return tp == 'boolean'
         or tp == 'function'
-        or tp == 'doc.type.function'
-        or tp == 'doc.type.table'
-        or tp == 'doc.type.string'
-        or tp == 'doc.type.integer'
+        or tp == 'integer'
+        or tp == 'nil'
+        or tp == 'number'
+        or tp == 'string'
+        or tp == 'table'
+        or tp == 'doc.type.array'
         or tp == 'doc.type.boolean'
         or tp == 'doc.type.code'
-        or tp == 'doc.type.array'
+        or tp == 'doc.type.function'
+        or tp == 'doc.type.integer'
+        or tp == 'doc.type.string'
+        or tp == 'doc.type.table'
 end
 
 --- Get the literal

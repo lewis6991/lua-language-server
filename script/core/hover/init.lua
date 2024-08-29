@@ -16,6 +16,7 @@ local function getHover(source)
     local descMark = {}
 
     if source.type == 'doc.see.name' then
+        --- @cast source parser.object.doc.see.name
         for _, symbol in ipairs(wssymbol(source[1], guide.getUri(source))) do
             if symbol.name == source[1] then
                 source = symbol.source
@@ -55,8 +56,10 @@ local function getHover(source)
         local orders = {}
         for i, def in ipairs(defs) do
             if def.type == 'function' then
+                --- @cast def parser.object.function
                 orders[def] = i - 20000
             elseif def.type == 'doc.type.function' then
+                --- @cast def parser.object.doc.type.function
                 orders[def] = i - 10000
             else
                 orders[def] = i

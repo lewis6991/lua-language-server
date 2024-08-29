@@ -4,7 +4,6 @@ local vm = require('vm.vm')
 local ws = require('workspace.workspace')
 local guide = require('parser.guide')
 local timer = require('timer')
-local util = require('utility')
 
 --- @type table<vm.object, vm.node>
 local nodeCache = setmetatable({}, { __mode = 'k' })

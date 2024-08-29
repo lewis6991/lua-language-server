@@ -55,6 +55,7 @@ local util = require('utility')
 --- @field groups unknown
 --- @field start? integer
 --- @field finish? integer
+--- @field [integer] parser.object.doc
 
 --- @class parser.object.doc.alias : parser.object.doc.base
 --- @field type 'doc.alias'

@@ -62,6 +62,7 @@ local ChunkFinishMap = {
 --- | parser.object.name
 --- | parser.object.funcargs
 --- | parser.object.callargs
+--- | parser.object.doc
 ---- | parser.object.old
 
 --- @class parser.object.base
@@ -168,20 +169,14 @@ local ChunkFinishMap = {
 
 --- @alias parser.object.expr
 --- | parser.object.binop
---- | parser.object.boolean
 --- | parser.object.explist
 --- | parser.object.getglobal
 --- | parser.object.getlocal
 --- | parser.object.label
---- | parser.object.number
---- | parser.object.integer
 --- | parser.object.paren
---- | parser.object.string
 --- | parser.object.unary
 --- | parser.object.varargs
 --- | parser.object.simple
---- | parser.object.table
---- | parser.object.nil
 --- | parser.object.index
 --- | parser.object.tableindex
 --- | parser.object.tableexp
@@ -190,6 +185,25 @@ local ChunkFinishMap = {
 --- | parser.object.getmethod
 --- | parser.object.getfield
 --- | parser.object.call
+--- | parser.object.literal
+
+--- @alias parser.object.literal
+--- | parser.object.boolean
+--- | parser.object.function
+--- | parser.object.integer
+--- | parser.object.nil
+--- | parser.object.number
+--- | parser.object.string
+--- | parser.object.table
+
+--- @alias parser.object.doc.type.literal
+--- | parser.object.doc.type.array
+--- | parser.object.doc.type.boolean
+--- | parser.object.doc.type.code
+--- | parser.object.doc.type.function
+--- | parser.object.doc.type.integer
+--- | parser.object.doc.type.string
+--- | parser.object.doc.type.table
 
 --- @class parser.binop
 --- @field type 'or' | 'and' | '<=' | '>=' | '<' | '>' | '~=' | '==' | '|' | '~' | '&' | '<<' | '>>' | '..' | '+' | '-' | '*' | '//' | '/' | '%' | '^'
@@ -403,6 +417,7 @@ local ChunkFinishMap = {
 --- @class parser.object.if : parser.object.block.base
 --- @field type 'if'
 --- @field keyword [integer,integer]
+--- @field [integer] parser.object.ifblock|parser.object.elseifblock|parser.object.elseblock
 
 --- @class parser.object.ifblock : parser.object.block.base
 --- @field type 'ifblock'
