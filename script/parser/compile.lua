@@ -30,6 +30,20 @@ local NLMap = {
     ['\r\n'] = true,
 }
 
+--- @alias parser.object.get
+--- | parser.object.getfield
+--- | parser.object.getglobal
+--- | parser.object.getindex
+--- | parser.object.getlocal
+--- | parser.object.getmethod
+
+--- @alias parser.object.set
+--- | parser.object.setfield
+--- | parser.object.setglobal
+--- | parser.object.setindex
+--- | parser.object.setlocal
+--- | parser.object.setmethod
+
 local GetToSetMap = {
     ['getglobal'] = 'setglobal',
     ['getlocal'] = 'setlocal',
@@ -62,9 +76,9 @@ local ChunkFinishMap = {
 --- | parser.object.name
 --- | parser.object.funcargs
 --- | parser.object.callargs
---- | parser.object.doc
 --- | parser.object.field
 --- | parser.object.method
+---- | parser.object.doc
 
 --- @class parser.object.base
 --- @field start integer
@@ -77,6 +91,9 @@ local ChunkFinishMap = {
 --- @field parent? parser.object
 --- @field docs? parser.object.doc.main
 --- @field bindDocs? parser.object.doc[]
+---
+--- Used to mark expressions that are redundant
+--- @field redundant? { max: integer, passed: integer }
 
 --- @class parser.object.setfield : parser.object.base
 --- @field type 'setfield'
@@ -289,7 +306,12 @@ local ChunkFinishMap = {
 --- @field type 'list'
 --- @field [integer] parser.object.expr
 
---- @class parser.object.getglobal : parser.object.base
+--- @class parser.object.simple.base : parser.object.base
+--- @field vstart integer
+--- @field value parser.object
+--- @field range integer
+
+--- @class parser.object.getglobal : parser.object.simple.base
 --- @field type 'getglobal'
 --- @field node parser.object.local
 --- @field [1] string Name
@@ -343,13 +365,10 @@ local ChunkFinishMap = {
 
 --- Blocks
 
---- @alias parser.object.funcaction
+--- @alias parser.object.function.action
 --- | parser.object.function
---- | parser.object.setlocal
---- | parser.object.setfield
---- | parser.object.setmethod
---- | parser.object.setindex
---- | parser.object.setglobal
+--- | parser.object.set
+--- | parser.object.local
 
 --- @alias parser.object.action
 --- | parser.object.label
@@ -361,7 +380,7 @@ local ChunkFinishMap = {
 --- | parser.object.loop
 --- | parser.object.while
 --- | parser.object.repeat
---- | parser.object.funcaction
+--- | parser.object.function.action
 --- | parser.object.expr
 --- | parser.object.break
 --- | parser.object.return
@@ -412,13 +431,19 @@ local ChunkFinishMap = {
 --- @field [1] '...'
 --- @field ref parser.object.varargs[]
 
+--- @alias parser.object.function.name
+--- | parser.object.get
+--- | parser.object.local
+
 --- @class parser.object.function : parser.object.block.base
 --- @field type 'function'
 --- @field keyword [integer,integer]
 --- @field vararg? parser.object.vararg
 --- @field args? parser.object.funcargs
---- @field name? parser.object.simple
+--- @field name? parser.object.function.name
+---
 --- @field returns? parser.object.return[]
+--- @field locPos? integer Start position of the 'local' keyword
 --- @field parent parser.object
 
 --- @class parser.object.lambda : parser.object.block.base
@@ -484,7 +509,7 @@ local ChunkFinishMap = {
 --- State
 
 --- @class parser.state.err
---- @field at? parser.object.base
+--- @field at? {start?:integer, finish?:integer}
 --- @field type string
 --- @field start? integer
 --- @field finish? integer
@@ -1100,6 +1125,7 @@ function P.LocalAttrs()
         if State.version ~= 'Lua 5.4' then
             Error.push({
                 type = 'UNSUPPORT_SYMBOL',
+                start = attr.start,
                 at = attr,
                 version = 'Lua 5.4',
                 info = {
@@ -2433,10 +2459,10 @@ do -- P.Simple
             elseif longStr then
                 ret = parseLongStrCall(ret, longStr)
             else
-                local ret1 = parseGetMethod(ret)
-                    or parseCall(ret)
+                local ret1 = parseCall(ret)
                     or parseTableCall(ret)
                     or parseShortStrCall(ret)
+                    or parseGetMethod(ret)
                     or parseGetField(ret)
                     or parseGetIndex(ret)
                 if ret1 then
@@ -2562,12 +2588,8 @@ local function getLocal(name, pos)
 end
 
 --- @param node parser.object.name
---- @return any
+--- @return parser.object.getlocal|parser.object.getglobal
 local function resolveName(node)
-    if not node then
-        return
-    end
-
     local loc = getLocal(node[1], node.start)
     if loc then
         local getlocal = node --[[@as parser.object.getlocal]]
@@ -2578,6 +2600,9 @@ local function resolveName(node)
         if loc.special then
             addSpecial(loc.special, getlocal)
         end
+        local name = getlocal[1]
+        bindSpecial(getlocal, name)
+        return getlocal
     else
         local getglobal = node --[[@as parser.object.getglobal]]
         getglobal.type = 'getglobal'
@@ -2587,11 +2612,10 @@ local function resolveName(node)
             global.ref = global.ref or {}
             global.ref[#global.ref + 1] = getglobal
         end
+        local name = getglobal[1]
+        bindSpecial(getglobal, name)
+        return getglobal
     end
-
-    local name = node[1]
-    bindSpecial(node, name)
-    return node
 end
 
 do -- P.Actions
@@ -2682,7 +2706,7 @@ do -- P.Function | P.Lambda
         params = params or {}
         params.type = 'funcargs'
 
-        local lastSep
+        local lastTokenWasSep
         local hasDots
         local endToken = isLambda and '|' or ')'
 
@@ -2690,22 +2714,23 @@ do -- P.Function | P.Lambda
             skipSpace()
             local token = Token.get()
             if not token or token == endToken then
-                if lastSep then
+                if lastTokenWasSep then
                     Error.missName()
                 end
                 break
             elseif token == ',' then
-                if lastSep or lastSep == nil then
-                    Error.missName()
+                if lastTokenWasSep == false then
+                    lastTokenWasSep = true
                 else
-                    lastSep = true
+                    Error.missName()
                 end
                 Token.next()
             elseif token == '...' then
-                if lastSep == false then
+                if lastTokenWasSep == false then
                     Error.missSymbol(',')
                 end
-                lastSep = false
+                lastTokenWasSep = false
+
                 local vararg = initObj('...') --- @as parser.object.vararg
                 vararg.parent = params
                 vararg[1] = '...'
@@ -2713,16 +2738,18 @@ do -- P.Function | P.Lambda
                 --- @cast chunk parser.object.function|parser.object.lambda
                 chunk.vararg = vararg
                 params[#params + 1] = vararg
+
                 if hasDots then
                     Error.token('ARGS_AFTER_DOTS')
                 end
                 hasDots = true
                 Token.next()
             elseif CharMapWord[token:sub(1, 1)] then
-                if lastSep == false then
+                if lastTokenWasSep == false then
                     Error.missSymbol(',')
                 end
-                lastSep = false
+                lastTokenWasSep = false
+
                 local start, finish = Token.left(), Token.right()
                 params[#params + 1] = createLocal({
                     start = start,
@@ -2730,12 +2757,15 @@ do -- P.Function | P.Lambda
                     parent = params,
                     [1] = token,
                 })
+
                 if hasDots then
                     Error.push({ type = 'ARGS_AFTER_DOTS', start = start, finish = finish })
                 end
+
                 if isKeyWord(token, Token.getPrev()) then
                     Error.token('KEYWORD')
                 end
+
                 Token.next()
             else
                 skipUnknownSymbol()
@@ -2745,9 +2775,51 @@ do -- P.Function | P.Lambda
         return params
     end
 
+    --- The type system is complex here, so added lots of casting
+    --- If `isLocal` is `true`, then parser.object.local is returned
+    --- unless there is an error. Otherwise a local/global accessor is returned.
+    --- @return parser.object.function.name?
+    local function parseFunctionName(isLocal)
+        --- @type parser.object.name|parser.object.function.name?
+        local name
+
+        name = P.Name()
+        if not name then
+            return
+        end
+
+        local fullName = P.Simple(name, true)
+
+        --- @cast fullName
+        --- | parser.object.name
+        --- | parser.object.getmethod
+        --- | parser.object.getfield
+        --- | parser.object.getindex
+
+        if isLocal then
+            if fullName == name then
+                name = createLocal(name)
+                --- @diagnostic disable-next-line:cast-type-mismatch
+                --- @cast fullName parser.object.local
+            else
+                name = resolveName(name)
+                --- @cast fullName -parser.object.name
+                --- @cast fullName +(parser.object.getlocal|parser.object.getglobal)
+                Error.token('UNEXPECT_LFUNC_NAME', { at = fullName.start })
+            end
+        else
+            name = resolveName(name)
+            --- @cast fullName -parser.object.name
+            --- @cast fullName +(parser.object.getlocal|parser.object.getglobal)
+        end
+
+        return fullName
+    end
+
     --- @param isLocal? boolean
     --- @param isAction? boolean
-    --- @return parser.object.function?
+    --- @return parser.object.function.action?
+    --- @overload fun(isLocal: 'false', isAction: 'true'): parser.object.function.action?
     function P.Function(isLocal, isAction)
         if not Token.get('function') then
             return
@@ -2756,30 +2828,17 @@ do -- P.Function | P.Lambda
         Token.next()
         skipSpace(true)
 
-        local hasLeftParen = Token.get('(')
-        if not hasLeftParen then
-            local name = P.Name()
+        if not Token.get('(') then
+            local name = parseFunctionName(isLocal)
             if name then
-                local simple = P.Simple(name, true)
-                if isLocal then
-                    if simple == name then
-                        createLocal(name)
-                    else
-                        resolveName(name)
-                        Error.token('UNEXPECT_LFUNC_NAME', { at = simple.start })
-                    end
-                else
-                    resolveName(name)
-                end
-                func.name = simple
-                func.finish = simple.finish
-                func.bstart = simple.finish
+                func.name = name
+                func.finish = name.finish
+                func.bstart = name.finish
                 if not isAction then
-                    simple.parent = func
-                    Error.token('UNEXPECT_EFUNC_NAME', { at = simple })
+                    name.parent = func
+                    Error.token('UNEXPECT_EFUNC_NAME', { at = name })
                 end
                 skipSpace(true)
-                hasLeftParen = Token.get('(')
             end
         end
 
@@ -2787,27 +2846,26 @@ do -- P.Function | P.Lambda
         Chunk.localCount = 0
         Chunk.push(func)
 
+        -- If function name is a method, add `self` to params
         local params --- @type parser.object.funcargs?
         if func.name and func.name.type == 'getmethod' then
-            if func.name.type == 'getmethod' then
-                local finish = func.keyword[2]
-                params = {
-                    type = 'funcargs',
-                    start = finish,
-                    finish = finish,
-                    parent = func,
-                }
-                params[1] = createLocal({
-                    start = finish,
-                    finish = finish,
-                    parent = params,
-                    [1] = 'self',
-                }) --[[@as parser.object.self]]
-                params[1].type = 'self'
-            end
+            local finish = func.keyword[2]
+            params = {
+                type = 'funcargs',
+                start = finish,
+                finish = finish,
+                parent = func,
+            }
+            params[1] = createLocal({
+                start = finish,
+                finish = finish,
+                parent = params,
+                [1] = 'self',
+            }) --[[@as parser.object.self]]
+            params[1].type = 'self'
         end
 
-        if hasLeftParen then
+        if Token.get('(') then
             local parenLeft = Token.left()
             Token.next()
             params = parseParams(params)
@@ -2841,6 +2899,32 @@ do -- P.Function | P.Lambda
         func.bfinish = Token.left()
         parseEnd(func)
         Chunk.localCount = lastLocalCount
+
+        if isAction then
+            local name = func.name
+            if not name then
+                Error.missName(func.keyword[2])
+                Chunk.pushIntoCurrent(func)
+                return func
+            end
+
+            func.name = nil
+            --- @cast name -parser.object.function.name
+            if not isLocal then
+                --- @cast name -parser.object.local
+                --- @cast name +parser.object.function.action
+                name.type = assert(GetToSetMap[name.type])
+                if name.type == 'setlocal' and name.node.attrs then
+                    Error.push({ type = 'SET_CONST', at = name })
+                end
+            end
+            name.value = func
+            name.vstart = func.start
+            name.range = func.finish
+            func.parent = name
+            Chunk.pushIntoCurrent(name)
+            return name
+        end
 
         return func
     end
@@ -2988,10 +3072,7 @@ function P.NameExpr()
     if not node then
         return
     end
-    local nameNode = resolveName(node)
-    if nameNode then
-        return P.Simple(nameNode, false)
-    end
+    return P.Simple(resolveName(node), false)
 end
 
 --- @return parser.object.expr?
@@ -3219,7 +3300,7 @@ local function parseSetValues()
         return
     end
     skipSpace()
-    if Token.get() ~= ',' then
+    if not Token.get(',') then
         return first
     end
     Token.next()
@@ -3230,11 +3311,12 @@ local function parseSetValues()
         return first
     end
     skipSpace()
-    if Token.get() ~= ',' then
+    if not Token.get(',') then
         return first, second
     end
     Token.next()
     skipSeps()
+
     local third = P.Exp()
     if not third then
         Error.missExp()
@@ -3244,7 +3326,7 @@ local function parseSetValues()
     local rest = { third }
     while true do
         skipSpace()
-        if Token.get() ~= ',' then
+        if not Token.get(',') then
             return first, second, rest
         end
         Token.next()
@@ -3258,6 +3340,8 @@ local function parseSetValues()
     end
 end
 
+--- @param parser fun(asAction?: boolean): parser.object
+--- @param isLocal? boolean
 --- @return parser.object?   second
 --- @return parser.object[]? rest
 local function parseVarTails(parser, isLocal)
@@ -3352,6 +3436,11 @@ local function bindValue(n, v, index, lastValue, isLocal, isSet)
     end
 end
 
+--- @param n1 parser.object.local|parser.object.get
+--- @param parser fun(asAction?: boolean): parser.object
+--- @param isLocal? boolean
+--- @return parser.object
+--- @return boolean? isSet
 local function parseMultiVars(n1, parser, isLocal)
     local n2, nrest = parseVarTails(parser, isLocal)
     skipSpace()
@@ -3379,19 +3468,17 @@ local function parseMultiVars(n1, parser, isLocal)
         lastVar = n2
         Chunk.pushIntoCurrent(n2)
     end
-    if nrest then
-        for i = 1, #nrest do
-            local n = nrest[i]
-            local v = vrest and vrest[i]
-            max = i + 2
-            if not v then
-                index = index + 1
-            end
-            bindValue(n, v, index, lastValue, isLocal, isSet)
-            lastValue = v or lastValue
-            lastVar = n
-            Chunk.pushIntoCurrent(n)
+
+    for i, n in ipairs(nrest or {}) do
+        local v = vrest and vrest[i]
+        max = i + 2
+        if not v then
+            index = index + 1
         end
+        bindValue(n, v, index, lastValue, isLocal, isSet)
+        lastValue = v or lastValue
+        lastVar = n
+        Chunk.pushIntoCurrent(n)
     end
 
     if isLocal then
@@ -3400,10 +3487,8 @@ local function parseMultiVars(n1, parser, isLocal)
         if n2 then
             n2.effect = effect
         end
-        if nrest then
-            for i = 1, #nrest do
-                nrest[i].effect = effect
-            end
+        for _, n in ipairs(nrest or {}) do
+            n.effect = effect
         end
     end
 
@@ -3414,16 +3499,14 @@ local function parseMultiVars(n1, parser, isLocal)
         }
         Chunk.pushIntoCurrent(v2)
     end
-    if vrest then
-        for i = 1, #vrest do
-            local v = vrest[i]
-            if not nrest or not nrest[i] then
-                v.redundant = {
-                    max = max,
-                    passed = i + 2,
-                }
-                Chunk.pushIntoCurrent(v)
-            end
+
+    for i, v in ipairs(vrest or {}) do
+        if not nrest or not nrest[i] then
+            v.redundant = {
+                max = max,
+                passed = i + 2,
+            }
+            Chunk.pushIntoCurrent(v)
         end
     end
 
@@ -3493,23 +3576,10 @@ function P.Local()
 
     -- local function a()
     -- end
-    local func = P.Function(true, true)
+    local func = P.Function(true, true) --[[@as parser.object.local]]
     if func then
-        local name = func.name
-        if not name then
-            Error.missName(func.keyword[2])
-            Chunk.pushIntoCurrent(func)
-            return func
-        end
-
-        func.name = nil
-        name.value = func
-        name.vstart = func.start
-        name.range = func.finish
-        name.locPos = locPos
-        func.parent = name
-        Chunk.pushIntoCurrent(name)
-        return name
+        func.locPos = locPos
+        return func
     end
 
     local name = P.Name(true)
@@ -4125,36 +4195,6 @@ function P.Break()
     return action
 end
 
---- function a()
---- end
---- @return parser.object.funcaction?
-function P.FunctionAction()
-    local func = P.Function(false, true)
-    if not func then
-        return
-    end
-
-    local name = func.name
-
-    if not name then
-        Error.missName(func.keyword[2])
-        Chunk.pushIntoCurrent(func)
-        return func
-    end
-
-    func.name = nil
-    name.type = GetToSetMap[name.type]
-    name.value = func
-    name.vstart = func.start
-    name.range = func.finish
-    func.parent = name
-    if name.type == 'setlocal' and name.node.attrs then
-        Error.push({ type = 'SET_CONST', at = name })
-    end
-    Chunk.pushIntoCurrent(name)
-    return name
-end
-
 --- @return parser.object.expr?
 function P.ExprAction()
     local exp = P.Exp(true)
@@ -4164,6 +4204,7 @@ function P.ExprAction()
 
     Chunk.pushIntoCurrent(exp)
     if GetToSetMap[exp.type] then
+        --- @cast exp parser.object.get
         skipSpace()
         local isLocal
         if exp.type == 'getlocal' and exp[1] == State.ENVMode then
@@ -4183,6 +4224,7 @@ function P.ExprAction()
     end
 
     if exp.type == 'call' then
+        --- @cast exp parser.object.call
         if exp.hasExit then
             for block in Chunk.iter_rev() do
                 if
@@ -4200,6 +4242,7 @@ function P.ExprAction()
     end
 
     if exp.type == 'binary' then
+        --- @cast exp parser.object.binop
         if GetToSetMap[exp[1].type] then
             local op = exp.op
             if op.type == '==' then
@@ -4237,7 +4280,7 @@ function P.Action()
         or P.While()
         or P.Repeat()
         or P.Goto()
-        or P.FunctionAction()
+        or P.Function(false, true) --[[@as parser.object.function.action]]
         or P.ExprAction()
 end
 
