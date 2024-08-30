@@ -854,7 +854,7 @@ function Tracer:getNode(source)
     end
     if source == self.main then
         self.nodes[source] = false
-        return nil
+        return
     end
     self.nodes[source] = false
     self:calcNode(source)
@@ -883,7 +883,7 @@ local function createTracer(mode, source, name)
         main = guide.getParentBlock(source)
     end
     if not main then
-        return nil
+        return
     end
     tracer = setmetatable({
         source = source,
@@ -917,22 +917,21 @@ function vm.traceNode(source)
     if vm.getGlobalNode(source) then
         base = vm.getGlobalBase(source)
         if not base then
-            return nil
+            return
         end
         mode = 'global'
         name = base.global:getCodeName()
     else
         base = vm.getVariable(source)
         if not base then
-            return nil
+            return
         end
         name = base:getCodeName()
         mode = 'local'
     end
     local tracer = createTracer(mode, base, name)
     if not tracer then
-        return nil
+        return
     end
-    local node = tracer:getNode(source)
-    return node
+    return tracer:getNode(source)
 end

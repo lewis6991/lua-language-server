@@ -169,7 +169,7 @@ local function createGlobal(name, cate)
     }, mt)
 end
 
---- @class parser.object
+--- @class parser.object.base
 --- @field package _globalNode vm.global|false
 --- @field package _enums?     parser.object[]
 

@@ -71,6 +71,7 @@ local util = require('utility')
 --- @class parser.object.doc.as : parser.object.doc.base
 --- @field type 'doc.as'
 --- @field as? parser.object.doc.type
+--- @field touch? integer
 
 --- @class parser.object.doc.enum : parser.object.doc.base
 --- @field type 'doc.enum'

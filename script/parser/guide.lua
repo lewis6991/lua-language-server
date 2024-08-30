@@ -1,5 +1,5 @@
 --- @class parser.object.base
---- @field _root?             parser.object.main
+--- @field package _root? parser.object.main
 --- @field package _isGlobal? boolean
 
 --- @class parser.object.old : parser.object.base
@@ -16,7 +16,6 @@
 --- @field method                parser.object.base
 --- @field extends               parser.object.base[]|parser.object.base
 --- @field types                 parser.object.base[]
---- @field fields                parser.object.base[]
 --- @field tkey                  parser.object.base
 --- @field tvalue                parser.object.base
 --- @field op                    parser.object.base
@@ -26,7 +25,6 @@
 --- @field closure               parser.object.base
 --- @field proto                 parser.object.base
 --- @field exp                   parser.object.base
---- @field alias                 parser.object.base
 --- @field class                 parser.object.base
 --- @field enum                  parser.object.base
 --- @field param                 parser.object.base
@@ -39,11 +37,7 @@
 --- @field docIndex              integer
 --- @field docs                  parser.object.base
 --- @field comment               table
---- @field optional              boolean
 --- @field redundant             { max: integer, passed: integer }
---- @field casts                 parser.object.base[]
---- @field mode?                 '+' | '-'
---- @field package _root         parser.object.base
 --- @field package _eachCache?   parser.object.base[]
 --- @field package _typeCache?   parser.object.base[][]
 
@@ -425,6 +419,7 @@ function M.getRoot(obj)
     end
     for _ = 1, 10000 do
         if obj.type == 'main' then
+            --- @cast obj parser.object.main
             source._root = obj
             return obj
         end
@@ -441,24 +436,19 @@ function M.getRoot(obj)
     error('guide.getRoot overstack')
 end
 
---- @param obj parser.object.base | { uri: string }
+--- @param obj parser.object
 --- @return string
 function M.getUri(obj)
     if obj.uri then
         return obj.uri
     end
     local root = M.getRoot(obj)
-    if root then
-        return root.uri or ''
-    end
-    return ''
+    return root and root.uri or ''
 end
 
 --- @return parser.object.base?
 function M.getENV(source, start)
-    if not start then
-        start = 1
-    end
+    start = start or 1
     return M.getLocal(source, '_ENV', start) or M.getLocal(source, '@fenv', start)
 end
 
@@ -494,12 +484,10 @@ function M.getLocal(source, name, pos)
             break
         end
         local res
-        if block.locals then
-            for _, loc in ipairs(block.locals) do
-                if loc[1] == name and loc.effect <= pos then
-                    if not res or res.effect < loc.effect then
-                        res = loc
-                    end
+        for _, loc in ipairs(block.locals or {}) do
+            if loc[1] == name and loc.effect <= pos then
+                if not res or res.effect < loc.effect then
+                    res = loc
                 end
             end
         end
@@ -515,14 +503,12 @@ end
 function M.getVisibleLocals(block, pos)
     local result = {}
     M.eachSourceContain(M.getRoot(block), pos, function(source)
+        --- @cast source parser.object.block
         local locals = source.locals
-        if locals then
-            for i = 1, #locals do
-                local loc = locals[i]
+        for _, loc in ipairs(locals or {}) do
+            if loc.effect <= pos then
                 local name = loc[1]
-                if loc.effect <= pos then
-                    result[name] = loc
-                end
+                result[name] = loc
             end
         end
     end)

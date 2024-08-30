@@ -65,7 +65,6 @@ local ChunkFinishMap = {
 --- | parser.object.doc
 --- | parser.object.field
 --- | parser.object.method
----- | parser.object.old
 
 --- @class parser.object.base
 --- @field start integer
@@ -150,6 +149,10 @@ local ChunkFinishMap = {
 --- | parser.object.name
 --- | parser.object.getglobal
 --- | parser.object.getlocal
+--- | parser.object.getfield
+--- | parser.object.getmethod
+--- | parser.object.getindex
+--- | parser.object.call
 
 --- @alias parser.object.comment
 --- | parser.object.comment.short
@@ -635,7 +638,7 @@ end
 
 local Error = {
     --- @type fun(err:parser.state.err):parser.state.err?
-    push = nil
+    push = nil,
 }
 
 --- @param ty string
@@ -848,9 +851,6 @@ local P = {}
 
 --- @return parser.object.string?
 function P.LongString()
-    if not Token.get('[') then
-        return
-    end
     local start, finish, mark = Lua:find('^(%[%=*%[)', Token.getPos())
     if not start then
         return
@@ -2129,88 +2129,6 @@ local function bindSpecial(source, name)
     end
 end
 
---- @param node parser.object.expr
---- @param currentName string?
---- @return parser.object.getfield, string?
-local function parseGetField(node, currentName)
-    local dot = initObj('.') --- @type parser.object.dot
-    Token.next()
-    skipSpace()
-    local field = P.Name(true) --[[@as parser.object.field?]]
-
-    --- @type parser.object.getfield
-    local getfield = {
-        type = 'getfield',
-        start = node.start,
-        finish = lastRightPosition(),
-        node = node,
-        dot = dot,
-        field = field,
-    }
-
-    if field then
-        field.parent = getfield
-        field.type = 'field'
-        if currentName then
-            if node.type == 'getlocal' or node.type == 'getglobal' or node.type == 'getfield' then
-                currentName = currentName .. '.' .. field[1]
-                bindSpecial(getfield, currentName)
-            else
-                currentName = nil
-            end
-        end
-    else
-        Error.push({
-            type = 'MISS_FIELD',
-            start = lastRightPosition(),
-            finish = lastRightPosition(),
-        })
-    end
-    node.parent = getfield
-    node.next = getfield
-    return getfield, currentName
-end
-
---- @param node parser.object.expr
---- @param lastMethod parser.object.getmethod?
---- @return parser.object.getmethod, parser.object.getmethod?
-local function parseGetMethod(node, lastMethod)
-    --- @type parser.object.colon
-    local colon = {
-        type = ':',
-        start = getPosition(Token.getPos(), 'left'),
-        finish = getPosition(Token.getPos(), 'right'),
-    }
-    Token.next()
-    skipSpace()
-    local method = P.Name(true) --[[@as parser.object.method?]]
-    --- @type parser.object.getmethod
-    local getmethod = {
-        type = 'getmethod',
-        start = node.start,
-        finish = lastRightPosition(),
-        node = node,
-        colon = colon,
-        method = method,
-    }
-    if method then
-        method.parent = getmethod
-        method.type = 'method'
-    else
-        Error.push({
-            type = 'MISS_METHOD',
-            start = lastRightPosition(),
-            finish = lastRightPosition(),
-        })
-    end
-    node.parent = getmethod
-    node.next = getmethod
-    if lastMethod then
-        Error.missSymbol('(', getmethod.node.finish, getmethod.node.finish)
-    end
-    return getmethod, getmethod
-end
-
 do -- P.Simple
     local function checkAmbiguityCall(call, parenPos)
         if State.version ~= 'Lua 5.1' then
@@ -2233,8 +2151,11 @@ do -- P.Simple
     end
 
     --- @param node parser.object.expr
-    --- @return parser.object.call
+    --- @return parser.object.call?
     local function parseCall(node)
+        if not Token.get('(') then
+            return
+        end
         local start = Token.left()
         Token.next()
 
@@ -2275,6 +2196,9 @@ do -- P.Simple
     --- @param node parser.object.expr
     --- @return parser.object.call?
     local function parseTableCall(node)
+        if not Token.get('{') then
+            return
+        end
         local tbl = P.Table()
         if not tbl then
             return
@@ -2286,6 +2210,7 @@ do -- P.Simple
             start = node.start,
             finish = tbl.finish,
             node = node,
+            --- @diagnostic disable-next-line:missing-fields
             args = {
                 type = 'callargs',
                 start = tbl.start,
@@ -2301,8 +2226,12 @@ do -- P.Simple
         return call
     end
 
+    --- @param node parser.object.expr
     --- @return parser.object.call?
     local function parseShortStrCall(node)
+        if not Token.get("'", '"', '`') then
+            return
+        end
         local str = P.ShortString()
         if not str then
             return
@@ -2327,6 +2256,9 @@ do -- P.Simple
         return call
     end
 
+    --- @param node parser.object.expr
+    --- @param str parser.object.string
+    --- @return parser.object.call
     local function parseLongStrCall(node, str)
         local call = {
             type = 'call',
@@ -2334,23 +2266,62 @@ do -- P.Simple
             finish = str.finish,
             node = node,
         }
-        local args = {
+        call.args = {
             type = 'callargs',
             start = str.start,
             finish = str.finish,
             parent = call,
             [1] = str,
         }
-        call.args = args
         addDummySelf(node, call)
-        str.parent = args
+        str.parent = call.args
         node.parent = call
         return call
     end
 
     --- @param node parser.object.expr
-    --- @return parser.object.getindex
+    --- @return parser.object.getfield?
+    local function parseGetField(node)
+        if not Token.get('.') then
+            return
+        end
+        local dot = initObj('.') --- @type parser.object.dot
+        Token.next()
+        skipSpace()
+        local field = P.Name(true) --[[@as parser.object.field?]]
+
+        --- @type parser.object.getfield
+        local getfield = {
+            type = 'getfield',
+            start = node.start,
+            finish = lastRightPosition(),
+            node = node,
+            dot = dot,
+            field = field,
+        }
+        node.parent = getfield
+        node.next = getfield
+
+        if field then
+            field.parent = getfield
+            field.type = 'field'
+        else
+            Error.push({
+                type = 'MISS_FIELD',
+                start = lastRightPosition(),
+                finish = lastRightPosition(),
+            })
+        end
+        return getfield
+    end
+
+    --- @param node parser.object.expr
+    --- @return parser.object.getindex?
     local function parseGetIndex(node)
+        if not Token.get('[') then
+            return
+        end
+
         local index = parseIndex() --[[@as parser.object.getindex]]
         index.type = 'getindex'
         index.start = node.start
@@ -2358,6 +2329,45 @@ do -- P.Simple
         node.next = index
         node.parent = index
         return index
+    end
+
+    --- @param node parser.object.expr
+    --- @return parser.object.getmethod?
+    local function parseGetMethod(node)
+        if not Token.get(':') then
+            return
+        end
+        --- @type parser.object.colon
+        local colon = {
+            type = ':',
+            start = getPosition(Token.getPos(), 'left'),
+            finish = getPosition(Token.getPos(), 'right'),
+        }
+        Token.next()
+        skipSpace()
+        local method = P.Name(true) --[[@as parser.object.method?]]
+        --- @type parser.object.getmethod
+        local getmethod = {
+            type = 'getmethod',
+            start = node.start,
+            finish = lastRightPosition(),
+            node = node,
+            colon = colon,
+            method = method,
+        }
+        if method then
+            method.parent = getmethod
+            method.type = 'method'
+        else
+            Error.push({
+                type = 'MISS_METHOD',
+                start = lastRightPosition(),
+                finish = lastRightPosition(),
+            })
+        end
+        node.parent = getmethod
+        node.next = getmethod
+        return getmethod
     end
 
     --- @param node parser.object.expr
@@ -2371,66 +2381,81 @@ do -- P.Simple
         end
 
         local lastMethod --- @type parser.object.getmethod?
+        local ret = node --[[@as parser.object.simple]]
 
         while true do
-            if lastMethod and node.node == lastMethod then
-                if node.type ~= 'call' then
-                    Error.missSymbol('(', node.node.finish, node.node.finish)
+            if ret then
+                if ret.type == 'getindex' and funcName then
+                    Error.push({
+                        type = 'INDEX_IN_FUNC_NAME',
+                        start = ret.start,
+                        finish = ret.finish,
+                    })
+                elseif ret.type == 'getfield' and ret.field and currentName then
+                    if
+                        ret.node.type == 'getlocal'
+                        or ret.node.type == 'getglobal'
+                        or ret.node.type == 'getfield'
+                    then
+                        currentName = currentName .. '.' .. ret.field[1]
+                        bindSpecial(ret, currentName)
+                    else
+                        currentName = nil
+                    end
                 end
-                lastMethod = nil
+
+                if lastMethod and ret.node == lastMethod then
+                    if ret.type ~= 'call' then
+                        Error.missSymbol('(', ret.node.finish, ret.node.finish)
+                    end
+                    lastMethod = nil
+                end
+
+                if ret.type == 'getmethod' then
+                    --- @cast ret parser.object.getmethod
+                    if lastMethod then
+                        Error.missSymbol('(', ret.node.finish, ret.node.finish)
+                    end
+                    lastMethod = ret
+                end
             end
+
             skipSpace()
-            local token = Token.get()
-            if token == '.' then
-                node, currentName = parseGetField(node, currentName)
-            elseif token == ':' then
-                node, lastMethod = parseGetMethod(node, lastMethod)
-            elseif token == '[' then
-                local str = P.LongString()
-                if str then
-                    if funcName then
-                        break
-                    end
-                    node = parseLongStrCall(node, str)
-                else
-                    node = parseGetIndex(node)
-                    if funcName then
-                        Error.push({
-                            type = 'INDEX_IN_FUNC_NAME',
-                            start = node.start,
-                            finish = node.finish,
-                        })
-                    end
-                end
+
+            local str = P.LongString()
+
+            if funcName and (str or Token.get("'", '"', '`', '(', '{')) then
+                break
+            elseif str then
+                ret = parseLongStrCall(ret, str)
             else
-                if funcName then
-                    break
-                end
-                if token == '(' then
-                    node = parseCall(node)
-                elseif token == '{' then
-                    node = parseTableCall(node)
-                elseif token == "'" or token == '"' or token == '`' then
-                    node = parseShortStrCall(node)
+                local ret1 = parseGetMethod(ret)
+                    or parseCall(ret)
+                    or parseTableCall(ret)
+                    or parseShortStrCall(ret)
+                    or parseGetField(ret)
+                    or parseGetIndex(ret)
+                if ret1 then
+                    ret = ret1
                 else
                     break
                 end
             end
         end
-        assert(node)
 
-        if node.type == 'call' then
-            local cnode = node.node
+        if ret.type == 'call' then
+            --- @cast ret parser.object.call
+            local cnode = ret.node
             if cnode == lastMethod then
                 lastMethod = nil
             end
 
             if cnode and (cnode.special == 'error' or cnode.special == 'os.exit') then
-                node.hasExit = true
+                ret.hasExit = true
             end
         end
 
-        if node == lastMethod and funcName then
+        if ret == lastMethod and funcName then
             lastMethod = nil
         end
 
@@ -2438,7 +2463,7 @@ do -- P.Simple
             Error.missSymbol('(', lastMethod.finish)
         end
 
-        return node
+        return ret
     end
 end
 
@@ -3670,127 +3695,124 @@ function P.Goto()
 end
 
 do -- P.If
+    --- @param parent parser.object.if
+    --- @return parser.object.ifblock?
+    local function ifBlock(parent)
+        if not Token.get('if') then
+            return
+        end
+        --- @type parser.object.ifblock
+        local obj = initBlock('ifblock')
+        obj.parent = parent
+        Token.next()
+        skipSpace()
+        local filter = P.Exp()
+        if filter then
+            obj.filter = filter
+            obj.finish = filter.finish
+            obj.bstart = obj.finish
+            filter.parent = obj
+        else
+            Error.missExp()
+        end
 
-  --- @param parent parser.object.if
-  --- @return parser.object.ifblock?
-  local function ifBlock(parent)
-      if not Token.get('if') then
-          return
-      end
-      --- @type parser.object.ifblock
-      local obj = initBlock('ifblock')
-      obj.parent = parent
-      Token.next()
-      skipSpace()
-      local filter = P.Exp()
-      if filter then
-          obj.filter = filter
-          obj.finish = filter.finish
-          obj.bstart = obj.finish
-          filter.parent = obj
-      else
-          Error.missExp()
-      end
+        parseThenOrDo(obj, 'then')
 
-      parseThenOrDo(obj, 'then')
+        Chunk.push(obj)
+        P.Actions()
+        Chunk.pop()
+        obj.finish = Token.left()
+        obj.bfinish = obj.finish
+        Chunk.localCount = Chunk.localCount - #(obj.locals or {})
+        return obj
+    end
 
-      Chunk.push(obj)
-      P.Actions()
-      Chunk.pop()
-      obj.finish = Token.left()
-      obj.bfinish = obj.finish
-      Chunk.localCount = Chunk.localCount - #(obj.locals or {})
-      return obj
-  end
+    --- @param parent parser.object.if
+    --- @return parser.object.elseifblock?
+    local function elseIfBlock(parent)
+        if not Token.get('elseif') then
+            return
+        end
+        local obj = initBlock('elseifblock') --- @type parser.object.elseifblock
+        obj.parent = parent
+        Token.next()
+        skipSpace()
+        local filter = P.Exp()
+        if filter then
+            obj.filter = filter
+            obj.finish = filter.finish
+            obj.bstart = obj.finish
+            filter.parent = obj
+        else
+            Error.missExp()
+        end
+        parseThenOrDo(obj, 'then')
+        Chunk.push(obj)
+        P.Actions()
+        Chunk.pop()
+        obj.finish = Token.left()
+        obj.bfinish = obj.finish
+        Chunk.localCount = Chunk.localCount - #(obj.locals or {})
+        return obj
+    end
 
-  --- @param parent parser.object.if
-  --- @return parser.object.elseifblock?
-  local function elseIfBlock(parent)
-      if not Token.get('elseif') then
-          return
-      end
-      local obj = initBlock('elseifblock') --- @type parser.object.elseifblock
-      obj.parent = parent
-      Token.next()
-      skipSpace()
-      local filter = P.Exp()
-      if filter then
-          obj.filter = filter
-          obj.finish = filter.finish
-          obj.bstart = obj.finish
-          filter.parent = obj
-      else
-          Error.missExp()
-      end
-      parseThenOrDo(obj, 'then')
-      Chunk.push(obj)
-      P.Actions()
-      Chunk.pop()
-      obj.finish = Token.left()
-      obj.bfinish = obj.finish
-      Chunk.localCount = Chunk.localCount - #(obj.locals or {})
-      return obj
-  end
+    --- @param parent parser.object.if
+    --- @return parser.object.elseblock?
+    local function elseBlock(parent)
+        if not Token.get('else') then
+            return
+        end
+        local obj = initBlock('elseblock') --- @type parser.object.elseblock
+        obj.parent = parent
+        Token.next()
+        skipSpace()
+        Chunk.push(obj)
+        P.Actions()
+        Chunk.pop()
+        obj.finish = Token.left()
+        obj.bfinish = obj.finish
+        Chunk.localCount = Chunk.localCount - #(obj.locals or {})
+        return obj
+    end
 
-  --- @param parent parser.object.if
-  --- @return parser.object.elseblock?
-  local function elseBlock(parent)
-      if not Token.get('else') then
-          return
-      end
-      local obj = initBlock('elseblock') --- @type parser.object.elseblock
-      obj.parent = parent
-      Token.next()
-      skipSpace()
-      Chunk.push(obj)
-      P.Actions()
-      Chunk.pop()
-      obj.finish = Token.left()
-      obj.bfinish = obj.finish
-      Chunk.localCount = Chunk.localCount - #(obj.locals or {})
-      return obj
-  end
+    --- @return parser.object.if?
+    function P.If()
+        local token = Token.get('if', 'elseif', 'else')
+        if not token then
+            return
+        end
 
-  --- @return parser.object.if?
-  function P.If()
-      local token = Token.get('if', 'elseif', 'else')
-      if not token then
-          return
-      end
+        local obj = initBlock('if') --- @type parser.object.if
+        Chunk.pushIntoCurrent(obj)
 
-      local obj = initBlock('if') --- @type parser.object.if
-      Chunk.pushIntoCurrent(obj)
+        if token ~= 'if' then
+            Error.missSymbol('if', obj.keyword[1], obj.keyword[1])
+        end
 
-      if token ~= 'if' then
-          Error.missSymbol('if', obj.keyword[1], obj.keyword[1])
-      end
+        local hasElse
+        while true do
+            local child = ifBlock(obj) or elseIfBlock(obj) or elseBlock(obj)
+            if not child then
+                break
+            end
+            if hasElse then
+                Error.push({ type = 'BLOCK_AFTER_ELSE', at = child })
+            end
+            if child.type == 'elseblock' then
+                hasElse = true
+            end
+            obj[#obj + 1] = child
+            obj.finish = child.finish
+            skipSpace()
+        end
 
-      local hasElse
-      while true do
-          local child = ifBlock(obj) or elseIfBlock(obj) or elseBlock(obj)
-          if not child then
-              break
-          end
-          if hasElse then
-              Error.push({ type = 'BLOCK_AFTER_ELSE', at = child })
-          end
-          if child.type == 'elseblock' then
-              hasElse = true
-          end
-          obj[#obj + 1] = child
-          obj.finish = child.finish
-          skipSpace()
-      end
+        parseEnd(obj)
 
-      parseEnd(obj)
-
-      return obj
-  end
-
+        return obj
+    end
 end
 
 do -- P.For
-
     --- @param action parser.object.for
     --- @param nameOrList parser.object.forlist|parser.object.name?
     --- @return parser.object.loop?
@@ -3976,7 +3998,6 @@ do -- P.For
 
         return obj
     end
-
 end
 
 --- @return parser.object.while?

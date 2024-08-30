@@ -678,6 +678,9 @@ local function getReturn(func, index, args)
     return vm.compileNode(func._callReturns[index])
 end
 
+--- @class parser.object.doc.main
+--- @field package _asCache? parser.object.doc.as[]
+
 --- @param source parser.object
 --- @return boolean
 function vm.bindAs(source)
@@ -692,6 +695,7 @@ function vm.bindAs(source)
         docs._asCache = ases
         for _, doc in ipairs(docs) do
             if doc.type == 'doc.as' and doc.as and doc.touch then
+                --- @cast doc parser.object.doc.as
                 ases[#ases + 1] = doc
             end
         end
@@ -1067,7 +1071,7 @@ function vm.compileCallArg(arg, call, index)
     return vm.getNode(arg)
 end
 
---- @class parser.object
+--- @class parser.object.base
 --- @field package _iterator? table
 --- @field package _iterArgs? table
 --- @field package _iterVars? table<parser.object, vm.node>
@@ -1515,10 +1519,9 @@ local nodeCompilers_table = {
             return
         end
         local node = vm.traceNode(source)
-        if not node then
-            return
+        if node then
+            vm.setNode(source, node, true)
         end
-        vm.setNode(source, node, true)
     end,
 
     ['setfield'] = compileGetSet,
