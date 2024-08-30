@@ -8,11 +8,11 @@ local vm = require('vm.vm')
 local plugin = require('plugin')
 
 --- @class parser.object.base
---- @field _compiledNodes        boolean
---- @field _node                 vm.node
---- @field cindex                integer
---- @field func                  parser.object
---- @field hideView              boolean
+--- @field _compiledNodes?       boolean
+--- @field _node?                vm.node
+--- @field cindex?               integer
+--- @field func?                 parser.object
+--- @field hideView?             boolean
 --- @field package _returns?     parser.object[]
 --- @field package _callReturns? parser.object[]
 --- @field package _asCache?     parser.object[]

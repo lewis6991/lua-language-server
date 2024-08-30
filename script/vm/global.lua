@@ -11,9 +11,11 @@ local allGlobals = {}
 local globalSubs = util.multiTable(2)
 
 --- @class parser.object.base
---- @field package _globalBase parser.object
---- @field package _globalBaseMap table<string, parser.object>
---- @field global vm.global
+--- @field package _globalBase? parser.object
+--- @field package _globalBaseMap? table<string, parser.object>
+--- @field package _globalNode? vm.global|false
+--- @field package _enums?      parser.object[]
+--- @field global? vm.global
 
 --- @class vm.global.link
 --- @field sets parser.object[]
@@ -168,10 +170,6 @@ local function createGlobal(name, cate)
         end),
     }, mt)
 end
-
---- @class parser.object.base
---- @field package _globalNode vm.global|false
---- @field package _enums?     parser.object[]
 
 local compileObject
 local compilerGlobalSwitch = util

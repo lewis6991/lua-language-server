@@ -343,6 +343,14 @@ local ChunkFinishMap = {
 
 --- Blocks
 
+--- @alias parser.object.funcaction
+--- | parser.object.function
+--- | parser.object.setlocal
+--- | parser.object.setfield
+--- | parser.object.setmethod
+--- | parser.object.setindex
+--- | parser.object.setglobal
+
 --- @alias parser.object.action
 --- | parser.object.label
 --- | parser.object.local
@@ -353,15 +361,11 @@ local ChunkFinishMap = {
 --- | parser.object.loop
 --- | parser.object.while
 --- | parser.object.repeat
---- | parser.object.function
+--- | parser.object.funcaction
 --- | parser.object.expr
 --- | parser.object.break
 --- | parser.object.return
 --- | parser.object.goto
---- | parser.object.setlocal
---- | parser.object.setfield
---- | parser.object.setmethod
---- | parser.object.setindex
 
 --- @alias parser.object.block
 --- | parser.object.main
@@ -2422,12 +2426,12 @@ do -- P.Simple
 
             skipSpace()
 
-            local str = P.LongString()
+            local longStr = P.LongString()
 
-            if funcName and (str or Token.get("'", '"', '`', '(', '{')) then
+            if funcName and (longStr or Token.get("'", '"', '`', '(', '{')) then
                 break
-            elseif str then
-                ret = parseLongStrCall(ret, str)
+            elseif longStr then
+                ret = parseLongStrCall(ret, longStr)
             else
                 local ret1 = parseGetMethod(ret)
                     or parseCall(ret)
@@ -2879,6 +2883,7 @@ do -- P.Function | P.Lambda
             params = parseParams(nil, true)
             params.start = pipeLeft
             params.finish = lastRightPosition()
+            --- @diagnostic disable-next-line:assign-type-mismatch
             params.parent = lambda
             lambda.args = params
             skipSpace()
@@ -3491,19 +3496,20 @@ function P.Local()
     local func = P.Function(true, true)
     if func then
         local name = func.name
-        if name then
-            func.name = nil
-            name.value = func
-            name.vstart = func.start
-            name.range = func.finish
-            name.locPos = locPos
-            func.parent = name
-            Chunk.pushIntoCurrent(name)
-            return name
+        if not name then
+            Error.missName(func.keyword[2])
+            Chunk.pushIntoCurrent(func)
+            return func
         end
-        Error.missName(func.keyword[2])
-        Chunk.pushIntoCurrent(func)
-        return func
+
+        func.name = nil
+        name.value = func
+        name.vstart = func.start
+        name.range = func.finish
+        name.locPos = locPos
+        func.parent = name
+        Chunk.pushIntoCurrent(name)
+        return name
     end
 
     local name = P.Name(true)
@@ -4121,29 +4127,32 @@ end
 
 --- function a()
 --- end
---- @return parser.object.function|parser.object.setlocal|parser.object.setmethod|parser.object.setindex|parser.object.setfield|parser.object.setglobal
+--- @return parser.object.funcaction?
 function P.FunctionAction()
     local func = P.Function(false, true)
-    if func then
-        local name = func.name
-        if name then
-            func.name = nil
-            name.type = GetToSetMap[name.type]
-            name.value = func
-            name.vstart = func.start
-            name.range = func.finish
-            func.parent = name
-            if name.type == 'setlocal' and name.node.attrs then
-                Error.push({ type = 'SET_CONST', at = name })
-            end
-            Chunk.pushIntoCurrent(name)
-            return name
-        end
+    if not func then
+        return
+    end
 
+    local name = func.name
+
+    if not name then
         Error.missName(func.keyword[2])
         Chunk.pushIntoCurrent(func)
         return func
     end
+
+    func.name = nil
+    name.type = GetToSetMap[name.type]
+    name.value = func
+    name.vstart = func.start
+    name.range = func.finish
+    func.parent = name
+    if name.type == 'setlocal' and name.node.attrs then
+        Error.push({ type = 'SET_CONST', at = name })
+    end
+    Chunk.pushIntoCurrent(name)
+    return name
 end
 
 --- @return parser.object.expr?
@@ -4274,6 +4283,9 @@ local function initState(lua, version, options)
     LastTokenFinish = 0
     Token.init(lua)
 
+    options = options or {}
+    options.nonstandardSymbol = options.nonstandardSymbol or {}
+
     ---@type parser.state
     local state = {
         version = version,
@@ -4284,13 +4296,9 @@ local function initState(lua, version, options)
             [0] = 1,
             size = #lua,
         },
-        options = options or {},
+        options = options,
         ENVMode = (version == 'Lua 5.1' or version == 'LuaJIT') and '@fenv' or '_ENV',
     }
-
-    if not state.options.nonstandardSymbol then
-        state.options.nonstandardSymbol = {}
-    end
 
     State = state
 

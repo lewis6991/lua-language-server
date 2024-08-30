@@ -2,8 +2,8 @@
 local vm = require('vm.vm')
 
 --- @class parser.object.base
---- @field package _generic vm.generic
---- @field package _resolved vm.node
+--- @field package _generic? vm.generic
+--- @field package _resolved? vm.node
 
 --- @class vm.generic
 --- @field sign  vm.sign
