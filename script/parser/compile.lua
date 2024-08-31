@@ -127,7 +127,7 @@ local ChunkFinishMap = {
 --- @class parser.object.local : parser.object.base
 --- @field type 'local'
 --- @field effect integer
---- @field attrs parser.object.localattrs
+--- @field attrs? parser.object.localattrs
 --- @field ref? parser.object.expr[] References to local
 --- @field locPos? integer Start position of the 'local' keyword
 --- @field [1] string Name of local variable
@@ -201,6 +201,7 @@ local ChunkFinishMap = {
 --- | parser.object.unary
 --- | parser.object.varargs
 --- | parser.object.simple
+--- | parser.object.lambda
 --- | parser.object.index
 --- | parser.object.tableindex
 --- | parser.object.tableexp
@@ -564,6 +565,8 @@ local function getPosition(offset, leftOrRight)
     end
 end
 
+local skipSpace
+
 local Token = {}
 
 do -- Token interface
@@ -608,8 +611,12 @@ do -- Token interface
         return tokens[index + 3] --[[@as integer]]
     end
 
-    function Token.next()
+    --- @param skipWS? boolean
+    function Token.next(skipWS)
         index = index + 2
+        if skipWS then
+            skipSpace()
+        end
     end
 
     --- @return integer
@@ -994,7 +1001,7 @@ local function skipComment(isAction)
 end
 
 --- @param isAction? boolean
-local function skipSpace(isAction)
+function skipSpace(isAction)
     repeat
     until not skipNL() and not skipComment(isAction)
 end
@@ -1058,22 +1065,21 @@ local UnarySymbol = {
     ['-'] = 11,
 }
 
-local function unaryOP()
+local function parseUnaryOP()
     local token = Token.get()
     local symbol = UnarySymbol[token] and token or UnaryAlias[token]
     if not symbol then
         return
     end
-    local myLevel = UnarySymbol[symbol]
     local op = initObj(symbol)
     Token.next()
-    return op, myLevel
+    return op, UnarySymbol[symbol]
 end
 
 local Chunk --- @type parser.Chunk
 
 --- @return parser.object.localattrs?
-function P.LocalAttrs()
+local function localAttrs()
     --- @type parser.object.localattrs?
     local attrs
     while true do
@@ -1081,16 +1087,11 @@ function P.LocalAttrs()
         if not Token.get('<') then
             break
         end
-        if not attrs then
-            attrs = {
-                type = 'localattrs',
-            }
-        end
+        attrs = attrs or { type = 'localattrs' }
         local attr = initObj('localattr') --- @type parser.object.localattr
         attr.parent = attrs
         attrs[#attrs + 1] = attr
-        Token.next()
-        skipSpace()
+        Token.next(true)
 
         local word, wstart, wfinish = peekWord()
         if word then
@@ -1139,16 +1140,18 @@ function P.LocalAttrs()
 end
 
 --- @param obj parser.object.base
---- @param attrs? parser.object.localattrs
+--- @param isDecl? boolean
 --- @return parser.object.local
-local function createLocal(obj, attrs)
+local function createLocal(obj, isDecl)
     local obj1 = obj --[[@as parser.object.local]]
     obj1.type = 'local'
     obj1.effect = obj1.finish
 
-    if attrs then
-        obj1.attrs = attrs
-        attrs.parent = obj1
+    if isDecl then
+        obj1.attrs = localAttrs()
+        if obj1.attrs then
+            obj1.attrs.parent = obj1
+        end
     end
 
     Chunk.addLocal(obj1)
@@ -1158,7 +1161,7 @@ end
 
 --- @return parser.object.nil?
 function P.Nil()
-    if Token.get() ~= 'nil' then
+    if not Token.get('nil') then
         return
     end
     local obj = initObj('nil') --- @type parser.object.nil
@@ -1508,6 +1511,9 @@ function P.String()
 end
 
 do -- P.Number
+    --- @param start integer
+    --- @return integer
+    --- @return integer
     local function parseNumber10(start)
         local integer = true
         local integerPart = Lua:match('^%d*', start)
@@ -1540,6 +1546,10 @@ do -- P.Number
         return tonumber(Lua:sub(start, offset - 1)), offset, integer
     end
 
+    --- @param start integer
+    --- @return integer
+    --- @return integer
+    --- @return boolean?
     local function parseNumber16(start)
         local integerPart = Lua:match('^[%da-fA-F]*', start)
         local offset = start + #integerPart
@@ -1582,6 +1592,9 @@ do -- P.Number
         return n, offset, integer
     end
 
+    --- @param start integer
+    --- @return integer
+    --- @return integer
     local function parseNumber2(start)
         local bins = Lua:match('^[01]*', start)
         local offset = start + #bins
@@ -1599,6 +1612,9 @@ do -- P.Number
         return tonumber(bins, 2), offset
     end
 
+    --- @param offset integer
+    --- @param integer? boolean
+    --- @return integer
     local function dropNumberTail(offset, integer)
         local _, finish, word = Lua:find('^([%.%w_\x80-\xff]+)', offset)
         if not finish then
@@ -1736,6 +1752,9 @@ local KeyWordMap = {
     ['while'] = true,
 }
 
+--- @param word string?
+--- @param tokenNext? string
+--- @return boolean?
 local function isKeyWord(word, tokenNext)
     if KeyWordMap[word] then
         return true
@@ -1765,6 +1784,7 @@ local ChunkStartMap = {
     ['while'] = true,
 }
 
+--- @param asAction? boolean
 --- @return parser.object.name?
 function P.Name(asAction)
     local word = peekWord()
@@ -1800,11 +1820,10 @@ function P.NameOrList(parent)
     skipSpace()
     local list
     while true do
-        if Token.get() ~= ',' then
+        if not Token.get(',') then
             break
         end
-        Token.next()
-        skipSpace()
+        Token.next(true)
         local name = P.Name(true)
         if not name then
             Error.missName()
@@ -1907,8 +1926,7 @@ end
 --- @return parser.object.index
 local function parseIndex()
     local start = Token.left()
-    Token.next()
-    skipSpace()
+    Token.next(true)
     local exp = P.Exp()
     --- @type parser.object.index
     local index = {
@@ -2316,8 +2334,7 @@ do -- P.Simple
             return
         end
         local dot = initObj('.') --- @type parser.object.dot
-        Token.next()
-        skipSpace()
+        Token.next(true)
         local field = P.Name(true) --[[@as parser.object.field?]]
 
         --- @type parser.object.getfield
@@ -2373,8 +2390,7 @@ do -- P.Simple
             start = getPosition(Token.getPos(), 'left'),
             finish = getPosition(Token.getPos(), 'right'),
         }
-        Token.next()
-        skipSpace()
+        Token.next(true)
         local method = P.Name(true) --[[@as parser.object.method?]]
         --- @type parser.object.getmethod
         local getmethod = {
@@ -2524,7 +2540,7 @@ do -- P.Varargs
 
     --- @return parser.object.varargs?
     function P.Varargs()
-        if Token.get() ~= '...' then
+        if not Token.get('...') then
             return
         end
         local varargs = initObj('varargs') --- @type parser.object.varargs
@@ -2541,8 +2557,7 @@ function P.ParenExpr()
     end
 
     local paren = initObj('paren') --- @type parser.object.paren
-    Token.next()
-    skipSpace()
+    Token.next(true)
 
     local exp = P.Exp()
     if exp then
@@ -2606,7 +2621,7 @@ local function resolveName(node)
     else
         local getglobal = node --[[@as parser.object.getglobal]]
         getglobal.type = 'getglobal'
-        local global = getLocal(State.ENVMode, getglobal.start)
+        local global = getLocal(State.ENVMode, node.start)
         if global then
             getglobal.node = global
             global.ref = global.ref or {}
@@ -2667,7 +2682,11 @@ do -- P.Actions
         end
 
         if rtn and rtn ~= last then
-            Error.token('ACTION_AFTER_RETURN', { at = rtn })
+            Error.push({
+                type   = 'ACTION_AFTER_RETURN',
+                start  = rtn.start,
+                finish = rtn.finish,
+            })
         end
     end
 end
@@ -2820,6 +2839,7 @@ do -- P.Function | P.Lambda
     --- @param isAction? boolean
     --- @return parser.object.function.action?
     --- @overload fun(isLocal: 'false', isAction: 'true'): parser.object.function.action?
+    --- @overload fun(): parser.object.function?
     function P.Function(isLocal, isAction)
         if not Token.get('function') then
             return
@@ -2978,8 +2998,7 @@ do -- P.Function | P.Lambda
                 if params then
                     params.finish = pipeRight
                 end
-                Token.next()
-                skipSpace()
+                Token.next(true)
             else
                 lambda.finish = lastRightPosition()
                 lambda.bstart = lambda.finish
@@ -3020,7 +3039,7 @@ do -- P.Function | P.Lambda
     end
 end
 
---- @param source parser.object.expr
+--- @param source parser.object.table|parser.object.string
 --- @return parser.object.expr
 local function checkNeedParen(source)
     if not Token.get('.', ':') then
@@ -3028,43 +3047,19 @@ local function checkNeedParen(source)
     end
 
     local exp = P.Simple(source, false)
-    if exp == source then
-        return exp
+    if exp ~= source then
+        Error.push({
+            type = 'NEED_PAREN',
+            at = source,
+            fix = {
+                title = 'FIX_ADD_PAREN',
+                { start = source.start, finish = source.start, text = '(' },
+                { start = source.finish, finish = source.finish, text = ')' },
+            },
+        })
     end
-
-    Error.push({
-        type = 'NEED_PAREN',
-        at = source,
-        fix = {
-            title = 'FIX_ADD_PAREN',
-            {
-                start = source.start,
-                finish = source.start,
-                text = '(',
-            },
-            {
-                start = source.finish,
-                finish = source.finish,
-                text = ')',
-            },
-        },
-    })
 
     return exp
-end
-
-function P.TableExpr()
-    local r = P.Table()
-    if r then
-        return checkNeedParen(r)
-    end
-end
-
-function P.StringExpr()
-    local r = P.String()
-    if r then
-        return checkNeedParen(r)
-    end
 end
 
 function P.NameExpr()
@@ -3077,16 +3072,23 @@ end
 
 --- @return parser.object.expr?
 function P.ExprUnit()
-    return P.ParenExpr()
-        or P.TableExpr()
-        or P.StringExpr()
+    local r = P.ParenExpr()
+        or P.Table()
+        or P.String()
         or P.Varargs()
         or P.Number()
         or P.Nil()
         or P.Boolean()
-        or P.Function()
+        or (P.Function() --[[@as parser.object.function?]])
         or P.Lambda()
         or P.NameExpr()
+
+    if r and (r.type == 'table' or r.type == 'string') then
+        --- @cast r parser.object.table|parser.object.string
+        r = checkNeedParen(r)
+    end
+
+    return r
 end
 
 do -- P.BinaryOp
@@ -3192,7 +3194,7 @@ end
 
 --- @return parser.object.expr?
 function P.ExprUnary(asAction)
-    local uop, uopLevel = unaryOP()
+    local uop, uopLevel = parseUnaryOP()
     if not uop then
         return P.ExprUnit()
     end
@@ -3291,7 +3293,6 @@ function P.Exp(asAction, level)
 end
 
 --- @return parser.object?   first
---- @return parser.object?   second
 --- @return parser.object[]? rest
 local function parseSetValues()
     skipSpace()
@@ -3299,94 +3300,61 @@ local function parseSetValues()
     if not first then
         return
     end
-    skipSpace()
-    if not Token.get(',') then
-        return first
-    end
-    Token.next()
-    skipSeps()
-    local second = P.Exp()
-    if not second then
-        Error.missExp()
-        return first
-    end
-    skipSpace()
-    if not Token.get(',') then
-        return first, second
-    end
-    Token.next()
-    skipSeps()
+    local rest
 
-    local third = P.Exp()
-    if not third then
-        Error.missExp()
-        return first, second
-    end
-
-    local rest = { third }
     while true do
         skipSpace()
         if not Token.get(',') then
-            return first, second, rest
+            return first, rest
         end
         Token.next()
         skipSeps()
         local exp = P.Exp()
         if not exp then
             Error.missExp()
-            return first, second, rest
+            return first, rest
         end
+        rest = rest or {}
         rest[#rest + 1] = exp
     end
 end
 
---- @param parser fun(asAction?: boolean): parser.object
---- @param isLocal? boolean
---- @return parser.object?   second
---- @return parser.object[]? rest
-local function parseVarTails(parser, isLocal)
-    if Token.get() ~= ',' then
-        return
+--- @param isLocalDecl boolean
+--- @return parser.object[] rest
+local function parseVarTails(isLocalDecl)
+    if not Token.get(',') then
+        return {}
     end
-    Token.next()
-    skipSpace()
+    Token.next(true)
+    local parser = isLocalDecl and P.Name or P.Exp
     local second = parser(true)
     if not second then
         Error.missName()
-        return
-    end
-    if isLocal then
-        createLocal(second, P.LocalAttrs())
+        return {}
     end
     skipSpace()
-    if Token.get() ~= ',' then
-        return second
+    if not Token.get(',') then
+        return { second }
     end
     Token.next()
     skipSeps()
     local third = parser(true)
     if not third then
         Error.missName()
-        return second
+        return { second }
     end
-    if isLocal then
-        createLocal(third, P.LocalAttrs())
-    end
-    local rest = { third }
+    local rest = { second, third }
     while true do
         skipSpace()
-        if Token.get() ~= ',' then
-            return second, rest
+        if not Token.get(',') then
+            return rest
         end
         Token.next()
         skipSeps()
         local name = parser(true)
         if not name then
             Error.missName()
-            return second, rest
-        end
-        if isLocal then
-            createLocal(name, P.LocalAttrs())
+            return rest
         end
         rest[#rest + 1] = name
     end
@@ -3437,41 +3405,37 @@ local function bindValue(n, v, index, lastValue, isLocal, isSet)
 end
 
 --- @param n1 parser.object.local|parser.object.get
---- @param parser fun(asAction?: boolean): parser.object
---- @param isLocal? boolean
+--- @param isLocalDecl boolean
+--- @param isLocal boolean
 --- @return parser.object
 --- @return boolean? isSet
-local function parseMultiVars(n1, parser, isLocal)
-    local n2, nrest = parseVarTails(parser, isLocal)
+local function parseMultiVars(n1, isLocalDecl, isLocal)
+    local nrest = parseVarTails(isLocalDecl)
+
+    if isLocalDecl then
+        for _, n in ipairs(nrest or {}) do
+            createLocal(n, true)
+        end
+    end
+
     skipSpace()
-    local v1, v2, vrest
+    local v1, vrest
     local isSet
-    local max = 1
     if expectAssign(not isLocal) then
-        v1, v2, vrest = parseSetValues()
+        v1, vrest = parseSetValues()
         isSet = true
         if not v1 then
             Error.missExp()
         end
     end
+
     local index = 1
     bindValue(n1, v1, index, nil, isLocal, isSet)
     local lastValue = v1
     local lastVar = n1
-    if n2 then
-        max = 2
-        if not v2 then
-            index = 2
-        end
-        bindValue(n2, v2, index, lastValue, isLocal, isSet)
-        lastValue = v2 or lastValue
-        lastVar = n2
-        Chunk.pushIntoCurrent(n2)
-    end
 
     for i, n in ipairs(nrest or {}) do
         local v = vrest and vrest[i]
-        max = i + 2
         if not v then
             index = index + 1
         end
@@ -3484,27 +3448,18 @@ local function parseMultiVars(n1, parser, isLocal)
     if isLocal then
         local effect = lastValue and lastValue.finish or lastVar.finish
         n1.effect = effect
-        if n2 then
-            n2.effect = effect
-        end
         for _, n in ipairs(nrest or {}) do
             n.effect = effect
         end
     end
 
-    if v2 and not n2 then
-        v2.redundant = {
-            max = max,
-            passed = 2,
-        }
-        Chunk.pushIntoCurrent(v2)
-    end
+    local max = #(nrest or {}) + 1
 
     for i, v in ipairs(vrest or {}) do
         if not nrest or not nrest[i] then
             v.redundant = {
                 max = max,
-                passed = i + 2,
+                passed = i + 1,
             }
             Chunk.pushIntoCurrent(v)
         end
@@ -3514,7 +3469,7 @@ local function parseMultiVars(n1, parser, isLocal)
 end
 
 local function skipFirstComment()
-    if Token.get() ~= '#' then
+    if not Token.get('#') then
         return
     end
     while true do
@@ -3566,13 +3521,7 @@ function P.Local()
     end
 
     local locPos = Token.left()
-    Token.next()
-    skipSpace()
-    local word = peekWord()
-    if not word then
-        Error.missName()
-        return
-    end
+    Token.next(true)
 
     -- local function a()
     -- end
@@ -3587,12 +3536,17 @@ function P.Local()
         Error.missName()
         return
     end
-    local loc = createLocal(name, P.LocalAttrs())
+
+    local loc = createLocal(name, true)
     loc.locPos = locPos
     loc.effect = math.maxinteger
     Chunk.pushIntoCurrent(loc)
     skipSpace()
-    parseMultiVars(loc, P.Name, true)
+
+    -- Parse either:
+    --  local a| = value
+    --  local a|, b, c = value1, value2, value3
+    parseMultiVars(loc, true, true)
 
     return loc
 end
@@ -3622,8 +3576,7 @@ function P.Return()
         return
     end
     local left, right = Token.left(), Token.right()
-    Token.next()
-    skipSpace()
+    Token.next(true)
 
     local rtn --- @type parser.object.return
     local explist = P.ExpList(true)
@@ -3669,8 +3622,7 @@ function P.Label()
         return
     end
     local left = Token.left()
-    Token.next()
-    skipSpace()
+    Token.next(true)
     local name = P.Name()
     skipSpace()
 
@@ -3737,8 +3689,7 @@ function P.Goto()
     end
 
     local start = Token.left()
-    Token.next()
-    skipSpace()
+    Token.next(true)
 
     local name = P.Name()
     if not name then
@@ -3780,8 +3731,7 @@ do -- P.If
         --- @type parser.object.ifblock
         local obj = initBlock('ifblock')
         obj.parent = parent
-        Token.next()
-        skipSpace()
+        Token.next(true)
         local filter = P.Exp()
         if filter then
             obj.filter = filter
@@ -3811,8 +3761,7 @@ do -- P.If
         end
         local obj = initBlock('elseifblock') --- @type parser.object.elseifblock
         obj.parent = parent
-        Token.next()
-        skipSpace()
+        Token.next(true)
         local filter = P.Exp()
         if filter then
             obj.filter = filter
@@ -3840,8 +3789,7 @@ do -- P.If
         end
         local obj = initBlock('elseblock') --- @type parser.object.elseblock
         obj.parent = parent
-        Token.next()
-        skipSpace()
+        Token.next(true)
         Chunk.push(obj)
         P.Actions()
         Chunk.pop()
@@ -3977,8 +3925,7 @@ do -- P.For
         forin.type = 'in'
         forin.stateVars = State.version == 'Lua 5.4' and 4 or 3
         local inLeft, inRight = Token.left(), Token.right()
-        Token.next()
-        skipSpace()
+        Token.next(true)
 
         local exps = P.ExpList()
 
@@ -4163,8 +4110,7 @@ function P.Break()
     --- @type parser.object.break
     local action = initObj('break') --- @as parser.object.break
 
-    Token.next()
-    skipSpace()
+    Token.next(true)
 
     local ok
     for chunk in Chunk.iter_rev() do
@@ -4206,24 +4152,23 @@ function P.ExprAction()
     if GetToSetMap[exp.type] then
         --- @cast exp parser.object.get
         skipSpace()
-        local isLocal
+        local isLocal = false
         if exp.type == 'getlocal' and exp[1] == State.ENVMode then
+            --- @cast exp parser.object.getlocal
             exp.special = nil
             -- TODO: need + 1 at the end
             Chunk.localCount = Chunk.localCount - 1
-            local loc = createLocal(exp, P.LocalAttrs())
+            local loc = createLocal(exp, true)
             loc.locPos = exp.start
             loc.effect = math.maxinteger
             isLocal = true
             skipSpace()
         end
-        local action, isSet = parseMultiVars(exp, P.Exp, isLocal)
+        local action, isSet = parseMultiVars(exp, false, isLocal)
         if isSet or action.type == 'getmethod' then
             return action
         end
-    end
-
-    if exp.type == 'call' then
+    elseif exp.type == 'call' then
         --- @cast exp parser.object.call
         if exp.hasExit then
             for block in Chunk.iter_rev() do
@@ -4239,9 +4184,7 @@ function P.ExprAction()
             end
         end
         return exp
-    end
-
-    if exp.type == 'binary' then
+    elseif exp.type == 'binary' then
         --- @cast exp parser.object.binop
         if GetToSetMap[exp[1].type] then
             local op = exp.op
@@ -4352,9 +4295,7 @@ local function initState(lua, version, options)
         err.finish = (err.at or err).finish
         err.start = (err.at or err).start
 
-        if err.finish < err.start then
-            err.finish = err.start
-        end
+        err.finish = math.max(err.finish, err.start)
         local last = errs[#errs]
         if last then
             if last.start <= err.start and last.finish >= err.finish then
