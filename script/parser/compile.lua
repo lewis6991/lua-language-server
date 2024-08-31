@@ -76,6 +76,7 @@ local ChunkFinishMap = {
 --- | parser.object.name
 --- | parser.object.funcargs
 --- | parser.object.callargs
+--- | parser.object.select
 --- | parser.object.field
 --- | parser.object.method
 ---- | parser.object.doc
@@ -87,6 +88,7 @@ local ChunkFinishMap = {
 --- @field state? parser.state
 --- @field next? parser.object
 --- @field uri? string
+--- @field range? integer
 --- @field hasExit? true
 --- @field parent? parser.object
 --- @field docs? parser.object.doc.main
@@ -255,10 +257,16 @@ local ChunkFinishMap = {
 --- @field parent parser.object.call
 --- @field [integer] parser.object.expr
 
+--- @class parser.object.select : parser.object.base
+--- @field type 'select'
+--- @field sindex integer
+--- @field vararg parser.object.call|parser.object.varargs
+
 --- @class parser.object.call : parser.object.base
 --- @field type 'call'
 --- @field args? parser.object.callargs
 --- @field node parser.object.expr
+--- @field extParent? parser.object.select[]
 
 --- @class parser.object.index : parser.object.base
 --- @field type 'index'
@@ -606,9 +614,9 @@ do -- Token interface
         return tokens[index - 1] --[[@as string]]
     end
 
-    --- @return integer?
+    --- @return string?
     function Token.peek()
-        return tokens[index + 3] --[[@as integer]]
+        return tokens[index + 3] --[[@as string]]
     end
 
     --- @param skipWS? boolean
@@ -1514,6 +1522,7 @@ do -- P.Number
     --- @param start integer
     --- @return integer
     --- @return integer
+    --- @return boolean
     local function parseNumber10(start)
         local integer = true
         local integerPart = Lua:match('^%d*', start)
@@ -1543,7 +1552,7 @@ do -- P.Number
                 })
             end
         end
-        return tonumber(Lua:sub(start, offset - 1)), offset, integer
+        return tonumber(Lua:sub(start, offset - 1)) --[[@as integer]], offset, integer
     end
 
     --- @param start integer
@@ -1588,7 +1597,7 @@ do -- P.Number
             local exp = Lua:match('^%d*', offset)
             offset = offset + #exp
         end
-        local n = tonumber(Lua:sub(start - 2, offset - 1))
+        local n = tonumber(Lua:sub(start - 2, offset - 1)) --[[@as integer]]
         return n, offset, integer
     end
 
@@ -3320,7 +3329,7 @@ local function parseSetValues()
 end
 
 --- @param isLocalDecl boolean
---- @return parser.object[] rest
+--- @return (parser.object.local|parser.object.get)[] rest
 local function parseVarTails(isLocalDecl)
     if not Token.get(',') then
         return {}
@@ -3360,30 +3369,41 @@ local function parseVarTails(isLocalDecl)
     end
 end
 
+--- @param n parser.object.local|parser.object.get
+--- @param v parser.object?
+--- @param index integer
+--- @param lastValue parser.object?
+--- @param isLocal boolean
+--- @param isSet boolean
 local function bindValue(n, v, index, lastValue, isLocal, isSet)
     if isLocal then
         if v and v.special then
             addSpecial(v.special, n)
         end
     elseif isSet then
+        --- @cast n +parser.object.set
         n.type = GetToSetMap[n.type] or n.type
         if n.type == 'setlocal' then
-            local loc = n.node
-            if loc.attrs then
+            --- @diagnostic disable-next-line: cast-type-mismatch TC bug
+            --- @cast n parser.object.setlocal
+            if n.node.attrs then
                 Error.push({ type = 'SET_CONST', at = n })
             end
         end
     end
+
     if not v and lastValue then
         if lastValue.type == 'call' or lastValue.type == 'varargs' then
+            --- @cast lastValue parser.object.call|parser.object.varargs
             v = lastValue
-            if not v.extParent then
-                v.extParent = {}
-            end
+            v.extParent = v.extParent or {}
         end
     end
+
     if v then
         if v.type == 'call' or v.type == 'varargs' then
+            --- @cast v parser.object.call|parser.object.varargs
+            --- @type parser.object.select
             local select = {
                 type = 'select',
                 sindex = index,
@@ -3407,7 +3427,7 @@ end
 --- @param n1 parser.object.local|parser.object.get
 --- @param isLocalDecl boolean
 --- @param isLocal boolean
---- @return parser.object
+--- @return parser.object.local|parser.object.get|parser.object.set
 --- @return boolean? isSet
 local function parseMultiVars(n1, isLocalDecl, isLocal)
     local nrest = parseVarTails(isLocalDecl)
@@ -3416,6 +3436,7 @@ local function parseMultiVars(n1, isLocalDecl, isLocal)
         for _, n in ipairs(nrest or {}) do
             createLocal(n, true)
         end
+        --- @cast nrest parser.object.local[]
     end
 
     skipSpace()
@@ -3431,6 +3452,8 @@ local function parseMultiVars(n1, isLocalDecl, isLocal)
 
     local index = 1
     bindValue(n1, v1, index, nil, isLocal, isSet)
+    --- @cast n1 +parser.object.set if not isLocal and isSet
+
     local lastValue = v1
     local lastVar = n1
 
@@ -3440,6 +3463,7 @@ local function parseMultiVars(n1, isLocalDecl, isLocal)
             index = index + 1
         end
         bindValue(n, v, index, lastValue, isLocal, isSet)
+        --- @cast n +parser.object.set if not isLocal and isSet
         lastValue = v or lastValue
         lastVar = n
         Chunk.pushIntoCurrent(n)
@@ -4141,7 +4165,11 @@ function P.Break()
     return action
 end
 
---- @return parser.object.expr?
+--- @return
+--- | parser.object.expr
+--- | parser.object.set
+--- | parser.object.getmethod
+--- | ?
 function P.ExprAction()
     local exp = P.Exp(true)
     if not exp then
@@ -4166,6 +4194,7 @@ function P.ExprAction()
         end
         local action, isSet = parseMultiVars(exp, false, isLocal)
         if isSet or action.type == 'getmethod' then
+            --- @cast action parser.object.set|parser.object.getmethod
             return action
         end
     elseif exp.type == 'call' then
@@ -4233,10 +4262,8 @@ function P.Lua()
     local main = { type = 'main', start = 0, finish = 0, bstart = 0 }
     Chunk.push(main)
     createLocal({
-        type = 'local',
         start = -1,
         finish = -1,
-        effect = -1,
         parent = main,
         tag = '_ENV',
         special = '_G',
