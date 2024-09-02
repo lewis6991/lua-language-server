@@ -16,6 +16,7 @@ return function(uri, callback)
 
     for _, doc in ipairs(state.ast.docs) do
         if doc.type == 'doc.cast' and doc.name then
+            --- @cast doc parser.object.doc.cast
             await.delay()
             local defs = vm.getDefs(doc.name)
             local loc = defs[1]

@@ -1,34 +1,19 @@
 --- @class parser.object.base
 --- @field package _root? parser.object.main
 --- @field package _isGlobal? boolean
+--- @field package _typeCache? table<string,parser.object[]>
+--- @field package _eachCache? parser.object[]
 
 --- @class parser.object.old : parser.object.base
 --- @field bindDocs              parser.object.base[]
 --- @field bindGroup             parser.object.base[]
 --- @field bindSource            parser.object.base
---- @field type                  string
---- @field tag                   string
---- @field exps                  parser.object.base[]
---- @field range                 integer
---- @field effect                integer
---- @field attrs                 string[]
---- @field specials              parser.object.base[]
---- @field method                parser.object.base
---- @field extends               parser.object.base[]|parser.object.base
---- @field types                 parser.object.base[]
 --- @field tkey                  parser.object.base
 --- @field tvalue                parser.object.base
 --- @field op                    parser.object.base
 --- @field docParam              parser.object.base
---- @field sindex                integer
---- @field call                  parser.object.base
 --- @field closure               parser.object.base
 --- @field proto                 parser.object.base
---- @field exp                   parser.object.base
---- @field class                 parser.object.base
---- @field enum                  parser.object.base
---- @field param                 parser.object.base
---- @field overload              parser.object.base
 --- @field docParamMap           table<string, integer>
 --- @field upvalues              table<string, string[]>
 --- @field ref                   parser.object.base[]
@@ -37,9 +22,6 @@
 --- @field docIndex              integer
 --- @field docs                  parser.object.base
 --- @field comment               table
---- @field redundant             { max: integer, passed: integer }
---- @field package _eachCache?   parser.object.base[]
---- @field package _typeCache?   parser.object.base[][]
 
 --- @class guide
 --- @field debugMode boolean
@@ -85,184 +67,328 @@ local breakBlockTypes = {
     ['for'] = true,
 }
 
-local childMap = {
-    ['main'] = { '#', 'docs' },
-    ['repeat'] = { '#', 'filter' },
-    ['while'] = { 'filter', '#' },
-    ['in'] = { 'keys', 'exps', '#' },
-    ['loop'] = { 'loc', 'init', 'max', 'step', '#' },
-    ['do'] = { '#' },
-    ['if'] = { '#' },
-    ['ifblock'] = { 'filter', '#' },
-    ['elseifblock'] = { 'filter', '#' },
-    ['elseblock'] = { '#' },
-    ['setfield'] = { 'node', 'field', 'value' },
-    ['getfield'] = { 'node', 'field' },
-    ['setmethod'] = { 'node', 'method', 'value' },
-    ['getmethod'] = { 'node', 'method' },
-    ['setindex'] = { 'node', 'index', 'value' },
-    ['getindex'] = { 'node', 'index' },
-    ['tableindex'] = { 'index', 'value' },
-    ['tablefield'] = { 'field', 'value' },
-    ['tableexp'] = { 'value' },
-    ['setglobal'] = { 'value' },
-    ['local'] = { 'attrs', 'value' },
-    ['setlocal'] = { 'value' },
-    ['return'] = { '#' },
-    ['select'] = { 'vararg' },
-    ['table'] = { '#' },
-    ['function'] = { 'args', '#' },
-    ['funcargs'] = { '#' },
-    ['paren'] = { 'exp' },
-    ['call'] = { 'node', 'args' },
-    ['callargs'] = { '#' },
-    ['list'] = { '#' },
-    ['binary'] = { 1, 2 },
-    ['unary'] = { 1 },
+local function addSelf(obj, list, _add, addList)
+    addList(obj, list)
+end
 
-    ['doc'] = { '#' },
-    ['doc.class'] = { 'class', '#extends', '#signs', 'docAttr', 'comment' },
-    ['doc.type'] = { '#types', 'name', 'comment' },
-    ['doc.alias'] = { 'alias', 'docAttr', 'extends', 'comment' },
-    ['doc.enum'] = { 'enum', 'extends', 'comment', 'docAttr' },
-    ['doc.param'] = { 'param', 'extends', 'comment' },
-    ['doc.return'] = { '#returns', 'comment' },
-    ['doc.field'] = { 'field', 'extends', 'comment' },
-    ['doc.generic'] = { '#generics', 'comment' },
-    ['doc.generic.object'] = { 'generic', 'extends', 'comment' },
-    ['doc.vararg'] = { 'vararg', 'comment' },
-    ['doc.type.array'] = { 'node' },
-    ['doc.type.function'] = { '#args', '#returns', 'comment' },
-    ['doc.type.table'] = { '#fields', 'comment' },
-    ['doc.type.literal'] = { 'node' },
-    ['doc.type.arg'] = { 'name', 'extends' },
-    ['doc.type.field'] = { 'name', 'extends' },
-    ['doc.type.sign'] = { 'node', '#signs' },
-    ['doc.overload'] = { 'overload', 'comment' },
-    ['doc.see'] = { 'name', 'comment' },
-    ['doc.version'] = { '#versions' },
-    ['doc.diagnostic'] = { '#names' },
-    ['doc.as'] = { 'as' },
-    ['doc.cast'] = { 'name', '#casts' },
-    ['doc.cast.block'] = { 'extends' },
-    ['doc.operator'] = { 'op', 'exp', 'extends' },
-    ['doc.meta'] = { 'name' },
-    ['doc.attr'] = { '#names' },
+--- @alias parser.object2 parser.object | parser.object.doc
+
+--- @type table<string,fun(obj: parser.object2, list: parser.object2[], elem: function, elemList: function)>
+local childMap = {
+    --- @param obj parser.object.main
+    ['main'] = function(obj, x, elem, elemList)
+        elemList(obj, x)
+        elem(x, obj.docs)
+    end,
+
+    --- @param obj parser.object.repeat
+    ['repeat'] = function(obj, x, elem, elemList)
+        elemList(obj, x)
+        elem(x, obj.filter)
+    end,
+
+    --- @param obj parser.object.while
+    ['while'] = function(obj, x, elem, elemList)
+        elem(x, obj.filter)
+        elemList(obj, x)
+    end,
+
+    --- @param obj parser.object.in
+    ['in'] = function(obj, x, elem, elemList)
+        elem(x, obj.keys, obj.exps)
+        elemList(obj, x)
+    end,
+
+    --- @param obj parser.object.loop
+    ['loop'] = function(obj, x, elem, elemList)
+        elem(x, obj.loc, obj.init, obj.max, obj.step)
+        elemList(obj, x)
+    end,
+
+    ['do'] = addSelf,
+    ['if'] = addSelf,
+
+    --- @param obj parser.object.ifblock
+    ['ifblock'] = function(obj, x, elem, elemList)
+        elem(x, obj.filter)
+        elemList(obj, x)
+    end,
+
+    --- @param obj parser.object.elseifblock
+    ['elseifblock'] = function(obj, x, elem, elemList)
+        elem(x, obj.filter)
+        elemList(obj, x)
+    end,
+
+    ['elseblock'] = addSelf,
+
+    --- @param obj parser.object.setfield
+    ['setfield'] = function(obj, x, elem)
+        elem(x, obj.node, obj.field, obj.value)
+    end,
+
+    --- @param obj parser.object.getfield
+    ['getfield'] = function(obj, x, elem)
+        elem(x, obj.node, obj.field)
+    end,
+
+    --- @param obj parser.object.setmethod
+    ['setmethod'] = function(obj, x, elem)
+        elem(x, obj.node, obj.method, obj.value)
+    end,
+
+    --- @param obj parser.object.getmethod
+    ['getmethod'] = function(obj, x, elem)
+        elem(x, obj.node, obj.method)
+    end,
+
+    --- @param obj parser.object.setindex
+    ['setindex'] = function(obj, x, elem)
+        elem(x, obj.node, obj.index, obj.value)
+    end,
+
+    --- @param obj parser.object.getindex
+    ['getindex'] = function(obj, x, elem)
+        elem(x, obj.node, obj.index)
+    end,
+
+    --- @param obj parser.object.tableindex
+    ['tableindex'] = function(obj, x, elem)
+        elem(x, obj.index, obj.value)
+    end,
+
+    --- @param obj parser.object.tablefield
+    ['tablefield'] = function(obj, x, elem)
+        elem(x, obj.field, obj.value)
+    end,
+
+    --- @param obj parser.object.tableexp
+    ['tableexp'] = function(obj, x, elem)
+        elem(x, obj.value)
+    end,
+
+    --- @param obj parser.object.setglobal
+    ['setglobal'] = function(obj, x, elem)
+        elem(x, obj.value)
+    end,
+
+    --- @param obj parser.object.local
+    ['local'] = function(obj, x, elem)
+        elem(x, obj.attrs, obj.value)
+    end,
+
+    --- @param obj parser.object.setlocal
+    ['setlocal'] = function(obj, x, elem)
+        elem(x, obj.value)
+    end,
+
+    ['return'] = addSelf,
+
+    --- @param obj parser.object.select
+    ['select'] = function(obj, x, elem)
+        elem(x, obj.vararg)
+    end,
+
+    ['table'] = addSelf,
+
+    --- @param obj parser.object.function
+    ['function'] = function(obj, x, elem, elemList)
+        elem(x, obj.args)
+        elemList(obj, x)
+    end,
+
+    ['funcargs'] = addSelf,
+
+    --- @param obj parser.object.call
+    ['call'] = function(obj, x, elem)
+        elem(x, obj.exp, obj.node, obj.args)
+    end,
+
+    --- @param obj parser.object.paren
+    ['paren'] = function(obj, x, elem)
+        elem(x, obj.exp)
+    end,
+
+    ['callargs'] = addSelf,
+
+    ['list'] = addSelf,
+
+    ['binary'] = addSelf,
+
+    ['unary'] = addSelf,
+
+    ['doc'] = addSelf,
+
+    --- @param obj parser.object.doc.class
+    ['doc.class'] = function(obj, x, elem, elemList)
+        elem(x, obj.class)
+        elemList(obj.extends, x)
+        elemList(obj.signs, x)
+        elem(x, obj.docAttr)
+        elem(x, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.type
+    ['doc.type'] = function(obj, x, elem, elemList)
+        elemList(obj.types, x)
+        elem(x, obj.name, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.alias
+    ['doc.alias'] = function(obj, x, elem)
+        elem(x, obj.alias, obj.docAttr, obj.extends, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.enum
+    ['doc.enum'] = function(obj, x, elem)
+        elem(x, obj.enum, obj.extends, obj.comment, obj.docAttr)
+    end,
+
+    --- @param obj parser.object.doc.param
+    ['doc.param'] = function(obj, x, elem)
+        elem(x, obj.param, obj.extends, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.return
+    ['doc.return'] = function(obj, x, elem, elemList)
+        elemList(obj.returns, x)
+        elem(x, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.field
+    ['doc.field'] = function(obj, x, elem)
+        elem(x, obj.field, obj.extends, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.generic
+    ['doc.generic'] = function(obj, x, elem, elemList)
+        elemList(obj.generics, x)
+        elem(x, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.generic.object
+    ['doc.generic.object'] = function(obj, x, elem)
+        elem(x, obj.generic, obj.extends, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.vararg
+    ['doc.vararg'] = function(obj, x, elem)
+        elem(x, obj.vararg, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.type.array
+    ['doc.type.array'] = function(obj, x, elem)
+        elem(x, obj.node)
+    end,
+
+    --- @param obj parser.object.doc.type.function
+    ['doc.type.function'] = function(obj, x, elem, elemList)
+        elemList(obj.args, x)
+        elemList(obj.returns, x)
+        elem(x, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.type.table
+    ['doc.type.table'] = function(obj, x, elem, elemList)
+        elemList(obj.fields, x)
+        elem(x, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.type.literal
+    ['doc.type.literal'] = function(obj, x, elem)
+        elem(x, obj.node)
+    end,
+
+    --- @param obj parser.object.doc.type.arg
+    ['doc.type.arg'] = function(obj, x, elem)
+        elem(x, obj.name, obj.extends)
+    end,
+
+    --- @param obj parser.object.doc.type.field
+    ['doc.type.field'] = function(obj, x, elem)
+        elem(x, obj.name, obj.extends)
+    end,
+
+    --- @param obj parser.object.doc.type.sign
+    ['doc.type.sign'] = function(obj, x, elem, elemList)
+        elem(x, obj.node)
+        elemList(obj.signs, x)
+    end,
+
+    --- @param obj parser.object.doc.overload
+    ['doc.overload'] = function(obj, x, elem)
+        elem(x, obj.overload, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.see
+    ['doc.see'] = function(obj, x, elem)
+        elem(x, obj.name, obj.comment)
+    end,
+
+    --- @param obj parser.object.doc.version
+    ['doc.version'] = function(obj, x, _, elemList)
+        elemList(obj.versions, x)
+    end,
+
+    --- @param obj parser.object.doc.diagnostic
+    ['doc.diagnostic'] = function(obj, x, _, elemList)
+        elemList(obj.names, x)
+    end,
+
+    --- @param obj parser.object.doc.as
+    ['doc.as'] = function(obj, x, elem)
+        elem(x, obj.as)
+    end,
+
+    --- @param obj parser.object.doc.cast
+    ['doc.cast'] = function(obj, x, elem, elemList)
+        elem(x, obj.name)
+        elemList(obj.casts, x)
+    end,
+
+    --- @param obj parser.object.doc.cast.block
+    ['doc.cast.block'] = function(obj, x, elem)
+        elem(x, obj.extends)
+    end,
+
+    --- @param obj parser.object.doc.operator
+    ['doc.operator'] = function(obj, x, elem)
+        elem(x, obj.op, obj.exp, obj.extends)
+    end,
+
+    --- @param obj parser.object.doc.meta
+    ['doc.meta'] = function(obj, x, elem)
+        elem(x, obj.name)
+    end,
+
+    --- @param obj parser.object.doc.attr
+    ['doc.attr'] = function(obj, x, _, elemList)
+        elemList(obj.names, x)
+    end,
 }
 
---- @type table<string, fun(obj: parser.object.base, list: parser.object.base[])>
-local compiledChildMap = setmetatable({}, {
-    __index = function(self, name)
-        local defs = childMap[name]
-        if not defs then
-            self[name] = false
-            return false
-        end
-        local text = {}
-        text[#text + 1] = 'local obj, list = ...'
-        for _, def in ipairs(defs) do
-            if def == '#' then
-                text[#text + 1] = [[
-for i = 1, #obj do
-    list[#list+1] = obj[i]
-end
-]]
-            elseif type(def) == 'string' and def:sub(1, 1) == '#' then
-                local key = def:sub(2)
-                text[#text + 1] = ([[
-local childs = obj.%s
-if childs then
-    for i = 1, #childs do
-        list[#list+1] = childs[i]
-    end
-end
-]]):format(key)
-            elseif type(def) == 'string' then
-                text[#text + 1] = ('list[#list+1] = obj.%s'):format(def)
-            else
-                text[#text + 1] = ('list[#list+1] = obj[%q]'):format(def)
-            end
-        end
-        local buf = table.concat(text, '\n')
-        local f = load(buf, buf, 't')
-        self[name] = f
-        return f
-    end,
-})
-
-local eachChildMap = setmetatable({}, {
-    __index = function(self, name)
-        local defs = childMap[name]
-        if not defs then
-            self[name] = false
-            return false
-        end
-        local text = {}
-        text[#text + 1] = 'local obj, callback = ...'
-        for _, def in ipairs(defs) do
-            if def == '#' then
-                text[#text + 1] = [[
-for i = 1, #obj do
-    callback(obj[i])
-end
-]]
-            elseif type(def) == 'string' and def:sub(1, 1) == '#' then
-                local key = def:sub(2)
-                text[#text + 1] = ([[
-local childs = obj.%s
-if childs then
-    for i = 1, #childs do
-        callback(childs[i])
-    end
-end
-]]):format(key)
-            elseif type(def) == 'string' then
-                text[#text + 1] = ('callback(obj.%s)'):format(def)
-            else
-                text[#text + 1] = ('callback(obj[%q])'):format(def)
-            end
-        end
-        local buf = table.concat(text, '\n')
-        local f = load(buf, buf, 't')
-        self[name] = f
-        return f
-    end,
-})
-
-M.actionMap = {
-    ['main'] = { '#' },
-    ['repeat'] = { '#' },
-    ['while'] = { '#' },
-    ['in'] = { '#' },
-    ['loop'] = { '#' },
-    ['if'] = { '#' },
-    ['ifblock'] = { '#' },
-    ['elseifblock'] = { '#' },
-    ['elseblock'] = { '#' },
-    ['do'] = { '#' },
-    ['function'] = { '#' },
-    ['funcargs'] = { '#' },
+local literalMap = {
+    ['boolean'] = true,
+    ['function'] = true,
+    ['integer'] = true,
+    ['nil'] = true,
+    ['number'] = true,
+    ['string'] = true,
+    ['table'] = true,
+    ['doc.type.array'] = true,
+    ['doc.type.boolean'] = true,
+    ['doc.type.code'] = true,
+    ['doc.type.function'] = true,
+    ['doc.type.integer'] = true,
+    ['doc.type.string'] = true,
+    ['doc.type.table'] = true,
 }
 
 --- Whether it is a literal
 --- @param obj table
 --- @return boolean
 function M.isLiteral(obj)
-    local tp = obj.type
-    return tp == 'boolean'
-        or tp == 'function'
-        or tp == 'integer'
-        or tp == 'nil'
-        or tp == 'number'
-        or tp == 'string'
-        or tp == 'table'
-        or tp == 'doc.type.array'
-        or tp == 'doc.type.boolean'
-        or tp == 'doc.type.code'
-        or tp == 'doc.type.function'
-        or tp == 'doc.type.integer'
-        or tp == 'doc.type.string'
-        or tp == 'doc.type.table'
+    return literalMap[obj.type] or false
 end
 
 --- Get the literal
@@ -366,10 +492,7 @@ end
 function M.getDocState(obj)
     for _ = 1, 10000 do
         local parent = obj.parent
-        if not parent then
-            return obj
-        end
-        if parent.type == 'doc' then
+        if not parent or parent.type == 'doc' then
             return obj
         end
         obj = parent
@@ -612,23 +735,33 @@ function M.isBetweenRange(source, tStart, tFinish)
     return start <= tFinish and finish >= tStart
 end
 
---- Add child
-local function addChilds(list, obj)
-    local tp = obj.type
-    if not tp then
-        return
+local function addList(x, list)
+    for i = 1, #(x or {}) do
+        list[#list + 1] = x[i]
     end
-    local f = compiledChildMap[tp]
+end
+
+local function add(list, ...)
+    for i = 1, select('#', ...) do
+        list[#list + 1] = select(i, ...)
+    end
+end
+
+--- Add child
+--- @param list parser.object[]
+--- @param obj parser.object
+local function addChilds(list, obj)
+    local f = childMap[obj.type]
     if not f then
         return
     end
-    f(obj, list)
+    f(obj, list, add, addList)
 end
 
 --- Traverse all sources containing position
---- @param ast parser.object.base
+--- @param ast parser.object
 --- @param position integer
---- @param callback fun(src: parser.object.base): any
+--- @param callback fun(src: parser.object): any
 function M.eachSourceContain(ast, position, callback)
     local list = { ast }
     local mark = {}
@@ -680,6 +813,8 @@ function M.eachSourceBetween(ast, start, finish, callback)
     end
 end
 
+--- @param ast parser.object
+--- @return table<string,parser.object[]>
 local function getSourceTypeCache(ast)
     local cache = ast._typeCache
     if not cache then
@@ -702,9 +837,9 @@ local function getSourceTypeCache(ast)
 end
 
 --- Traverse all sources of the specified type
---- @param ast parser.object.base
+--- @param ast parser.object
 --- @param type string
---- @param callback fun(src: parser.object.base): any
+--- @param callback fun(src: parser.object): any
 --- @return any
 function M.eachSourceType(ast, type, callback)
     local cache = getSourceTypeCache(ast)
@@ -720,9 +855,9 @@ function M.eachSourceType(ast, type, callback)
     end
 end
 
---- @param ast parser.object.base
+--- @param ast parser.object
 --- @param tps string[]
---- @param callback fun(src: parser.object.base)
+--- @param callback fun(src: parser.object)
 function M.eachSourceTypes(ast, tps, callback)
     local cache = getSourceTypeCache(ast)
     for x = 1, #tps do
@@ -736,14 +871,14 @@ function M.eachSourceTypes(ast, tps, callback)
 end
 
 --- Traverse all sources
---- @param ast parser.object.base
---- @param callback fun(src: parser.object.base): boolean?
+--- @param ast parser.object
+--- @param callback fun(src: parser.object): boolean?
 function M.eachSource(ast, callback)
     local cache = ast._eachCache
     if not cache then
         cache = { ast }
         ast._eachCache = cache
-        local mark = {}
+        local seen = {}
         local index = 1
         while true do
             local obj = cache[index]
@@ -751,8 +886,8 @@ function M.eachSource(ast, callback)
                 break
             end
             index = index + 1
-            if not mark[obj] then
-                mark[obj] = true
+            if not seen[obj] then
+                seen[obj] = true
                 addChilds(cache, obj)
             end
         end
@@ -765,23 +900,36 @@ function M.eachSource(ast, callback)
     end
 end
 
---- @param source   parser.object.base
---- @param callback fun(src: parser.object.base)
+local function callList(x, callback)
+    for i = 1, #(x or {}) do
+        callback(x[i])
+    end
+end
+
+local function callElem(callback, ...)
+    for i = 1, select('#', ...) do
+        callback(select(i, ...))
+    end
+end
+
+--- @param source   parser.object
+--- @param callback fun(src: parser.object)
 function M.eachChild(source, callback)
-    local f = eachChildMap[source.type]
+    local f = childMap[source.type]
     if not f then
         return
     end
-    f(source, callback)
+    f(source, callback, callElem, callList)
 end
 
 --- Get the specified special
---- @param ast parser.object.base
+--- @param ast parser.object
 --- @param name string
 --- @param callback fun(src: parser.object.base)
 function M.eachSpecialOf(ast, name, callback)
     local root = M.getRoot(ast)
     local state = root.state
+    --- @cast state -?
     if not state.specials then
         return
     end
@@ -1069,7 +1217,7 @@ function M.getKeyType(obj)
 end
 
 --- Whether it is a global variable (including _G.XXX form)
---- @param source parser.object
+--- @param source parser.object2
 --- @return boolean
 function M.isGlobal(source)
     if source._isGlobal ~= nil then
@@ -1112,6 +1260,7 @@ function M.isGlobal(source)
         end
     end
     if source.type == 'call' then
+        --- @cast source parser.object.call
         local node = source.node
         if node.special == 'rawget' or node.special == 'rawset' then
             if source.args and source.args[1] then

@@ -9,6 +9,7 @@ return function(uri, callback)
         return
     end
 
+    --- @param source parser.object.loop
     guide.eachSourceType(state.ast, 'loop', function(source)
         local maxNumber = source.max and tonumber(source.max[1])
         if not maxNumber then

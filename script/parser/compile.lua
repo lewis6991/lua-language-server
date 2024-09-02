@@ -99,10 +99,15 @@ local ChunkFinishMap = {
 
 --- @class parser.object.setfield : parser.object.base
 --- @field type 'setfield'
+--- @field node parser.object.expr
+--- @field field? parser.object.field
+--- @field value? parser.object.expr
 
 --- @class parser.object.setmethod : parser.object.base
 --- @field type 'setmethod'
---- @field node unknown
+--- @field node parser.object.expr
+--- @field method? parser.object.method
+--- @field value? parser.object.expr
 
 --- @class parser.object.break : parser.object.base
 --- @field type 'break'
@@ -130,8 +135,10 @@ local ChunkFinishMap = {
 --- @field type 'local'
 --- @field effect integer
 --- @field attrs? parser.object.localattrs
---- @field ref? parser.object.expr[] References to local
+--- @field ref? parser.object[] References to local
 --- @field locPos? integer Start position of the 'local' keyword
+--- @field value? parser.object.expr
+--- @field tag? '_ENV'
 --- @field [1] string Name of local variable
 
 --- @class parser.object.self : parser.object.local
@@ -259,7 +266,7 @@ local ChunkFinishMap = {
 
 --- @class parser.object.select : parser.object.base
 --- @field type 'select'
---- @field sindex integer
+--- @field sindex integer Select index
 --- @field vararg parser.object.call|parser.object.varargs
 
 --- @class parser.object.call : parser.object.base
@@ -328,6 +335,7 @@ local ChunkFinishMap = {
 --- @class parser.object.setlocal : parser.object.base
 --- @field type 'setlocal'
 --- @field node parser.object.local|parser.object.self
+--- @field value parser.object.expr
 
 --- @class parser.object.setglobal : parser.object.base
 --- @field type 'setglobal'
@@ -335,6 +343,9 @@ local ChunkFinishMap = {
 
 --- @class parser.object.setindex : parser.object.base
 --- @field type 'setindex'
+--- @field node parser.object.expr
+--- @field index? parser.object.index
+--- @field value? parser.object.expr
 
 --- @class parser.object.getlocal : parser.object.base
 --- @field type 'getlocal'
@@ -3329,30 +3340,10 @@ local function parseSetValues()
 end
 
 --- @param isLocalDecl boolean
---- @return (parser.object.local|parser.object.get)[] rest
+--- @return (parser.object.local|parser.object.get)[]? rest
 local function parseVarTails(isLocalDecl)
-    if not Token.get(',') then
-        return {}
-    end
-    Token.next(true)
     local parser = isLocalDecl and P.Name or P.Exp
-    local second = parser(true)
-    if not second then
-        Error.missName()
-        return {}
-    end
-    skipSpace()
-    if not Token.get(',') then
-        return { second }
-    end
-    Token.next()
-    skipSeps()
-    local third = parser(true)
-    if not third then
-        Error.missName()
-        return { second }
-    end
-    local rest = { second, third }
+    local rest
     while true do
         skipSpace()
         if not Token.get(',') then
@@ -3365,6 +3356,7 @@ local function parseVarTails(isLocalDecl)
             Error.missName()
             return rest
         end
+        rest = rest or {}
         rest[#rest + 1] = name
     end
 end
@@ -3383,12 +3375,8 @@ local function bindValue(n, v, index, lastValue, isLocal, isSet)
     elseif isSet then
         --- @cast n +parser.object.set
         n.type = GetToSetMap[n.type] or n.type
-        if n.type == 'setlocal' then
-            --- @diagnostic disable-next-line: cast-type-mismatch TC bug
-            --- @cast n parser.object.setlocal
-            if n.node.attrs then
-                Error.push({ type = 'SET_CONST', at = n })
-            end
+        if n.type == 'setlocal' and n.node.attrs then
+            Error.push({ type = 'SET_CONST', at = n })
         end
     end
 

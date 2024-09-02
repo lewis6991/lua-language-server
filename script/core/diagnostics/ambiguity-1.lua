@@ -31,6 +31,7 @@ return function(uri, callback)
     if not state or not text then
         return
     end
+    --- @param source parser.object.binop
     guide.eachSourceType(state.ast, 'binary', function(source)
         if source.op.type ~= 'or' then
             return

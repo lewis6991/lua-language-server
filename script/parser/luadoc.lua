@@ -28,6 +28,7 @@ local util = require('utility')
 --- | parser.object.doc.field
 --- | parser.object.doc.field.name
 --- | parser.object.doc.generic
+--- | parser.object.doc.generic.object
 --- | parser.object.doc.meta
 --- | parser.object.doc.module
 --- | parser.object.doc.nodiscard
@@ -75,6 +76,11 @@ local util = require('utility')
 
 --- @class parser.object.doc.enum : parser.object.doc.base
 --- @field type 'doc.enum'
+--- @field enum parser.object.doc.enum.name
+
+--- @class parser.object.doc.enum.name : parser.object.doc.base
+--- @field type 'doc.enum.name'
+--- @field [1] string
 
 --- @class parser.object.doc.async : parser.object.doc.base
 --- @field type 'doc.async'
@@ -233,6 +239,7 @@ local util = require('utility')
 
 --- @class parser.object.doc.attr : parser.object.doc.base
 --- @field type 'doc.attr'
+--- @field names parser.object.doc.attr.name[]
 
 --- @class parser.object.doc.attr.name : parser.object.doc.base
 --- @field type 'doc.attr.name'
@@ -306,6 +313,13 @@ local util = require('utility')
 
 --- @class parser.object.doc.version : parser.object.doc.base
 --- @field type 'doc.version'
+--- @field versions parser.object.doc.version.unit[]
+---
+--- @class parser.object.doc.version.unit : parser.object.doc.base
+--- @field type 'doc.version.unit'
+--- @field le? true
+--- @field ge? true
+--- @field version? number|string
 
 local TokenTypes, TokenStarts, TokenFinishs, TokenContents
 local TokenMarks --- @type table<integer,string?>?
@@ -455,7 +469,6 @@ Symbol              <-  ({} {
 --- @field touch?            integer
 --- @field module?           string
 --- @field async?            boolean
---- @field versions?         table[]
 --- @field names?            parser.object.base[]
 --- @field path?             string
 --- @field bindComments?     parser.object.base[]
@@ -1712,6 +1725,7 @@ local docSwitch = {
             if not result.start then
                 result.start = getStart()
             end
+            --- @type parser.object.doc.version.unit
             local version = {
                 type = 'doc.version.unit',
                 parent = result,
@@ -1994,7 +2008,7 @@ local docSwitch = {
 
     ['enum'] = function()
         local attr = parseDocAttr()
-        local name = parseName('doc.enum.name')
+        local name = parseName('doc.enum.name') --[[@as parser.object.doc.enum.name]]
         if not name then
             return
         end

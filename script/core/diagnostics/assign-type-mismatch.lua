@@ -53,6 +53,12 @@ return function(uri, callback)
 
     local delayer = await.newThrottledDelayer(15)
     ---@async
+    --- @param source
+    --- | parser.object.set
+    --- | parser.object.local
+    --- | parser.object.tablefield
+    --- | parser.object.tableindex
+    --- | parser.object.tableexp
     guide.eachSourceTypes(state.ast, checkTypes, function(source)
         local value = source.value
         if not value then
@@ -60,6 +66,7 @@ return function(uri, callback)
         end
         delayer:delay()
         if source.type == 'setlocal' then
+            --- @cast source parser.object.setlocal
             local locNode = vm.compileNode(source.node)
             if not locNode.hasDefined then
                 return
@@ -87,8 +94,8 @@ return function(uri, callback)
         end
 
         if value.type == 'getfield' or value.type == 'getindex' then
-            -- 由于无法对字段进行类型收窄，
-            -- 因此将假值移除再进行检查
+            -- Since the field cannot be type-narrowed,
+            -- So remove the false value and check again
             valueNode = valueNode:copy():setTruthy()
         end
 
@@ -98,7 +105,7 @@ return function(uri, callback)
             return
         end
 
-        -- local Cat = setmetatable({}, {__index = Animal}) 允许逆变
+        -- local Cat = setmetatable({}, {__index = Animal}) allows inversion
         if hasMarkClass(source) then
             if vm.canCastType(uri, valueNode:copy():remove('table'), varNode) then
                 return

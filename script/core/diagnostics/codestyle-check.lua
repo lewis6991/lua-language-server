@@ -28,13 +28,11 @@ return function(uri, callback)
         return
     end
 
-    if diagnosticInfos then
-        for _, diagnosticInfo in ipairs(diagnosticInfos) do
-            callback({
-                start = converter.unpackPosition(state, diagnosticInfo.range.start),
-                finish = converter.unpackPosition(state, diagnosticInfo.range['end']),
-                message = diagnosticInfo.message,
-            })
-        end
+    for _, diagnosticInfo in ipairs(diagnosticInfos or {}) do
+        callback({
+            start = converter.unpackPosition(state, diagnosticInfo.range.start),
+            finish = converter.unpackPosition(state, diagnosticInfo.range['end']),
+            message = diagnosticInfo.message,
+        })
     end
 end

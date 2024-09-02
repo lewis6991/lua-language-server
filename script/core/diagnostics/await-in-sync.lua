@@ -11,7 +11,8 @@ return function(uri, callback)
         return
     end
 
-    ---@async
+    --- @async
+    --- @param source parser.object.call
     guide.eachSourceType(state.ast, 'call', function(source)
         local currentFunc = guide.getParentFunction(source)
         if currentFunc and vm.isAsync(currentFunc, false) then
@@ -24,7 +25,6 @@ return function(uri, callback)
                 finish = source.node.finish,
                 message = lang.script('DIAG_AWAIT_IN_SYNC'),
             })
-            return
         end
     end)
 end

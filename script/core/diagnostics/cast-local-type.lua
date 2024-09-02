@@ -12,6 +12,7 @@ return function(uri, callback)
     end
 
     ---@async
+    --- @param loc parser.object.local
     guide.eachSourceType(state.ast, 'local', function(loc)
         if not loc.ref then
             return
@@ -26,13 +27,14 @@ return function(uri, callback)
         end
         for _, ref in ipairs(loc.ref) do
             if ref.type == 'setlocal' and ref.value then
+                --- @cast ref parser.object.setlocal
                 await.delay()
                 local refNode = vm.compileNode(ref)
                 local value = ref.value
 
                 if value.type == 'getfield' or value.type == 'getindex' then
-                    -- 由于无法对字段进行类型收窄，
-                    -- 因此将假值移除再进行检查
+                    -- Since the field cannot be type-narrowed,
+                    -- So remove the false value and check again
                     refNode = refNode:copy():setTruthy()
                 end
 

@@ -9,6 +9,7 @@ return function(uri, callback)
         return
     end
 
+    --- @param source parser.object.local
     guide.eachSourceType(state.ast, 'local', function(source)
         if not source.attrs then
             return

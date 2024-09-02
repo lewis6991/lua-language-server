@@ -11,10 +11,14 @@ return function(uri, callback)
         return
     end
 
+    --- @type table<parser.object,true?>
     local mark = {}
-    ---@async
+
+    --- @async
+    --- @param source parser.object.break
     guide.eachSourceType(state.ast, 'break', function(source)
         local list = source.parent
+        --- @cast list -?
         if mark[list] then
             return
         end
