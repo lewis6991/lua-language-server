@@ -4,17 +4,19 @@ local guide = require('parser.guide')
 local vm = require('vm.vm')
 local config = require('config')
 
---- @class parser.object.base
---- @field package _castTargetHead? parser.object.base | vm.global | false
+--- @class parser.object.doc.base
+--- @field package _castTargetHead? parser.object|vm.global|false
 --- @field package _validVersions? table<string, boolean>
---- @field package _deprecated? parser.object.base | false
 --- @field package _async? boolean
 --- @field package _nodiscard? boolean
+
+--- @class parser.object.base
+--- @field package _deprecated? parser.object | false
 
 --- Get class and alias
 --- @param suri string
 --- @param name? string
---- @return parser.object.base[]
+--- @return parser.object[]
 function vm.getDocSets(suri, name)
     if name then
         local global = vm.getGlobal('type', name)
@@ -22,9 +24,8 @@ function vm.getDocSets(suri, name)
             return {}
         end
         return global:getSets(suri)
-    else
-        return vm.getGlobalSets(suri, 'type')
     end
+    return vm.getGlobalSets(suri, 'type')
 end
 
 --- @param uri string
@@ -59,14 +60,11 @@ end
 --- @return string?
 function vm.getMetaName(uri)
     if not vm.isMetaFile(uri) then
-        return nil
+        return
     end
     local cache = files.getCache(uri)
-    if not cache then
-        return nil
-    end
-    if not cache.metaName then
-        return nil
+    if not cache or not cache.metaName then
+        return
     end
     return cache.metaName[1]
 end
@@ -80,15 +78,17 @@ function vm.isMetaFileRequireable(uri)
     return vm.getMetaName(uri) ~= '_'
 end
 
---- @param doc parser.object.base
+--- @param doc parser.object
 --- @return table<string, boolean>?
 function vm.getValidVersions(doc)
     if doc.type ~= 'doc.version' then
         return
     end
+
     if doc._validVersions then
         return doc._validVersions
     end
+
     local valids = {
         ['Lua 5.1'] = false,
         ['Lua 5.2'] = false,
@@ -96,6 +96,7 @@ function vm.getValidVersions(doc)
         ['Lua 5.4'] = false,
         ['LuaJIT'] = false,
     }
+
     for _, version in ipairs(doc.versions) do
         if version.ge and type(version.version) == 'number' then
             for ver in pairs(valids) do
@@ -117,27 +118,34 @@ function vm.getValidVersions(doc)
             valids['LuaJIT'] = true
         end
     end
+
     if valids['Lua 5.1'] then
         valids['LuaJIT'] = true
     end
+
     doc._validVersions = valids
+
     return valids
 end
 
---- @param value parser.object.base
---- @return parser.object.base?
+--- @param value parser.object
+--- @return parser.object?
 local function getDeprecated(value)
     if not value.bindDocs then
-        return nil
+        return
     end
+
     if value._deprecated ~= nil then
         return value._deprecated or nil
     end
+
     for _, doc in ipairs(value.bindDocs) do
         if doc.type == 'doc.deprecated' then
+            --- @cast doc parser.object.doc.deprecated
             value._deprecated = doc
             return doc
         elseif doc.type == 'doc.version' then
+            --- @cast doc parser.object.doc.version
             local valids = vm.getValidVersions(doc)
             if valids and not valids[config.get(guide.getUri(value), 'Lua.runtime.version')] then
                 value._deprecated = doc
@@ -145,20 +153,22 @@ local function getDeprecated(value)
             end
         end
     end
+
     if value.type == 'function' then
+        --- @cast value parser.object.function
         local doc = getDeprecated(value.parent)
         if doc then
             value._deprecated = doc
             return doc
         end
     end
+
     value._deprecated = false
-    return nil
 end
 
---- @param value parser.object.base
+--- @param value parser.object
 --- @param deep boolean?
---- @return parser.object.base?
+--- @return parser.object?
 function vm.getDeprecated(value, deep)
     if not deep then
         return getDeprecated(value)
@@ -183,7 +193,7 @@ function vm.getDeprecated(value, deep)
     return deprecated
 end
 
---- @param  value parser.object.base
+--- @param  value parser.object
 --- @return boolean
 local function isAsync(value)
     if value.type == 'function' then
@@ -208,7 +218,7 @@ local function isAsync(value)
     return value.async == true
 end
 
---- @param value parser.object.base
+--- @param value parser.object
 --- @param deep  boolean?
 --- @return boolean
 function vm.isAsync(value, deep)
@@ -225,7 +235,7 @@ function vm.isAsync(value, deep)
     return false
 end
 
---- @param value parser.object.base
+--- @param value parser.object
 --- @return boolean
 local function isNoDiscard(value)
     if value.type == 'function' then
@@ -247,7 +257,7 @@ local function isNoDiscard(value)
     return false
 end
 
---- @param value parser.object.base
+--- @param value parser.object
 --- @param deep boolean?
 --- @return boolean
 function vm.isNoDiscard(value, deep)
@@ -264,7 +274,7 @@ function vm.isNoDiscard(value, deep)
     return false
 end
 
---- @param param parser.object.base
+--- @param param parser.object
 --- @return boolean
 local function isCalledInFunction(param)
     if not param.ref then
@@ -273,59 +283,56 @@ local function isCalledInFunction(param)
     local func = guide.getParentFunction(param)
     for _, ref in ipairs(param.ref) do
         if ref.type == 'getlocal' then
-            if ref.parent.type == 'call' and guide.getParentFunction(ref) == func then
+            --- @cast ref parser.object.getlocal
+            local parent = assert(ref.parent)
+            if parent.type == 'call' and guide.getParentFunction(ref) == func then
                 return true
             elseif
-                ref.parent.type == 'callargs'
-                and ref.parent[1] == ref
+                parent.type == 'callargs'
+                and parent[1] == ref
                 and guide.getParentFunction(ref) == func
+                and (
+                    parent.parent.node.special == 'pcall'
+                    or parent.parent.node.special == 'xpcall'
+                )
             then
-                if
-                    ref.parent.parent.node.special == 'pcall'
-                    or ref.parent.parent.node.special == 'xpcall'
-                then
-                    return true
-                end
+                return true
             end
         end
     end
     return false
 end
 
---- @param node parser.object.base
+--- @param node parser.object
 --- @param index integer
 --- @return boolean
 local function isLinkedCall(node, index)
     for _, def in ipairs(vm.getDefs(node)) do
         if def.type == 'function' then
+            --- @cast def parser.object.function
             local param = def.args and def.args[index]
-            if param then
-                if isCalledInFunction(param) then
-                    return true
-                end
+            if param and isCalledInFunction(param) then
+                return true
             end
         end
     end
     return false
 end
 
---- @param node parser.object.base
+--- @param node parser.object
 --- @param index integer
 --- @return boolean
 function vm.isLinkedCall(node, index)
     return isLinkedCall(node, index)
 end
 
---- @param call parser.object.base
+--- @param call parser.object.lua
 --- @return boolean
 function vm.isAsyncCall(call)
     if vm.isAsync(call.node, true) then
         return true
     end
-    if not call.args then
-        return false
-    end
-    for i, arg in ipairs(call.args) do
+    for i, arg in ipairs(call.args or {}) do
         if vm.isAsync(arg, true) and isLinkedCall(call.node, i) then
             return true
         end
@@ -333,7 +340,7 @@ function vm.isAsyncCall(call)
     return false
 end
 
---- @param doc parser.object.base
+--- @param doc parser.object
 --- @param results table[]
 local function makeDiagRange(doc, results)
     local names
@@ -437,31 +444,33 @@ function vm.isDiagDisabledAt(uri, position, name, err)
     return count > 0
 end
 
---- @param doc parser.object.base
---- @return (parser.object.base | vm.global)?
+--- @param doc parser.object.doc
+--- @return (parser.object|vm.global)?
 function vm.getCastTargetHead(doc)
     if doc._castTargetHead ~= nil then
         return doc._castTargetHead or nil
     end
+
     local name = doc.name[1]:match('^[^%.]+')
     if not name then
         doc._castTargetHead = false
-        return nil
+        return
     end
+
     local loc = guide.getLocal(doc, name, doc.start)
     if loc then
         doc._castTargetHead = loc
         return loc
     end
+
     local global = vm.getGlobal('variable', name)
     if global then
         doc._castTargetHead = global
         return global
     end
-    return nil
 end
 
---- @param doc parser.object.base
+--- @param doc parser.object
 --- @param key string
 --- @return boolean
 function vm.docHasAttr(doc, key)

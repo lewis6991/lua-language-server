@@ -19,6 +19,7 @@ return function(uri, callback)
     end
 
     ---@async
+    --- @param src parser.object.setmethod|parser.object.setfield
     local function checkInjectField(src)
         await.delay()
 

@@ -15,11 +15,11 @@ function M.getSpecial(source)
     end
 end
 
---- @param source parser.object.base
+--- @param source parser.object
 --- @return string?
 function M.getKeyName(source)
     if not source then
-        return nil
+        return
     end
     if source.type == 'call' then
         local special = M.getSpecial(source.node)
@@ -32,7 +32,7 @@ end
 
 function M.getKeyType(source)
     if not source then
-        return nil
+        return
     end
     if source.type == 'call' then
         local special = M.getSpecial(source.node)
@@ -55,8 +55,8 @@ function M.getObjectValue(source)
     end
 end
 
---- @param source parser.object.base
---- @return parser.object.base?
+--- @param source parser.object
+--- @return parser.object?
 function M.getObjectFunctionValue(source)
     local value = M.getObjectValue(source)
     if value == nil then

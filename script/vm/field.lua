@@ -3,11 +3,8 @@ local vm = require('vm.vm')
 local guide = require('parser.guide')
 
 local function searchByLocalID(source, pushResult)
-    local fields = vm.getVariableFields(source, true)
-    if fields then
-        for _, field in ipairs(fields) do
-            pushResult(field)
-        end
+    for _, field in ipairs(vm.getVariableFields(source, true) or {}) do
+        pushResult(field)
     end
 end
 
@@ -37,11 +34,11 @@ end
 --- @return       parser.object.base[]
 function vm.getFields(source)
     local results = {}
-    local mark = {}
+    local seen = {}
 
     local function pushResult(src)
-        if not mark[src] then
-            mark[src] = true
+        if not seen[src] then
+            seen[src] = true
             results[#results + 1] = src
         end
     end

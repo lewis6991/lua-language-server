@@ -57,9 +57,7 @@ end
 --- @param suri string
 --- @return parser.object[]
 function mt:getSets(suri)
-    if not self.setsCache then
-        self.setsCache = {}
-    end
+    self.setsCache = self.setsCache or {}
     local scp = scope.getScope(suri)
     local cacheUri = scp.uri or '<callback>'
     if self.setsCache[cacheUri] then
@@ -69,11 +67,9 @@ function mt:getSets(suri)
     self.setsCache[cacheUri] = {}
     local cache = self.setsCache[cacheUri]
     for uri, link in pairs(self.links) do
-        if link.sets then
-            if scp:isVisible(uri) then
-                for _, source in ipairs(link.sets) do
-                    cache[#cache + 1] = source
-                end
+        if link.sets and scp:isVisible(uri) then
+            for _, source in ipairs(link.sets) do
+                cache[#cache + 1] = source
             end
         end
     end

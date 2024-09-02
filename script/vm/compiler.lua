@@ -2053,7 +2053,7 @@ local function compileByParentNode(source)
     end)
 end
 
---- @param source vm.node.object
+--- @param source vm.node.object | parser.object
 --- @return vm.node
 function vm.compileNode(source)
     if not source then

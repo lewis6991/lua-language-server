@@ -135,7 +135,7 @@ function mt:resolve(uri, args)
     return result
 end
 
---- @param source parser.object.base
+--- @param source parser.object
 --- @return vm.node?
 function vm.getGenericResolved(source)
     if source.type ~= 'doc.generic.name' then

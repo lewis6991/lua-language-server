@@ -148,7 +148,7 @@ viewNodeSwitch = util.switch()
         local node = vm.compileNode(source)
         for c in node:eachObject() do
             if guide.isLiteral(c) then
-                ---@cast c parser.object.base
+                ---@cast c parser.object
                 local view = vm.getInfer(c):view(uri)
                 if view then
                     infer._drop[view] = true
@@ -321,6 +321,7 @@ function mt:_eraseAlias(uri)
             LOCK[n.name] = true
             for _, set in ipairs(n:getSets(uri)) do
                 if set.type == 'doc.alias' then
+                    --- @cast set parser.object.doc.alias
                     if expandAlias then
                         self._drop[n.name] = true
                         local newInfer = createInfer()
@@ -487,7 +488,7 @@ end
 --- @return string?
 function mt:viewLiterals()
     if not self.node then
-        return nil
+        return
     end
     local mark = {}
     local literals = {}
@@ -511,7 +512,7 @@ function mt:viewLiterals()
         end
     end
     if #literals == 0 then
-        return nil
+        return
     end
     table.sort(literals, function(a, b)
         local sa = inferSorted[a] or 0
@@ -527,21 +528,21 @@ end
 --- @return string?
 function mt:viewClass()
     if not self.node then
-        return nil
+        return
     end
-    local mark = {}
+    local seen = {}
     local class = {}
     for n in self.node:eachObject() do
         if n.type == 'global' and n.cate == 'type' then
             local name = n.name
-            if not mark[name] then
+            if not seen[name] then
                 class[#class + 1] = name
-                mark[name] = true
+                seen[name] = true
             end
         end
     end
     if #class == 0 then
-        return nil
+        return
     end
     table.sort(class)
     return table.concat(class, '|')
@@ -555,7 +556,7 @@ function vm.viewObject(source, uri)
     return viewNodeSwitch(source.type, source, infer, uri)
 end
 
---- @param source parser.object.base
+--- @param source parser.object
 --- @param uri string
 --- @return string?
 --- @return string|number|boolean|nil
@@ -579,8 +580,10 @@ function vm.viewKey(source, uri)
     elseif ty == 'doc.field' then
         return vm.viewKey(source.field, uri)
     elseif ty == 'doc.type.field' then
+        --- @cast source parser.object.doc.type.field
         return vm.viewKey(source.name, uri)
     elseif ty == 'doc.type.name' then
+        --- @cast source parser.object.doc.type.name
         return '[' .. source[1] .. ']', source[1]
     elseif ty == 'doc.type.string' then
         local name = util.viewString(source[1], source[2])

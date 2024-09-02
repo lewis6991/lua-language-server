@@ -34,6 +34,7 @@ function Node:merge(node)
     end
     self.lastInfer = nil
     if node.type == 'vm.node' then
+        --- @cast node vm.node
         if node == self then
             return self
         end
@@ -64,6 +65,7 @@ end
 --- @return boolean
 function Node:isTyped()
     for _, c in ipairs(self) do
+        --- @cast c vm.node.object
         if c.type == 'global' and c.cate == 'type' then
             return true
         end
@@ -124,6 +126,7 @@ end
 --- @return boolean
 function Node:hasKnownType()
     for _, c in ipairs(self) do
+        --- @cast c vm.node.object
         if c.type == 'global' and c.cate == 'type' then
             return true
         end
@@ -356,14 +359,17 @@ function Node:asTable()
     for index = #self, 1, -1 do
         local c = self[index]
         if c.type == 'table' or c.type == 'doc.type.table' or c.type == 'doc.type.array' then
+            -- pass
         elseif
             c.type == 'doc.type.sign' and (c.node[1] == 'table' or not guide.isBasicType(c.node[1]))
         then
+            -- pass
         elseif
             c.type == 'global'
             and c.cate == 'type'
             and (c.name == 'table' or not guide.isBasicType(c.name))
         then
+            -- pass
         else
             table.remove(self, index)
             self[c] = nil

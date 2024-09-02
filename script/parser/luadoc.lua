@@ -46,6 +46,7 @@ local util = require('utility')
 --- | parser.object.doc.type.name
 --- | parser.object.doc.type.unit
 --- | parser.object.doc.type.field
+--- | parser.object.doc.type.arg
 --- | parser.object.doc.vararg
 --- | parser.object.doc.version
 --- | parser.object.doc.comment

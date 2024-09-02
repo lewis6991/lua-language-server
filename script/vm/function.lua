@@ -3,21 +3,21 @@ local vm = require('vm.vm')
 local guide = require('parser.guide')
 local util = require('utility')
 
+--- @class parser.object.function
+--- @field package _varargFunction? boolean
+
 --- @param arg parser.object.base
---- @return parser.object.base?
+--- @return parser.object.doc.param?
 local function getDocParam(arg)
-    if not arg.bindDocs then
-        return nil
-    end
-    for _, doc in ipairs(arg.bindDocs) do
+    for _, doc in ipairs(arg.bindDocs or {}) do
         if doc.type == 'doc.param' and doc.param[1] == arg[1] then
+            --- @cast doc parser.object.doc.param
             return doc
         end
     end
-    return nil
 end
 
---- @param func parser.object.base
+--- @param func parser.object
 --- @return integer min
 --- @return number  max
 --- @return integer def
@@ -26,6 +26,7 @@ function vm.countParamsOfFunction(func)
     local max = 0
     local def = 0
     if func.type == 'function' then
+        --- @cast func parser.object.function
         if func.args then
             max = #func.args
             def = max
@@ -43,6 +44,7 @@ function vm.countParamsOfFunction(func)
             end
         end
     elseif func.type == 'doc.type.function' then
+        --- @cast func parser.object.doc.type.function
         if func.args then
             max = #func.args
             def = max
@@ -60,7 +62,7 @@ function vm.countParamsOfFunction(func)
     return min, max, def
 end
 
---- @param source parser.object.base
+--- @param source parser.object
 --- @return integer min
 --- @return number  max
 --- @return integer def
@@ -69,42 +71,32 @@ function vm.countParamsOfSource(source)
     local max = 0
     local def = 0
     local overloads = {}
-    if source.bindDocs then
-        for _, doc in ipairs(source.bindDocs) do
-            if doc.type == 'doc.overload' then
-                overloads[doc.overload] = true
-            end
+
+    for _, doc in ipairs(source.bindDocs or {}) do
+        if doc.type == 'doc.overload' then
+            overloads[doc.overload] = true
         end
     end
+
     local hasDocFunction
     for nd in vm.compileNode(source):eachObject() do
         if nd.type == 'doc.type.function' and not overloads[nd] then
             hasDocFunction = true
-            ---@cast nd parser.object.base
+            ---@cast nd parser.object.doc.type.function
             local dmin, dmax, ddef = vm.countParamsOfFunction(nd)
-            if dmin > min then
-                min = dmin
-            end
-            if dmax > max then
-                max = dmax
-            end
-            if ddef > def then
-                def = ddef
-            end
+            min = math.max(min, dmin)
+            max = math.max(max, dmax)
+            def = math.max(def, ddef)
         end
     end
+
     if not hasDocFunction then
         local dmin, dmax, ddef = vm.countParamsOfFunction(source)
-        if dmin > min then
-            min = dmin
-        end
-        if dmax > max then
-            max = dmax
-        end
-        if ddef > def then
-            def = ddef
-        end
+        min = math.max(min, dmin)
+        max = math.max(max, dmax)
+        def = math.max(def, ddef)
     end
+
     return min, max, def
 end
 
@@ -113,26 +105,21 @@ end
 --- @return number  max
 --- @return integer def
 function vm.countParamsOfNode(node)
+    --- @type integer?, number?, integer?
     local min, max, def
     for n in node:eachObject() do
         if n.type == 'function' or n.type == 'doc.type.function' then
-            ---@cast n parser.object.base
+            --- @cast n parser.object.function|parser.object.doc.type.function
             local fmin, fmax, fdef = vm.countParamsOfFunction(n)
-            if not min or fmin < min then
-                min = fmin
-            end
-            if not max or fmax > max then
-                max = fmax
-            end
-            if not def or fdef > def then
-                def = fdef
-            end
+            min = math.min(min or 100000, fmin)
+            max = math.max(max or 0, fmax)
+            def = math.max(def or 0, fdef)
         end
     end
     return min or 0, max or math.huge, def or 0
 end
 
---- @param func parser.object.base
+--- @param func parser.object
 --- @param onlyDoc? boolean
 --- @param mark? table
 --- @return integer min
@@ -140,7 +127,8 @@ end
 --- @return integer def
 function vm.countReturnsOfFunction(func, onlyDoc, mark)
     if func.type == 'function' then
-        ---@type integer?, number?, integer?
+        --- @cast func parser.object.function
+        --- @type integer?, number?, integer?
         local min, max, def
         local hasDocReturn
         if func.bindDocs then
@@ -150,6 +138,7 @@ function vm.countReturnsOfFunction(func, onlyDoc, mark)
             local dmin, dmax, ddef
             for _, doc in ipairs(func.bindDocs) do
                 if doc.type == 'doc.return' then
+                    --- @cast doc parser.object.doc.return
                     hasDocReturn = true
                     for _, ret in ipairs(doc.returns) do
                         n = n + 1
@@ -196,13 +185,15 @@ function vm.countReturnsOfFunction(func, onlyDoc, mark)
         end
         return min or 0, max or math.huge, def or 0
     end
+
     if func.type == 'doc.type.function' then
         return vm.countList(func.returns)
     end
+
     error('not a function')
 end
 
---- @param source parser.object.base
+--- @param source parser.object
 --- @return integer min
 --- @return number  max
 --- @return integer def
@@ -210,26 +201,24 @@ function vm.countReturnsOfSource(source)
     local overloads = {}
     local hasDocFunction
     local min, max, def
-    if source.bindDocs then
-        for _, doc in ipairs(source.bindDocs) do
-            if doc.type == 'doc.overload' then
-                overloads[doc.overload] = true
-                local dmin, dmax, ddef = vm.countReturnsOfFunction(doc.overload)
-                if not min or dmin < min then
-                    min = dmin
-                end
-                if not max or dmax > max then
-                    max = dmax
-                end
-                if not def or ddef > def then
-                    def = ddef
-                end
+    for _, doc in ipairs(source.bindDocs or {}) do
+        if doc.type == 'doc.overload' then
+            overloads[doc.overload] = true
+            local dmin, dmax, ddef = vm.countReturnsOfFunction(doc.overload)
+            if not min or dmin < min then
+                min = dmin
+            end
+            if not max or dmax > max then
+                max = dmax
+            end
+            if not def or ddef > def then
+                def = ddef
             end
         end
     end
     for nd in vm.compileNode(source):eachObject() do
         if nd.type == 'doc.type.function' and not overloads[nd] then
-            ---@cast nd parser.object.base
+            --- @cast nd parser.object.doc.type.function
             hasDocFunction = true
             local dmin, dmax, ddef = vm.countReturnsOfFunction(nd)
             if not min or dmin < min then
@@ -258,7 +247,7 @@ function vm.countReturnsOfSource(source)
     return min, max, def
 end
 
---- @param func parser.object.base
+--- @param func parser.object
 --- @param mark? table
 --- @return integer min
 --- @return number  max
@@ -285,7 +274,7 @@ function vm.countReturnsOfCall(func, args, mark)
     return min or 0, max or math.huge, def or 0
 end
 
---- @param list parser.object.base[]?
+--- @param list parser.object[]?
 --- @param mark? table
 --- @return integer min
 --- @return number  max
@@ -307,9 +296,8 @@ function vm.countList(list, mark)
     then
         max = math.huge
     elseif lastArg.type == 'call' then
-        if not mark then
-            mark = {}
-        end
+        --- @cast lastArg parser.object.call
+        mark = mark or {}
         if mark[lastArg] then
             min = min - 1
             max = math.huge
@@ -334,7 +322,7 @@ function vm.countList(list, mark)
 end
 
 --- @param uri string
---- @param args parser.object.base[]
+--- @param args parser.object[]
 --- @return boolean
 local function isAllParamMatched(uri, args, params)
     if not params then
@@ -353,9 +341,9 @@ local function isAllParamMatched(uri, args, params)
     return true
 end
 
---- @param func parser.object.base
---- @param args? parser.object.base[]
---- @return parser.object.base[]?
+--- @param func parser.object
+--- @param args? parser.object[]
+--- @return parser.object[]?
 function vm.getExactMatchedFunctions(func, args)
     local funcs = vm.getMatchedFunctions(func, args)
     if not args or not funcs then
@@ -368,9 +356,7 @@ function vm.getExactMatchedFunctions(func, args)
     local needRemove
     for i, n in ipairs(funcs) do
         if vm.isVarargFunctionWithOverloads(n) or not isAllParamMatched(uri, args, n.args) then
-            if not needRemove then
-                needRemove = {}
-            end
+            needRemove = needRemove or {}
             needRemove[#needRemove + 1] = i
         end
     end
@@ -378,16 +364,16 @@ function vm.getExactMatchedFunctions(func, args)
         return funcs
     end
     if #needRemove == #funcs then
-        return nil
+        return
     end
     util.tableMultiRemove(funcs, needRemove)
     return funcs
 end
 
---- @param func parser.object.base
---- @param args? parser.object.base[]
+--- @param func parser.object
+--- @param args? parser.object[]
 --- @param mark? table
---- @return parser.object.base[]?
+--- @return parser.object[]?
 function vm.getMatchedFunctions(func, args, mark)
     local funcs = {}
     local node = vm.compileNode(func)
@@ -408,10 +394,9 @@ function vm.getMatchedFunctions(func, args, mark)
     end
 
     if #matched == 0 then
-        return nil
-    else
-        return matched
+        return
     end
+    return matched
 end
 
 --- @param func table
@@ -420,33 +405,36 @@ function vm.isVarargFunctionWithOverloads(func)
     if func.type ~= 'function' then
         return false
     end
-    if not func.args then
+
+    --- @cast func parser.object.function
+
+    local args = func.args
+
+    if not args then
         return false
     end
+
     if func._varargFunction ~= nil then
         return func._varargFunction
     end
-    if func.args[1] and func.args[1].type == 'self' then
-        if not func.args[2] or func.args[2].type ~= '...' then
+
+    if args[1] and args[1].type == 'self' then
+        if not args[2] or args[2].type ~= '...' then
             func._varargFunction = false
             return false
         end
-    else
-        if not func.args[1] or func.args[1].type ~= '...' then
-            func._varargFunction = false
-            return false
-        end
-    end
-    if not func.bindDocs then
+    elseif not args[1] or args[1].type ~= '...' then
         func._varargFunction = false
         return false
     end
-    for _, doc in ipairs(func.bindDocs) do
+
+    for _, doc in ipairs(func.bindDocs or {}) do
         if doc.type == 'doc.overload' then
             func._varargFunction = true
             return true
         end
     end
+
     func._varargFunction = false
     return false
 end

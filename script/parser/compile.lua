@@ -81,6 +81,8 @@ local ChunkFinishMap = {
 --- | parser.object.select
 --- | parser.object.field
 --- | parser.object.method
+--- | parser.object.self
+--- | parser.object.vararg
 
 --- @class parser.object.base
 --- @field start integer
