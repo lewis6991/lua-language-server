@@ -9,7 +9,7 @@ local lang = require('language')
 --- @diagnostic disable-next-line: assign-type-mismatch
 vm.ANY = debug.upvalueid(require, 1)
 
---- @alias typecheck.err vm.node.object|string|vm.node
+--- @alias typecheck.err vm.node.object|boolean|string|number|vm.node
 
 --- @param object vm.node.object
 --- @return string?
@@ -46,6 +46,17 @@ function vm.getNodeName(object)
     end
 end
 
+--- @param dst? typecheck.err[]
+--- @param src typecheck.err[]
+local function addErrs(dst, src)
+    if not dst then
+        return
+    end
+    for _, e in ipairs(src) do
+        dst[#dst + 1] = e
+    end
+end
+
 --- @param parentName string
 --- @param child      vm.node.object
 --- @param uri        string
@@ -60,6 +71,7 @@ local function checkParentEnum(parentName, child, uri, mark, errs)
     local enums
     for _, set in ipairs(parentClass:getSets(uri)) do
         if set.type == 'doc.enum' then
+            --- @cast set parser.object.doc.enum
             local denums = vm.getEnums(set)
             if denums then
                 enums = util.arrayMerge(enums or {}, denums)
@@ -76,21 +88,14 @@ local function checkParentEnum(parentName, child, uri, mark, errs)
                 return true
             end
         end
-        if errs then
-            errs[#errs + 1] = 'TYPE_ERROR_ENUM_GLOBAL_DISMATCH'
-            errs[#errs + 1] = child
-            errs[#errs + 1] = parentClass
-        end
+        addErrs(errs, { 'TYPE_ERROR_ENUM_GLOBAL_DISMATCH', child, parentClass })
         return false
     elseif child.type == 'generic' then
         ---@cast child vm.generic
-        if errs then
-            errs[#errs + 1] = 'TYPE_ERROR_ENUM_GENERIC_UNSUPPORTED'
-            errs[#errs + 1] = child
-        end
+        addErrs(errs, { 'TYPE_ERROR_ENUM_GENERIC_UNSUPPORTED', child })
         return false
     else
-        ---@cast child parser.object.base
+        --- @cast child parser.object
         local childName = vm.getNodeName(child)
         if
             childName == 'number'
@@ -105,11 +110,7 @@ local function checkParentEnum(parentName, child, uri, mark, errs)
                     end
                 end
             end
-            if errs then
-                errs[#errs + 1] = 'TYPE_ERROR_ENUM_LITERAL_DISMATCH'
-                errs[#errs + 1] = child[1]
-                errs[#errs + 1] = parentClass
-            end
+            addErrs(errs, { 'TYPE_ERROR_ENUM_LITERAL_DISMATCH', child[1], parentClass })
             return false
         elseif childName == 'function' or childName == 'table' then
             for _, enum in ipairs(enums) do
@@ -119,17 +120,10 @@ local function checkParentEnum(parentName, child, uri, mark, errs)
                     end
                 end
             end
-            if errs then
-                errs[#errs + 1] = 'TYPE_ERROR_ENUM_OBJECT_DISMATCH'
-                errs[#errs + 1] = child
-                errs[#errs + 1] = parentClass
-            end
+            addErrs(errs, { 'TYPE_ERROR_ENUM_OBJECT_DISMATCH', child, parentClass })
             return false
         end
-        if errs then
-            errs[#errs + 1] = 'TYPE_ERROR_ENUM_NO_OBJECT'
-            errs[#errs + 1] = child
-        end
+        addErrs(errs, { 'TYPE_ERROR_ENUM_NO_OBJECT', child })
         return false
     end
 end
@@ -151,6 +145,7 @@ local function checkChildEnum(childName, parent, uri, mark, errs)
     local enums
     for _, set in ipairs(childClass:getSets(uri)) do
         if set.type == 'doc.enum' then
+            --- @cast set parser.object.doc.enum
             enums = vm.getEnums(set)
             break
         end
@@ -176,76 +171,67 @@ end
 --- @return boolean
 local function checkValue(parent, child, mark, errs)
     if parent.type == 'doc.type.integer' then
+        --- @cast parent parser.object.doc.type.integer
         if
             child.type == 'integer'
             or child.type == 'doc.type.integer'
             or child.type == 'number'
         then
+            --- @cast child parser.object.integer|parser.object.doc.type.integer|parser.object.number
             if parent[1] ~= child[1] then
-                if errs then
-                    errs[#errs + 1] = 'TYPE_ERROR_INTEGER_DISMATCH'
-                    errs[#errs + 1] = child[1]
-                    errs[#errs + 1] = parent[1]
-                end
+                addErrs(errs, { 'TYPE_ERROR_INTEGER_DISMATCH', child[1], parent[1] })
                 return false
             end
         end
         return true
     elseif parent.type == 'doc.type.string' or parent.type == 'doc.field.name' then
+        --- @cast parent parser.object.doc.type.string|parser.object.doc.field.name
         if
             child.type == 'string'
             or child.type == 'doc.type.string'
             or child.type == 'doc.field.name'
         then
+            --- @cast child parser.object.string|parser.object.doc.type.string|parser.object.doc.field.name
             if parent[1] ~= child[1] then
-                if errs then
-                    errs[#errs + 1] = 'TYPE_ERROR_STRING_DISMATCH'
-                    errs[#errs + 1] = child[1]
-                    errs[#errs + 1] = parent[1]
-                end
+                addErrs(errs, { 'TYPE_ERROR_STRING_DISMATCH', child[1], parent[1] })
                 return false
             end
         end
         return true
     elseif parent.type == 'doc.type.boolean' then
+        --- @cast parent parser.object.doc.type.boolean
         if child.type == 'boolean' or child.type == 'doc.type.boolean' then
+            --- @cast child parser.object.boolean|parser.object.doc.type.boolean
             if parent[1] ~= child[1] then
-                if errs then
-                    errs[#errs + 1] = 'TYPE_ERROR_BOOLEAN_DISMATCH'
-                    errs[#errs + 1] = child[1]
-                    errs[#errs + 1] = parent[1]
-                end
+                addErrs(errs, { 'TYPE_ERROR_BOOLEAN_DISMATCH', child[1], parent[1] })
                 return false
             end
         end
         return true
     elseif parent.type == 'doc.type.table' then
+        --- @cast parent parser.object.doc.type.table
         if child.type == 'doc.type.table' then
+            --- @cast child parser.object.doc.type.table
             if child == parent then
                 return true
             end
-            ---@cast parent parser.object.base
-            ---@cast child parser.object.base
+            ---@cast parent parser.object
+            ---@cast child parser.object
             local uri = guide.getUri(parent)
             local tnode = vm.compileNode(child)
             for _, pfield in ipairs(parent.fields) do
                 local knode = vm.compileNode(pfield.name)
                 local cvalues = vm.getTableValue(uri, tnode, knode, true)
                 if not cvalues then
-                    if errs then
-                        errs[#errs + 1] = 'TYPE_ERROR_TABLE_NO_FIELD'
-                        errs[#errs + 1] = pfield.name
-                    end
+                    addErrs(errs, { 'TYPE_ERROR_TABLE_NO_FIELD', pfield.name })
                     return false
                 end
                 local pvalues = vm.compileNode(pfield.extends)
                 if vm.isSubType(uri, cvalues, pvalues, mark, errs) == false then
-                    if errs then
-                        errs[#errs + 1] = 'TYPE_ERROR_TABLE_FIELD_DISMATCH'
-                        errs[#errs + 1] = pfield.name
-                        errs[#errs + 1] = cvalues
-                        errs[#errs + 1] = pvalues
-                    end
+                    addErrs(
+                        errs,
+                        { 'TYPE_ERROR_TABLE_FIELD_DISMATCH', pfield.name, cvalues, pvalues }
+                    )
                     return false
                 end
             end
@@ -296,7 +282,7 @@ local function checkTableShape(parent, child, uri, mark, errs)
             if not key then
                 local fieldnode = vm.compileNode(field.field)[1]
                 if fieldnode and fieldnode.type == 'doc.type.integer' then
-                    ---@cast fieldnode parser.object.base
+                    ---@cast fieldnode parser.object.doc.type.integer
                     key = vm.getKeyName(fieldnode)
                 end
             end
@@ -309,9 +295,11 @@ local function checkTableShape(parent, child, uri, mark, errs)
             if myKeys[key] then
                 ok = vm.isSubType(uri, myKeys[key], nodeField, mark, errs)
                 if ok == false then
-                    errs[#errs + 1] = 'TYPE_ERROR_PARENT_ALL_DISMATCH' -- error display can be greatly improved
-                    errs[#errs + 1] = myKeys[key]
-                    errs[#errs + 1] = nodeField
+                    addErrs(errs, {
+                        'TYPE_ERROR_PARENT_ALL_DISMATCH', -- error display can be greatly improved
+                        myKeys[key],
+                        nodeField,
+                    })
                     failedCheck = true
                 end
             elseif not nodeField:isNullable() then
@@ -325,12 +313,37 @@ local function checkTableShape(parent, child, uri, mark, errs)
         end
         ::continue::
     end
+
     if #missedKeys > 0 then
-        errs[#errs + 1] = 'DIAG_MISSING_FIELDS'
-        errs[#errs + 1] = parent
-        errs[#errs + 1] = table.concat(missedKeys, ', ')
+        addErrs(errs, { 'DIAG_MISSING_FIELDS', parent, table.concat(missedKeys, ', ') })
     end
-    if failedCheck then
+
+    return not failedCheck
+end
+
+--- @param uri string
+--- @param child  vm.node
+--- @param parent vm.node|string|vm.node.object
+--- @param seen?  table
+--- @param errs? typecheck.err[]
+--- @return boolean?
+local function weakUnionCheck(uri, child, parent, seen, errs)
+    local hasKnownType = 0
+    for n in child:eachObject() do
+        if vm.getNodeName(n) then
+            local res = vm.isSubType(uri, n, parent, seen, errs)
+            if res then
+                return true
+            elseif res == false then
+                hasKnownType = hasKnownType + 1
+            end
+        end
+    end
+
+    if hasKnownType > 0 then
+        if errs and hasKnownType > 1 and #vm.getInfer(child):getSubViews(uri) > 1 then
+            addErrs(errs, { 'TYPE_ERROR_CHILD_ALL_DISMATCH', child, parent })
+        end
         return false
     end
 
@@ -338,94 +351,104 @@ local function checkTableShape(parent, child, uri, mark, errs)
 end
 
 --- @param uri string
---- @param child  vm.node|string|vm.node.object
+--- @param child  vm.node
 --- @param parent vm.node|string|vm.node.object
---- @param mark?  table
+--- @param seen?  table
 --- @param errs? typecheck.err[]
---- @return boolean|nil
-function vm.isSubType(uri, child, parent, mark, errs)
-    mark = mark or {}
+--- @return boolean?
+local function isNodeSubType(uri, child, parent, seen, errs)
+    local weakNil = config.get(uri, 'Lua.type.weakNilCheck')
 
-    if type(child) == 'string' then
-        local global = vm.getGlobal('type', child)
-        if not global then
-            return
-        end
-        child = global
-    elseif child.type == 'vm.node' then
-        if config.get(uri, 'Lua.type.weakUnionCheck') then
-            local hasKnownType = 0
-            for n in child:eachObject() do
-                if vm.getNodeName(n) then
-                    local res = vm.isSubType(uri, n, parent, mark, errs)
-                    if res == true then
-                        return true
-                    elseif res == false then
-                        hasKnownType = hasKnownType + 1
-                    end
-                end
-            end
-            if hasKnownType > 0 then
-                if errs and hasKnownType > 1 and #vm.getInfer(child):getSubViews(uri) > 1 then
-                    errs[#errs + 1] = 'TYPE_ERROR_CHILD_ALL_DISMATCH'
-                    errs[#errs + 1] = child
-                    errs[#errs + 1] = parent
-                end
-                return false
-            end
-            return true
-        else
-            local weakNil = config.get(uri, 'Lua.type.weakNilCheck')
-            local skipTable
-            for n in child:eachObject() do
-                if skipTable == nil and n.type == 'table' and parent.type == 'vm.node' then -- skip table type check if child has class
-                    ---@cast parent vm.node
-                    for _, c in ipairs(child) do
-                        if c.type == 'global' and c.cate == 'type' then
-                            for _, set in ipairs(c:getSets(uri)) do
-                                if set.type == 'doc.class' then
-                                    skipTable = true
-                                    break
-                                end
-                            end
-                        end
-                        if skipTable then
+    local skipTable
+    for n in child:eachObject() do
+        if skipTable == nil and n.type == 'table' and parent.type == 'vm.node' then -- skip table type check if child has class
+            ---@cast parent vm.node
+            for _, c in ipairs(child) do
+                if c.type == 'global' and c.cate == 'type' then
+                    for _, set in ipairs(c:getSets(uri)) do
+                        if set.type == 'doc.class' then
+                            skipTable = true
                             break
                         end
                     end
-                    if not skipTable then
-                        skipTable = false
-                    end
                 end
-                local nodeName = vm.getNodeName(n)
-                if
-                    nodeName
-                    and not (nodeName == 'nil' and weakNil)
-                    and not (skipTable and n.type == 'table')
-                    and vm.isSubType(uri, n, parent, mark, errs) == false
-                then
-                    if errs then
-                        errs[#errs + 1] = 'TYPE_ERROR_UNION_DISMATCH'
-                        errs[#errs + 1] = n
-                        errs[#errs + 1] = parent
-                    end
-                    return false
+                if skipTable then
+                    break
                 end
             end
-            if not weakNil and child:isOptional() then
-                if vm.isSubType(uri, 'nil', parent, mark, errs) == false then
-                    if errs then
-                        errs[#errs + 1] = 'TYPE_ERROR_OPTIONAL_DISMATCH'
-                        errs[#errs + 1] = parent
-                    end
-                    return false
-                end
+            if skipTable == nil then
+                skipTable = false
             end
+        end
+
+        local nodeName = vm.getNodeName(n)
+
+        if
+            nodeName
+            and not (nodeName == 'nil' and weakNil)
+            and not (skipTable and n.type == 'table')
+            and vm.isSubType(uri, n, parent, seen, errs) == false
+        then
+            addErrs(errs, { 'TYPE_ERROR_UNION_DISMATCH', n, parent })
+            return false
+        end
+    end
+
+    if
+        not weakNil
+        and child:isOptional()
+        and vm.isSubType(uri, 'nil', parent, seen, errs) == false
+    then
+        addErrs(errs, { 'TYPE_ERROR_OPTIONAL_DISMATCH', parent })
+        return false
+    end
+
+    return true
+end
+
+--- @param uri string
+--- @param child  vm.node.object
+--- @param parent vm.node
+--- @param seen?  table
+--- @param errs? typecheck.err[]
+--- @return boolean
+local function isObjectSubTypeOfNode(uri, child, parent, seen, errs)
+    local hasKnownType = 0
+    for n in parent:eachObject() do
+        if vm.getNodeName(n) then
+            local res = vm.isSubType(uri, child, n, seen, errs)
+            if res == true then
+                return true
+            elseif res == false then
+                hasKnownType = hasKnownType + 1
+            end
+        end
+        if n.type == 'doc.generic.name' then
             return true
         end
     end
 
-    ---@cast child  vm.node.object
+    if parent:isOptional() and vm.isSubType(uri, child, 'nil', seen, errs) == true then
+        return true
+    end
+
+    if hasKnownType > 0 then
+        if errs and hasKnownType > 1 and #vm.getInfer(parent):getSubViews(uri) > 1 then
+            addErrs(errs, { 'TYPE_ERROR_PARENT_ALL_DISMATCH', child, parent })
+        end
+        return false
+    end
+
+    return true
+end
+
+--- @param uri string
+--- @param child  vm.node.object
+--- @param parent vm.node|string|vm.node.object
+--- @param seen?  table
+--- @param errs? typecheck.err[]
+--- @return boolean?
+local function isObjectSubType(uri, child, parent, seen, errs)
     local childName = vm.getNodeName(child)
     if childName == 'any' or childName == 'unknown' then
         return true
@@ -435,41 +458,19 @@ function vm.isSubType(uri, child, parent, mark, errs)
         return
     end
 
+    seen = seen or {}
+
+    if type(parent) == 'table' and parent.type == 'vm.node' then
+        --- @cast parent vm.node
+        return isObjectSubTypeOfNode(uri, child, parent, seen, errs)
+    end
+
     if type(parent) == 'string' then
         local global = vm.getGlobal('type', parent)
         if not global then
             return false
         end
         parent = global
-    elseif parent.type == 'vm.node' then
-        local hasKnownType = 0
-        for n in parent:eachObject() do
-            if vm.getNodeName(n) then
-                local res = vm.isSubType(uri, child, n, mark, errs)
-                if res == true then
-                    return true
-                elseif res == false then
-                    hasKnownType = hasKnownType + 1
-                end
-            end
-            if n.type == 'doc.generic.name' then
-                return true
-            end
-        end
-        if parent:isOptional() then
-            if vm.isSubType(uri, child, 'nil', mark, errs) == true then
-                return true
-            end
-        end
-        if hasKnownType > 0 then
-            if errs and hasKnownType > 1 and #vm.getInfer(parent):getSubViews(uri) > 1 then
-                errs[#errs + 1] = 'TYPE_ERROR_PARENT_ALL_DISMATCH'
-                errs[#errs + 1] = child
-                errs[#errs + 1] = parent
-            end
-            return false
-        end
-        return true
     end
 
     ---@cast parent vm.node.object
@@ -484,7 +485,7 @@ function vm.isSubType(uri, child, parent, mark, errs)
     end
 
     if childName == parentName then
-        return checkValue(parent, child, mark, errs)
+        return checkValue(parent, child, seen, errs)
     end
 
     if parentName == 'number' and childName == 'integer' then
@@ -496,30 +497,26 @@ function vm.isSubType(uri, child, parent, mark, errs)
             return true
         end
         if child.type == 'number' and child[1] and not math.tointeger(child[1]) then
-            if errs then
-                errs[#errs + 1] = 'TYPE_ERROR_NUMBER_LITERAL_TO_INTEGER'
-                errs[#errs + 1] = child[1]
-            end
+            --- @cast child parser.object.number
+            addErrs(errs, { 'TYPE_ERROR_NUMBER_LITERAL_TO_INTEGER', child[1] })
             return false
         end
         if child.type == 'global' and child.cate == 'type' then
-            if errs then
-                errs[#errs + 1] = 'TYPE_ERROR_NUMBER_TYPE_TO_INTEGER'
-            end
+            addErrs(errs, { 'TYPE_ERROR_NUMBER_TYPE_TO_INTEGER' })
             return false
         end
         return true
     end
 
     do
-        local result = checkParentEnum(parentName, child, uri, mark, errs)
+        local result = checkParentEnum(parentName, child, uri, seen, errs)
         if result ~= nil then
             return result
         end
     end
 
     do
-        local result = checkChildEnum(childName, parent, uri, mark, errs)
+        local result = checkChildEnum(childName, parent, uri, seen, errs)
         if result ~= nil then
             return result
         end
@@ -528,17 +525,18 @@ function vm.isSubType(uri, child, parent, mark, errs)
     if parentName == 'table' and not guide.isBasicType(childName) then
         return true
     end
+
     if childName == 'table' and not guide.isBasicType(parentName) then
         if config.get(uri, 'Lua.type.checkTableShape') then
-            return checkTableShape(parent, child, uri, mark, errs)
+            return checkTableShape(parent, child, uri, seen, errs)
         else
             return true
         end
     end
 
     -- check class parent
-    if childName and not mark[childName] then
-        mark[childName] = true
+    if childName and not seen[childName] then
+        seen[childName] = true
         local isBasicType = guide.isBasicType(childName)
         local childClass = vm.getGlobal('type', childName)
         if childClass then
@@ -548,16 +546,16 @@ function vm.isSubType(uri, child, parent, mark, errs)
                         if
                             ext.type == 'doc.extends.name'
                             and (not isBasicType or guide.isBasicType(ext[1]))
-                            and vm.isSubType(uri, ext[1], parent, mark, errs) == true
+                            and vm.isSubType(uri, ext[1], parent, seen, errs) == true
                         then
-                            mark[childName] = nil
+                            seen[childName] = nil
                             return true
                         end
                     end
                 end
             end
         end
-        mark[childName] = nil
+        seen[childName] = nil
     end
 
     --[[
@@ -569,17 +567,44 @@ function vm.isSubType(uri, child, parent, mark, errs)
     if
         guide.isBasicType(childName)
         and guide.isLiteral(child)
-        and vm.isSubType(uri, parentName, childName, mark)
+        and vm.isSubType(uri, parentName, childName, seen)
     then
         return true
     end
 
-    if errs then
-        errs[#errs + 1] = 'TYPE_ERROR_DISMATCH'
-        errs[#errs + 1] = child
-        errs[#errs + 1] = parent
-    end
+    addErrs(errs, { 'TYPE_ERROR_DISMATCH', child, parent })
+
     return false
+end
+
+--- Is child a subtype of parent.
+--- @param uri string
+--- @param child  vm.node|string|vm.node.object
+--- @param parent vm.node|string|vm.node.object
+--- @param seen?  table
+--- @param errs? typecheck.err[]
+--- @return boolean?
+function vm.isSubType(uri, child, parent, seen, errs)
+    seen = seen or {}
+
+    if type(child) == 'table' and child.type == 'vm.node' then
+        --- @cast child  vm.node
+        if config.get(uri, 'Lua.type.weakUnionCheck') then
+            return weakUnionCheck(uri, child, parent, seen, errs)
+        end
+        return isNodeSubType(uri, child, parent, seen, errs)
+    end
+
+    if type(child) == 'string' then
+        local global = vm.getGlobal('type', child)
+        if not global then
+            return
+        end
+        child = global
+    end
+
+    --- @cast child  vm.node.object
+    return isObjectSubType(uri, child, parent, seen, errs)
 end
 
 --- @param node string|vm.node|vm.object
@@ -644,6 +669,7 @@ function vm.getTableValue(uri, tnode, knode, inversion)
                             end
                         end
                     elseif field.type == 'varargs' then
+                        --- @cast field parser.object.varargs
                         result:merge(vm.compileNode(field))
                     end
                 end
@@ -706,24 +732,18 @@ end
 --- @param defNode vm.node
 --- @param refNode vm.node
 --- @param errs typecheck.err[]?
---- @return boolean
+--- @return boolean?
 function vm.canCastType(uri, defNode, refNode, errs)
     local defInfer = vm.getInfer(defNode)
     local refInfer = vm.getInfer(refNode)
 
-    if defInfer:hasAny(uri) then
-        return true
-    end
-    if refInfer:hasAny(uri) then
-        return true
-    end
-    if defInfer:view(uri) == 'unknown' then
-        return true
-    end
-    if refInfer:view(uri) == 'unknown' then
-        return true
-    end
-    if defInfer:view(uri) == 'nil' then
+    if
+        defInfer:hasAny(uri)
+        or refInfer:hasAny(uri)
+        or defInfer:view(uri) == 'unknown'
+        or refInfer:view(uri) == 'unknown'
+        or defInfer:view(uri) == 'nil'
+    then
         return true
     end
 
@@ -743,11 +763,7 @@ function vm.canCastType(uri, defNode, refNode, errs)
         end
     end
 
-    if vm.isSubType(uri, refNode, defNode, {}, errs) then
-        return true
-    end
-
-    return false
+    return vm.isSubType(uri, refNode, defNode, nil, errs)
 end
 
 local ErrorMessageMap = {

@@ -21,6 +21,7 @@ local util = require('utility')
 --- | parser.object.doc.as
 --- | parser.object.doc.async
 --- | parser.object.doc.cast
+--- | parser.object.doc.cast.name
 --- | parser.object.doc.class
 --- | parser.object.doc.deprecated
 --- | parser.object.doc.diagnostic

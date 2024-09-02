@@ -44,8 +44,8 @@ local function searchInAllFiles(suri, searcher, notify)
 end
 
 --- @async
---- @param source  parser.object.base
---- @param pushResult fun(src: parser.object.base)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 --- @param defMap table
 --- @param fileNotify fun(uri: string): boolean
 local function searchWord(source, pushResult, defMap, fileNotify)
@@ -56,7 +56,7 @@ local function searchWord(source, pushResult, defMap, fileNotify)
 
     local global = vm.getGlobalNode(source)
 
-    ---@param src parser.object.base
+    ---@param src parser.object
     local function checkDef(src)
         for _, def in ipairs(vm.getDefs(src)) do
             if defMap[def] then
@@ -132,7 +132,7 @@ end
 
 --- @async
 local function searchFunction(source, pushResult, defMap, fileNotify)
-    ---@param src parser.object.base
+    ---@param src parser.object
     local function checkDef(src)
         for _, def in ipairs(vm.getDefs(src)) do
             if defMap[def] then
@@ -158,8 +158,8 @@ local function searchFunction(source, pushResult, defMap, fileNotify)
     searchInAllFiles(guide.getUri(source), findCall, fileNotify)
 end
 
---- @param source  parser.object.base
---- @param pushResult fun(src: parser.object.base)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchBySimple(source, pushResult)
     if source.type == 'goto' then
         if source.node then
@@ -176,8 +176,8 @@ local function searchBySimple(source, pushResult)
     end
 end
 
---- @param source  parser.object.base
---- @param pushResult fun(src: parser.object.base)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchByLocalID(source, pushResult)
     local sourceSets = vm.getVariableSets(source)
     if sourceSets then
@@ -195,7 +195,7 @@ end
 
 local searchByParentNode
 
---- @type table<string|string[], async fun(source: parser.object.base, pushResult: fun(src: parser.object.base), defMap: table, fileNotify: fun(uri: string): boolean)>
+--- @type table<string|string[], async fun(source: parser.object, pushResult: fun(src: parser.object), defMap: table, fileNotify: fun(uri: string): boolean)>
 local nodeSwitch_table = {
     [{ 'field', 'method' }] = function(source, pushResult, defMap, fileNotify) --- @async
         searchByParentNode(source.parent, pushResult, defMap, fileNotify)
@@ -245,8 +245,8 @@ local nodeSwitch_table = {
 local nodeSwitch = util.switch2(nodeSwitch_table)
 
 --- @async
---- @param source  parser.object.base
---- @param pushResult fun(src: parser.object.base)
+--- @param source  parser.object
+--- @param pushResult fun(src: parser.object)
 --- @param fileNotify? fun(uri: string): boolean
 function searchByParentNode(source, pushResult, defMap, fileNotify)
     nodeSwitch(source.type)(source, pushResult, defMap, fileNotify)
@@ -271,8 +271,8 @@ local function searchByGlobal(source, pushResult)
     end
 end
 
---- @param source parser.object.base
---- @param pushResult fun(src: parser.object.base)
+--- @param source parser.object
+--- @param pushResult fun(src: parser.object)
 local function searchByDef(source, pushResult)
     local defMap = {}
     if source.type == 'function' or source.type == 'doc.type.function' then
@@ -302,7 +302,7 @@ local function searchByDef(source, pushResult)
 end
 
 --- @async
---- @param source parser.object.base
+--- @param source parser.object
 --- @param fileNotify? fun(uri: string): boolean
 function vm.getRefs(source, fileNotify)
     local results = {}

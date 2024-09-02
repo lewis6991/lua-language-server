@@ -3,9 +3,9 @@ local guide = require('parser.guide')
 local vm = require('vm.vm')
 
 --- @class vm.sign
---- @field parent    parser.object.base
+--- @field parent    parser.object
 --- @field signList  vm.node[]
---- @field docGenric parser.object.base[]
+--- @field docGenric parser.object[]
 local mt = {}
 mt.__index = mt
 mt.type = 'sign'
@@ -15,13 +15,13 @@ function mt:addSign(node)
     self.signList[#self.signList + 1] = node
 end
 
---- @param doc parser.object.base
+--- @param doc parser.object
 function mt:addDocGeneric(doc)
     self.docGenric[#self.docGenric + 1] = doc
 end
 
 --- @param uri string
---- @param args parser.object.base
+--- @param args parser.object
 --- @return table<string, vm.node>?
 function mt:resolve(uri, args)
     if not args then
@@ -31,7 +31,7 @@ function mt:resolve(uri, args)
     ---@type table<string, vm.node>
     local resolved = {}
 
-    ---@param object vm.node|vm.node.object
+    ---@param object vm.node|vm.node.object|parser.object
     ---@param node   vm.node
     local function resolve(object, node)
         if object.type == 'vm.node' then
@@ -41,7 +41,7 @@ function mt:resolve(uri, args)
             return
         end
         if object.type == 'doc.type' then
-            ---@cast object parser.object.base
+            ---@cast object parser.object
             resolve(vm.compileNode(object), node)
             return
         end
@@ -52,7 +52,7 @@ function mt:resolve(uri, args)
                 -- 'number' -> `T`
                 for n in node:eachObject() do
                     if n.type == 'string' then
-                        ---@cast n parser.object.base
+                        ---@cast n parser.object
                         local type = vm.declareGlobal(
                             'type',
                             object.pattern and object.pattern:format(n[1]) or n[1],
@@ -146,7 +146,7 @@ function mt:resolve(uri, args)
                 if arg.extends then
                     for n in node:eachObject() do
                         if n.type == 'function' or n.type == 'doc.type.function' then
-                            ---@cast n parser.object.base
+                            ---@cast n parser.object
                             local farg = n.args and n.args[i]
                             if farg then
                                 resolve(arg.extends, vm.compileNode(farg))
@@ -158,7 +158,7 @@ function mt:resolve(uri, args)
             for i, ret in ipairs(object.returns) do
                 for n in node:eachObject() do
                     if n.type == 'function' or n.type == 'doc.type.function' then
-                        ---@cast n parser.object.base
+                        ---@cast n parser.object
                         local fret = vm.getReturnOfFunction(n, i)
                         if fret then
                             resolve(ret, vm.compileNode(fret))
@@ -186,7 +186,7 @@ function mt:resolve(uri, args)
                     or obj.type == 'doc.type.function'
                     or obj.type == 'doc.type.array'
                 then
-                    ---@cast obj parser.object.base
+                    ---@cast obj parser.object
                     guide.eachSourceType(obj, 'doc.generic.name', function(src)
                         hasGeneric = true
                         genericsNames[src[1]] = true
@@ -270,16 +270,16 @@ function vm.createSign()
     return genericMgr
 end
 
---- @class parser.object.base
+--- @class parser.object
 --- @field package _sign vm.sign|false|nil
 
---- @param source parser.object.base
+--- @param source parser.object
 --- @param sign vm.sign
 function vm.setSign(source, sign)
     source._sign = sign
 end
 
---- @param source parser.object.base
+--- @param source parser.object
 --- @return vm.sign?
 function vm.getSign(source)
     if source._sign ~= nil then
