@@ -444,6 +444,7 @@ function M.getBlock(obj)
             break
         end
     end
+
     error('guide.getBlock overstack:' .. table.concat(stack, ' -> '))
 end
 
@@ -481,6 +482,7 @@ function M.getBreakBlock(obj)
             return
         end
     end
+
     error('guide.getBreakBlock overstack')
 end
 
@@ -495,6 +497,7 @@ function M.getDocState(obj)
         end
         obj = parent
     end
+
     error('guide.getDocState overstack')
 end
 
@@ -511,6 +514,7 @@ function M.getParentType(obj, want)
             return obj
         end
     end
+
     error('guide.getParentType overstack')
 end
 
@@ -527,6 +531,7 @@ function M.getParentTypes(obj, wants)
             return obj
         end
     end
+
     error('guide.getParentTypes overstack')
 end
 
@@ -538,6 +543,7 @@ function M.getRoot(obj)
     if source._root then
         return source._root
     end
+
     for _ = 1, 10000 do
         if obj.type == 'main' then
             --- @cast obj parser.object.main
@@ -554,6 +560,7 @@ function M.getRoot(obj)
         end
         obj = parent
     end
+
     error('guide.getRoot overstack')
 end
 
@@ -922,12 +929,9 @@ function M.eachSpecialOf(ast, name, callback)
     if not state.specials then
         return
     end
-    local specials = state.specials[name]
-    if not specials then
-        return
-    end
-    for i = 1, #specials do
-        callback(specials[i])
+
+    for _, s in ipairs(state.specials[name] or {}) do
+        callback(s)
     end
 end
 
@@ -1042,18 +1046,10 @@ local assignTypeMap = {
     ['doc.type.field'] = true,
     ['doc.type.array'] = true,
 }
+
 function M.isAssign(source)
     local tp = source.type
-    if assignTypeMap[tp] then
-        return true
-    end
-    if tp == 'call' then
-        local special = M.getSpecial(source.node)
-        if special == 'rawset' then
-            return true
-        end
-    end
-    return false
+    return assignTypeMap[tp] or (tp == 'call' and M.getSpecial(source.node) == 'rawset')
 end
 
 local getTypeMap = {
@@ -1063,18 +1059,10 @@ local getTypeMap = {
     ['getmethod'] = true,
     ['getindex'] = true,
 }
+
 function M.isGet(source)
     local tp = source.type
-    if getTypeMap[tp] then
-        return true
-    end
-    if tp == 'call' then
-        local special = M.getSpecial(source.node)
-        if special == 'rawget' then
-            return true
-        end
-    end
-    return false
+    return getTypeMap[tp] or (tp == 'call' and M.getSpecial(source.node) == 'rawget')
 end
 
 function M.getSpecial(source)
@@ -1089,10 +1077,10 @@ function M.getKeyNameOfLiteral(obj)
         return
     end
     local tp = obj.type
-    if tp == 'field' or tp == 'method' then
-        return obj[1]
-    elseif
-        tp == 'string'
+    if
+        tp == 'field'
+        or tp == 'method'
+        or tp == 'string'
         or tp == 'number'
         or tp == 'integer'
         or tp == 'boolean'
@@ -1151,58 +1139,64 @@ function M.getKeyName(obj)
     return M.getKeyNameOfLiteral(obj)
 end
 
+local keyTypeLiteralMap = {
+    ['field'] = 'string',
+    ['method'] = 'string',
+    ['string'] = 'string',
+    ['number'] = 'number',
+    ['integer'] = 'integer',
+    ['boolean'] = 'boolean',
+}
+
 function M.getKeyTypeOfLiteral(obj)
     if not obj then
         return
     end
-    local tp = obj.type
-    if tp == 'field' or tp == 'method' then
-        return 'string'
-    elseif tp == 'string' then
-        return 'string'
-    elseif tp == 'number' then
-        return 'number'
-    elseif tp == 'integer' then
-        return 'integer'
-    elseif tp == 'boolean' then
-        return 'boolean'
-    end
+    return keyTypeLiteralMap[obj.type]
 end
+
+local keyTypeMap = {
+    ['getglobal'] = 'string',
+    ['setglobal'] = 'string',
+
+    ['local'] = 'local',
+    ['self'] = 'local',
+    ['getlocal'] = 'local',
+    ['setlocal'] = 'local',
+
+    ['getfield'] = 'string',
+    ['setfield'] = 'string',
+    ['tablefield'] = 'string',
+    ['getmethod'] = 'string',
+    ['setmethod'] = 'string',
+
+    ['tableexp'] = 'integer',
+
+    ['field'] = 'string',
+    ['method'] = 'string',
+    ['doc.class'] = 'string',
+    ['doc.alias'] = 'string',
+    ['doc.enum'] = 'string',
+}
 
 function M.getKeyType(obj)
     if not obj then
         return
     end
+
     local tp = obj.type
-    if tp == 'getglobal' or tp == 'setglobal' then
-        return 'string'
-    elseif tp == 'local' or tp == 'self' or tp == 'getlocal' or tp == 'setlocal' then
-        return 'local'
-    elseif tp == 'getfield' or tp == 'setfield' or tp == 'tablefield' then
-        return 'string'
-    elseif tp == 'getmethod' or tp == 'setmethod' then
-        return 'string'
-    elseif tp == 'getindex' or tp == 'setindex' or tp == 'tableindex' then
+
+    if tp == 'getindex' or tp == 'setindex' or tp == 'tableindex' then
         return M.getKeyTypeOfLiteral(obj.index)
-    elseif tp == 'tableexp' then
-        return 'integer'
-    elseif tp == 'field' or tp == 'method' then
-        return 'string'
-    elseif tp == 'doc.class' then
-        return 'string'
-    elseif tp == 'doc.alias' then
-        return 'string'
-    elseif tp == 'doc.enum' then
-        return 'string'
     elseif tp == 'doc.field' then
         return type(obj.field[1])
     elseif tp == 'doc.type.field' then
         return type(obj.name[1])
-    end
-    if tp == 'doc.field.name' then
+    elseif tp == 'doc.field.name' then
         return type(obj[1])
     end
-    return M.getKeyTypeOfLiteral(obj)
+
+    return keyTypeMap[tp] or keyTypeLiteralMap[tp]
 end
 
 --- Whether it is a global variable (including _G.XXX form)
@@ -1379,13 +1373,7 @@ end
 --- @param source parser.object
 --- @return boolean
 function M.isParam(source)
-    if source.type ~= 'local' and source.type ~= 'self' then
-        return false
-    end
-    if source.parent.type ~= 'funcargs' then
-        return false
-    end
-    return true
+    return (source.type == 'local' or source.type == 'self') and source.parent.type == 'funcargs'
 end
 
 --- @param source parser.object
@@ -1397,7 +1385,7 @@ function M.getParams(source)
         if not args then
             return
         end
-        assert(args.type == 'callargs', "call.args type is't callargs")
+        assert(args.type == 'callargs', "call.args type isn't callargs")
         return args
     elseif source.type == 'callargs' then
         --- @cast source parser.object.callargs
