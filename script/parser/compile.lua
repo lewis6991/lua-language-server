@@ -67,7 +67,9 @@ local ChunkFinishMap = {
 
 --- Nodes
 
---- @alias parser.object
+--- @alias parser.object parser.object.lua|parser.object.doc
+
+--- @alias parser.object.lua
 --- | parser.object.block
 --- | parser.object.action
 --- | parser.object.expr
@@ -79,7 +81,6 @@ local ChunkFinishMap = {
 --- | parser.object.select
 --- | parser.object.field
 --- | parser.object.method
----- | parser.object.doc
 
 --- @class parser.object.base
 --- @field start integer
@@ -3312,8 +3313,8 @@ function P.Exp(asAction, level)
     return exp
 end
 
---- @return parser.object?   first
---- @return parser.object[]? rest
+--- @return parser.object.lua?   first
+--- @return parser.object.lua[]? rest
 local function parseSetValues()
     skipSpace()
     local first = P.Exp()
@@ -3362,7 +3363,7 @@ local function parseVarTails(isLocalDecl)
 end
 
 --- @param n parser.object.local|parser.object.get
---- @param v parser.object?
+--- @param v parser.object.lua?
 --- @param index integer
 --- @param lastValue parser.object?
 --- @param isLocal boolean

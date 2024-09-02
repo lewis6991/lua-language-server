@@ -178,7 +178,7 @@ local Class = '['
 
 local function adddef(t, k, exp)
     if t[k] then
-    -- TODO 改了一下这里的代码，重复定义不会抛错
+    -- TODO I changed the code here so that repeated definitions will not throw errors.
     --error("'"..k.."' already defined as a rule")
     else
         t[k] = exp

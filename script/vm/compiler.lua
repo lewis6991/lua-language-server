@@ -192,11 +192,13 @@ local function searchFieldSwitchTable(suri, source, key, pushResult)
 
     for _, doc in ipairs(docs) do
         if doc.type == 'doc.enum' then
+            --- @cast doc parser.object.doc.enum
             if not vm.docHasAttr(doc, 'partial') then
                 return
             end
             for _, def in ipairs(vm.getDefs(doc)) do
                 if def.type == 'doc.enum' then
+                    --- @cast def parser.object.doc.enum
                     local tbl = def.bindSource
                     if not tbl then
                         return

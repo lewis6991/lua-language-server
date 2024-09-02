@@ -14,8 +14,16 @@ local globalSubs = util.multiTable(2)
 --- @field package _globalBase? parser.object
 --- @field package _globalBaseMap? table<string, parser.object>
 --- @field package _globalNode? vm.global|false
---- @field package _enums?      parser.object[]
 --- @field global? vm.global
+
+--- @class parser.object.doc.base
+--- @field package _globalBase? parser.object
+--- @field package _globalBaseMap? table<string, parser.object>
+--- @field package _globalNode? vm.global|false
+--- @field global? vm.global
+
+--- @class parser.object.doc.enum
+--- @field package _enums? parser.object.doc[]
 
 --- @class vm.global.link
 --- @field sets parser.object[]
@@ -310,7 +318,7 @@ local compilerGlobalSwitch = util
         end
     end)
     :case('doc.class')
-    ---@param source parser.object
+    ---@param source parser.object.doc.class
     :call(function(source)
         local uri = guide.getUri(source)
         local name = guide.getKeyName(source)
@@ -618,7 +626,7 @@ function vm.getGlobalNode(source)
     return source._globalNode or nil
 end
 
---- @param source parser.object
+--- @param source parser.object.doc.enum
 --- @return parser.object[]?
 function vm.getEnums(source)
     return source._enums

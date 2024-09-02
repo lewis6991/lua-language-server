@@ -71,10 +71,8 @@ local function addSelf(obj, list, _add, addList)
     addList(obj, list)
 end
 
---- @alias parser.object2 parser.object | parser.object.doc
-
---- @type table<string,fun(obj: parser.object2, list: parser.object2[], elem: function, elemList: function)>
-local childMap = {
+--- @type table<string,fun(obj: parser.object, list: parser.object[], elem: function, elemList: function)>
+local childVisitors = {
     --- @param obj parser.object.main
     ['main'] = function(obj, x, elem, elemList)
         elemList(obj, x)
@@ -201,7 +199,7 @@ local childMap = {
 
     --- @param obj parser.object.call
     ['call'] = function(obj, x, elem)
-        elem(x, obj.exp, obj.node, obj.args)
+        elem(x, obj.node, obj.args)
     end,
 
     --- @param obj parser.object.paren
@@ -241,7 +239,7 @@ local childMap = {
 
     --- @param obj parser.object.doc.enum
     ['doc.enum'] = function(obj, x, elem)
-        elem(x, obj.enum, obj.extends, obj.comment, obj.docAttr)
+        elem(x, obj.enum, obj.comment, obj.docAttr)
     end,
 
     --- @param obj parser.object.doc.param
@@ -401,7 +399,7 @@ function M.getLiteral(obj)
 end
 
 --- Find the parent function
---- @param obj parser.object.base
+--- @param obj parser.object
 --- @return parser.object.main|parser.object.function?
 function M.getParentFunction(obj)
     for _ = 1, 10000 do
@@ -665,10 +663,7 @@ end
 
 function M.getStartFinish(source)
     local start = source.start
-    local finish = source.finish
-    if source.bfinish and source.bfinish > finish then
-        finish = source.bfinish
-    end
+    local finish = math.max(source.finish, source.bfinish or 0)
     if not start then
         local first = source[1]
         if not first then
@@ -741,7 +736,7 @@ local function addList(x, list)
     end
 end
 
-local function add(list, ...)
+local function addElem(list, ...)
     for i = 1, select('#', ...) do
         list[#list + 1] = select(i, ...)
     end
@@ -751,11 +746,11 @@ end
 --- @param list parser.object[]
 --- @param obj parser.object
 local function addChilds(list, obj)
-    local f = childMap[obj.type]
+    local f = childVisitors[obj.type]
     if not f then
         return
     end
-    f(obj, list, add, addList)
+    f(obj, list, addElem, addList)
 end
 
 --- Traverse all sources containing position
@@ -764,7 +759,7 @@ end
 --- @param callback fun(src: parser.object): any
 function M.eachSourceContain(ast, position, callback)
     local list = { ast }
-    local mark = {}
+    local seen = {}
     while true do
         local len = #list
         if len == 0 then
@@ -772,8 +767,8 @@ function M.eachSourceContain(ast, position, callback)
         end
         local obj = list[len]
         list[len] = nil
-        if not mark[obj] then
-            mark[obj] = true
+        if not seen[obj] then
+            seen[obj] = true
             if M.isInRange(obj, position) then
                 if M.isContain(obj, position) then
                     local res = callback(obj)
@@ -822,14 +817,8 @@ local function getSourceTypeCache(ast)
         ast._typeCache = cache
         M.eachSource(ast, function(source)
             local tp = source.type
-            if not tp then
-                return
-            end
+            cache[tp] = cache[tp] or {}
             local myCache = cache[tp]
-            if not myCache then
-                myCache = {}
-                cache[tp] = myCache
-            end
             myCache[#myCache + 1] = source
         end)
     end
@@ -837,18 +826,14 @@ local function getSourceTypeCache(ast)
 end
 
 --- Traverse all sources of the specified type
+--- @generic R
 --- @param ast parser.object
 --- @param type string
---- @param callback fun(src: parser.object): any
---- @return any
+--- @param callback fun(src: parser.object): R
+--- @return R?
 function M.eachSourceType(ast, type, callback)
-    local cache = getSourceTypeCache(ast)
-    local myCache = cache[type]
-    if not myCache then
-        return
-    end
-    for i = 1, #myCache do
-        local res = callback(myCache[i])
+    for _, c in ipairs(getSourceTypeCache(ast)[type] or {}) do
+        local res = callback(c)
         if res ~= nil then
             return res
         end
@@ -860,26 +845,23 @@ end
 --- @param callback fun(src: parser.object)
 function M.eachSourceTypes(ast, tps, callback)
     local cache = getSourceTypeCache(ast)
-    for x = 1, #tps do
-        local tpCache = cache[tps[x]]
-        if tpCache then
-            for i = 1, #tpCache do
-                callback(tpCache[i])
-            end
+    for _, tp in ipairs(tps) do
+        for _, c in ipairs(cache[tp] or {}) do
+            callback(c)
         end
     end
 end
 
---- Traverse all sources
 --- @param ast parser.object
---- @param callback fun(src: parser.object): boolean?
-function M.eachSource(ast, callback)
+--- @return parser.object[]
+local function getSourceEachCache(ast)
     local cache = ast._eachCache
     if not cache then
         cache = { ast }
         ast._eachCache = cache
         local seen = {}
         local index = 1
+        -- Can't use ipairs as the length of cache will grow
         while true do
             local obj = cache[index]
             if not obj then
@@ -892,8 +874,15 @@ function M.eachSource(ast, callback)
             end
         end
     end
-    for i = 1, #cache do
-        local res = callback(cache[i])
+    return cache
+end
+
+--- Traverse all sources
+--- @param ast parser.object
+--- @param callback fun(src: parser.object): boolean?
+function M.eachSource(ast, callback)
+    for _, c in ipairs(getSourceEachCache(ast)) do
+        local res = callback(c)
         if res == false then
             return
         end
@@ -915,7 +904,7 @@ end
 --- @param source   parser.object
 --- @param callback fun(src: parser.object)
 function M.eachChild(source, callback)
-    local f = childMap[source.type]
+    local f = childVisitors[source.type]
     if not f then
         return
     end
@@ -1217,7 +1206,7 @@ function M.getKeyType(obj)
 end
 
 --- Whether it is a global variable (including _G.XXX form)
---- @param source parser.object2
+--- @param source parser.object
 --- @return boolean
 function M.isGlobal(source)
     if source._isGlobal ~= nil then
@@ -1372,8 +1361,8 @@ function M.getFunctionSelfNode(func)
     end
 end
 
---- @param source parser.object.base
---- @return parser.object.base?
+--- @param source parser.object
+--- @return parser.object?
 function M.getTopBlock(source)
     for _ = 1, 1000 do
         local block = source.parent

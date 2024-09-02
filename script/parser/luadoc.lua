@@ -58,6 +58,11 @@ local util = require('utility')
 --- @field finish? integer
 --- @field [integer] parser.object.doc
 
+--- @class parser.object.doc.type.sign
+--- @field type 'doc.type.sign'
+--- @field node parser.object.doc.type.unit
+--- @field signs parser.object.doc.type[]
+
 --- @class parser.object.doc.alias : parser.object.doc.base
 --- @field type 'doc.alias'
 --- @field alias? parser.object.doc.alias.name
@@ -77,6 +82,7 @@ local util = require('utility')
 --- @class parser.object.doc.enum : parser.object.doc.base
 --- @field type 'doc.enum'
 --- @field enum parser.object.doc.enum.name
+--- @field docAttr? parser.object.doc.attr
 
 --- @class parser.object.doc.enum.name : parser.object.doc.base
 --- @field type 'doc.enum.name'
@@ -159,10 +165,11 @@ local util = require('utility')
 --- @field type 'doc.generic'
 --- @field generics parser.object.doc.generic.object[]
 
---- @class parser.object.doc.generic.object
+--- @class parser.object.doc.generic.object: parser.object.doc.base
 --- @field type 'doc.generic.object'
 --- @field parent parser.object.doc.generic
 --- @field generic parser.object.doc.generic.name
+--- @field extends? parser.object.doc.type
 
 --- @class parser.object.doc.generic.name : parser.object.doc.base
 --- @field type 'doc.generic.name'
@@ -218,6 +225,7 @@ local util = require('utility')
 
 --- @class parser.object.doc.return : parser.object.doc.base
 --- @field type 'doc.return'
+--- @field returns parser.object.doc.type[]
 
 --- @class parser.object.doc.return.name : parser.object.doc.base
 --- @field type 'doc.return.name'
@@ -255,6 +263,7 @@ local util = require('utility')
 --- | parser.object.doc.type.string
 --- | parser.object.doc.type.table
 --- | parser.object.doc.type.array
+--- | parser.object.doc.type.sign
 
 --- @class parser.object.doc.type : parser.object.doc.base
 --- @field type 'doc.type'
@@ -294,6 +303,8 @@ local util = require('utility')
 
 --- @class parser.object.doc.type.function : parser.object.doc.base
 --- @field type 'doc.type.function'
+--- @field args parser.object.doc.type.arg[]
+--- @field returns parser.object.doc.type[]
 --- @field async? true
 --- @field asyncPos? integer
 
@@ -1017,11 +1028,15 @@ local function parseTypeUnitArray(parent, node)
     return result
 end
 
+--- @param parent parser.object.doc
+--- @param node parser.object.doc.type.unit
+--- @return parser.object.doc.type.sign?
 local function parseTypeUnitSign(parent, node)
     if not checkToken('symbol', '<', 1) then
         return
     end
     nextToken()
+    --- @type parser.object.doc.type.sign
     local result = {
         type = 'doc.type.sign',
         start = node.start,
@@ -2441,7 +2456,8 @@ local function bindCommentsAndFields(binded)
     for _, doc in ipairs(binded) do
         local clear_source = true
         if doc.type == 'doc.class' then
-            -- 多个class连续写在一起，只有最后一个class可以绑定source
+            -- Multiple classes are written together continuously,
+            -- and only the last class can be bound to source.
             if class then
                 class.bindSource = nil
             end
@@ -2667,15 +2683,13 @@ local function luadoc(state)
         local doc, rests = buildLuaDoc(comment)
         if doc then
             insertDoc(doc, comment)
-            if rests then
-                for _, rest in ipairs(rests) do
-                    insertDoc(rest, comment)
-                end
+            for _, rest in ipairs(rests or {}) do
+                insertDoc(rest, comment)
             end
         end
     end
 
-    if ast.state.pluginDocs then
+   if ast.state.pluginDocs then
         for _, doc in ipairs(ast.state.pluginDocs) do
             insertDoc(doc, doc.originalComment)
         end
