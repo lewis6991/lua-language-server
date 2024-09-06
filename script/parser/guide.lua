@@ -836,7 +836,7 @@ end
 --- @generic R
 --- @param ast parser.object
 --- @param type string
---- @param callback fun(src: parser.object): R
+--- @param callback fun(src: parser.object): R?
 --- @return R?
 function M.eachSourceType(ast, type, callback)
     for _, c in ipairs(getSourceTypeCache(ast)[type] or {}) do

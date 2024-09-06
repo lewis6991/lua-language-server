@@ -380,7 +380,27 @@ local ChunkFinishMap = {
 
 --- @class parser.object.unary : parser.object.base
 --- @field type 'unary'
+--- @field op parser.object.unary.op
 --- @field [1] parser.object.expr?
+
+--- @class parser.object.unary.not : parser.object.base
+--- @field type 'not'
+
+--- @class parser.object.unary.hash : parser.object.base
+--- @field type '#'
+
+--- @class parser.object.unary.not2 : parser.object.base
+--- @field type '~'
+
+--- @class parser.object.unary.negate : parser.object.base
+--- @field type '-'
+
+--- @alias parser.object.unary.op
+--- | parser.object.unary.not
+--- | parser.object.unary.hash
+--- | parser.object.unary.not2
+--- | parser.object.unary.negate
+
 
 --- @class parser.object.varargs : parser.object.base
 --- @field type 'varargs'
@@ -1087,6 +1107,7 @@ local UnarySymbol = {
     ['-'] = 11,
 }
 
+--- @return parser.object.unary.op?, integer?
 local function parseUnaryOP()
     local token = Token.get()
     local symbol = UnarySymbol[token] and token or UnaryAlias[token]

@@ -28,11 +28,11 @@ function mt:resolve(uri, args)
         return
     end
 
-    ---@type table<string, vm.node>
+    --- @type table<string, vm.node>
     local resolved = {}
 
-    ---@param object vm.node|vm.node.object|parser.object
-    ---@param node   vm.node
+    --- @param object vm.node|vm.node.object|parser.object
+    --- @param node   vm.node
     local function resolve(object, node)
         if object.type == 'vm.node' then
             for o in object:eachObject() do
@@ -41,18 +41,19 @@ function mt:resolve(uri, args)
             return
         end
         if object.type == 'doc.type' then
-            ---@cast object parser.object
+            --- @cast object parser.object
             resolve(vm.compileNode(object), node)
             return
         end
         if object.type == 'doc.generic.name' then
-            ---@type string
+            --- @cast object parser.object.doc.generic.name
+            --- @type string
             local key = object[1]
             if object.literal then
                 -- 'number' -> `T`
                 for n in node:eachObject() do
                     if n.type == 'string' then
-                        ---@cast n parser.object
+                        --- @cast n parser.object.string
                         local type = vm.declareGlobal(
                             'type',
                             object.pattern and object.pattern:format(n[1]) or n[1],
@@ -92,7 +93,7 @@ function mt:resolve(uri, args)
                 end
                 if n.type == 'global' and n.cate == 'type' then
                     -- ---@field [integer]: number -> T[]
-                    ---@cast n vm.global
+                    --- @cast n vm.global
                     vm.getClassFields(uri, n, vm.declareGlobal('type', 'integer'), function(field)
                         resolve(object.node, vm.compileNode(field.extends))
                     end)
@@ -146,7 +147,7 @@ function mt:resolve(uri, args)
                 if arg.extends then
                     for n in node:eachObject() do
                         if n.type == 'function' or n.type == 'doc.type.function' then
-                            ---@cast n parser.object
+                            --- @cast n parser.object
                             local farg = n.args and n.args[i]
                             if farg then
                                 resolve(arg.extends, vm.compileNode(farg))
@@ -158,7 +159,7 @@ function mt:resolve(uri, args)
             for i, ret in ipairs(object.returns) do
                 for n in node:eachObject() do
                     if n.type == 'function' or n.type == 'doc.type.function' then
-                        ---@cast n parser.object
+                        --- @cast n parser.object
                         local fret = vm.getReturnOfFunction(n, i)
                         if fret then
                             resolve(ret, vm.compileNode(fret))
@@ -170,9 +171,9 @@ function mt:resolve(uri, args)
         end
     end
 
-    ---@param sign vm.node
-    ---@return table<string, true>
-    ---@return table<string, true>
+    --- @param sign vm.node
+    --- @return table<string, true>
+    --- @return table<string, true>
     local function getSignInfo(sign)
         local knownTypes = {}
         local genericsNames = {}
@@ -186,7 +187,7 @@ function mt:resolve(uri, args)
                     or obj.type == 'doc.type.function'
                     or obj.type == 'doc.type.array'
                 then
-                    ---@cast obj parser.object
+                    --- @cast obj parser.object
                     guide.eachSourceType(obj, 'doc.generic.name', function(src)
                         hasGeneric = true
                         genericsNames[src[1]] = true
@@ -205,10 +206,10 @@ function mt:resolve(uri, args)
     end
 
     -- remove un-generic type
-    ---@param argNode vm.node
-    ---@param sign vm.node
-    ---@param knownTypes table<string, true>
-    ---@return vm.node
+    --- @param argNode vm.node
+    --- @param sign vm.node
+    --- @param knownTypes table<string, true>
+    --- @return vm.node
     local function buildArgNode(argNode, sign, knownTypes)
         local newArgNode = vm.createNode()
         local needRemoveNil = sign:hasFalsy()
@@ -235,7 +236,7 @@ function mt:resolve(uri, args)
         return newArgNode
     end
 
-    ---@param genericNames table<string, true>
+    --- @param genericNames table<string, true>
     local function isAllResolved(genericNames)
         for n in pairs(genericNames) do
             if not resolved[n] then
@@ -270,7 +271,7 @@ function vm.createSign()
     return genericMgr
 end
 
---- @class parser.object
+--- @class parser.object.base
 --- @field package _sign vm.sign|false|nil
 
 --- @param source parser.object

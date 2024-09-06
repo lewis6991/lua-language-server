@@ -749,7 +749,7 @@ local lookIntoChild = util.switch()
     :case('unary')
     :call(
         ---@param tracer   vm.tracer
-        ---@param action   parser.object
+        ---@param action   parser.object.unary
         ---@param topNode  vm.node
         ---@param outNode? vm.node
         function(tracer, action, topNode, outNode)
