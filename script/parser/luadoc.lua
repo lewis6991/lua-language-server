@@ -631,11 +631,6 @@ local function parseExtendsName(parent)
     return parseName('doc.extends.name', parent)
 end
 
---- @return parser.object.doc.field.name?
-local function parseFieldName(parent)
-    return parseName('doc.field.name', parent)
-end
-
 --- @return parser.object.doc.param.name?
 local function parseParamName(parent)
     return parseName('doc.param.name', parent) or parseDots('doc.param.name', parent)
@@ -692,9 +687,11 @@ local function parseIndexField(parent)
     return field
 end
 
+--- @param isTuple boolean
+--- @param parent parser.object.doc
 --- @return parser.object.doc.type.table?
-local function parseTable(parent)
-    if not checkToken('symbol', '{', 1) then
+local function parseTableOrTuple(isTuple, parent)
+    if not checkToken('symbol', isTuple and '[' or '{', 1) then
         return
     end
     nextToken()
@@ -704,10 +701,12 @@ local function parseTable(parent)
         start = getStart(),
         parent = parent,
         fields = {},
+        isTuple = isTuple or nil,
     }
 
+    local index = 1 -- for tuple
     while true do
-        if checkToken('symbol', '}', 1) then
+        if checkToken('symbol', isTuple and ']' or '}', 1) then
             nextToken()
             break
         end
@@ -723,29 +722,61 @@ local function parseTable(parent)
                 nextToken()
                 needCloseParen = true
             end
-            field.name = parseFieldName(field) or parseIndexField(field)
-            if not field.name then
-                pushWarning({
-                    type = 'LUADOC_MISS_FIELD_NAME',
+
+            if isTuple then
+                --- @type parser.object.doc.type
+                field.name = {
+                    type = 'doc.type',
                     start = getFinish(),
+                    firstFinish = getFinish(),
                     finish = getFinish(),
-                })
-                break
+                    parent = field,
+                    types = {},
+                }
+                field.name.types = {
+                    --- @type parser.object.doc.type.integer
+                    [1] = {
+                        type = 'doc.type.integer',
+                        start = getFinish(),
+                        finish = getFinish(),
+                        parent = field.name,
+                        [1] = index,
+                    },
+                }
+                index = index + 1
+            else
+                field.name = parseName('doc.field.name', field) --[[@ss parser.object.doc.field.name?]]
+                    or parseIndexField(field)
+                if not field.name then
+                    pushWarning({
+                        type = 'LUADOC_MISS_FIELD_NAME',
+                        start = getFinish(),
+                        finish = getFinish(),
+                    })
+                    break
+                end
+                field.start = field.start or field.name.start
+                if checkToken('symbol', '?', 1) then
+                    nextToken()
+                    field.optional = true
+                end
+                field.finish = getFinish()
+                if not nextSymbolOrError(':') then
+                    break
+                end
             end
-            field.start = field.start or field.name.start
-            if checkToken('symbol', '?', 1) then
-                nextToken()
-                field.optional = true
-            end
-            field.finish = getFinish()
-            if not nextSymbolOrError(':') then
-                break
-            end
+
             field.extends = parseType(field)
             if not field.extends then
                 break
             end
             field.finish = getFinish()
+
+            if isTuple then
+                field.optional = field.extends.optional
+                field.start = field.extends.start
+            end
+
             if needCloseParen then
                 nextSymbolOrError(')')
             end
@@ -755,85 +786,7 @@ local function parseTable(parent)
         if checkToken('symbol', ',', 1) or checkToken('symbol', ';', 1) then
             nextToken()
         else
-            nextSymbolOrError('}')
-            break
-        end
-    end
-    typeUnit.finish = getFinish()
-    return typeUnit
-end
-
---- @return parser.object.doc.type.table?
-local function parseTuple(parent)
-    if not checkToken('symbol', '[', 1) then
-        return
-    end
-    nextToken()
-    --- @type parser.object.doc.type.table
-    local typeUnit = {
-        type = 'doc.type.table',
-        start = getStart(),
-        parent = parent,
-        fields = {},
-        isTuple = true,
-    }
-
-    local index = 1
-    while true do
-        if checkToken('symbol', ']', 1) then
-            nextToken()
-            break
-        end
-        --- @type parser.object.doc.type.field
-        local field = {
-            type = 'doc.type.field',
-            parent = typeUnit,
-        }
-
-        do
-            local needCloseParen
-            if checkToken('symbol', '(', 1) then
-                nextToken()
-                needCloseParen = true
-            end
-            --- @type parser.object.doc.type
-            field.name = {
-                type = 'doc.type',
-                start = getFinish(),
-                firstFinish = getFinish(),
-                finish = getFinish(),
-                parent = field,
-                types = {},
-            }
-            --- @diagnostic disable-next-line:inject-field
-            field.name.types = {
-                --- @type parser.object.doc.type.integer
-                [1] = {
-                    type = 'doc.type.integer',
-                    start = getFinish(),
-                    finish = getFinish(),
-                    parent = field.name,
-                    [1] = index,
-                },
-            }
-            index = index + 1
-            field.extends = parseType(field)
-            if not field.extends then
-                break
-            end
-            field.optional = field.extends.optional
-            field.start = field.extends.start
-            field.finish = field.extends.finish
-            if needCloseParen then
-                nextSymbolOrError(')')
-            end
-        end
-
-        typeUnit.fields[#typeUnit.fields + 1] = field
-        if checkToken('symbol', ',', 1) or checkToken('symbol', ';', 1) then
-            nextToken()
-        else
-            nextSymbolOrError(']')
+            nextSymbolOrError(isTuple and ']' or '}')
             break
         end
     end
@@ -903,9 +856,7 @@ local function parseTypeUnitFunction(parent)
             })
             break
         end
-        if not arg.start then
-            arg.start = arg.name.start
-        end
+        arg.start = arg.start or arg.name.start
         if checkToken('symbol', '?', 1) then
             nextToken()
             arg.optional = true
@@ -1201,8 +1152,8 @@ end
 function parseTypeUnit(parent)
     --- @type parser.object.doc.type.unit?
     local result = parseFunction(parent)
-        or parseTable(parent)
-        or parseTuple(parent)
+        or parseTableOrTuple(false, parent)
+        or parseTableOrTuple(true, parent)
         or parseString(parent)
         or parseCode(parent)
         or parseInteger(parent)
@@ -1327,6 +1278,7 @@ local function doResume(result)
     lockResume = false
 end
 
+--- @param parent parser.object.doc?
 --- @return parser.object.doc.type?
 function parseType(parent)
     --- @type parser.object.doc.type
@@ -1344,9 +1296,7 @@ function parseType(parent)
         end
 
         result.types[#result.types + 1] = typeUnit
-        if not result.start then
-            result.start = typeUnit.start
-        end
+        result.start = result.start or typeUnit.start
 
         if not checkToken('symbol', '|', 1) then
             break
@@ -1415,7 +1365,9 @@ local docSwitch = {
         result.extends = {}
 
         while true do
-            local extend = parseExtendsName(result) or parseTable(result) or parseTuple(result)
+            local extend = parseExtendsName(result)
+                or parseTableOrTuple(false, result)
+                or parseTableOrTuple(true, result)
 
             if not extend then
                 pushWarning({
@@ -1444,9 +1396,7 @@ local docSwitch = {
         while checkToken('symbol', ',', 1) do
             nextToken()
             local rest = parseType()
-            if not rests then
-                rests = {}
-            end
+            rests = rests or {}
             rests[#rests + 1] = rest
         end
         return first, rests
@@ -1531,9 +1481,7 @@ local docSwitch = {
             if not docType then
                 break
             end
-            if not result.start then
-                result.start = docType.start
-            end
+            result.start = result.start or docType.start
             if checkToken('symbol', '?', 1) then
                 nextToken()
                 docType.optional = true
@@ -1593,9 +1541,7 @@ local docSwitch = {
             })
             return
         end
-        if not result.start then
-            result.start = result.field.start
-        end
+        result.start = result.start or result.field.start
         if checkToken('symbol', '?', 1) then
             nextToken()
             result.optional = true
@@ -1721,9 +1667,7 @@ local docSwitch = {
                 })
                 break
             end
-            if not result.start then
-                result.start = getStart()
-            end
+            result.start = result.start or getStart()
             --- @type parser.object.doc.version.unit
             local version = {
                 type = 'doc.version.unit',
