@@ -15,7 +15,7 @@ local util = require('utility')
 --- @field range? integer
 --- @field virtual? true
 --- @field special? parser.object
---- @field originalComment? parser.object.comment.short
+--- @field originalComment? parser.object.comment
 --- @field specialBindGroup? parser.object.doc[]
 --- @field bindGroup? parser.object.doc[]
 --- @field bindSource? parser.object
@@ -26,6 +26,7 @@ local util = require('utility')
 --- | parser.object.doc.alias
 --- | parser.object.doc.as
 --- | parser.object.doc.async
+--- | parser.object.doc.attr
 --- | parser.object.doc.cast
 --- | parser.object.doc.cast.name
 --- | parser.object.doc.class
@@ -38,6 +39,7 @@ local util = require('utility')
 --- | parser.object.doc.generic
 --- | parser.object.doc.generic.name
 --- | parser.object.doc.generic.object
+--- | parser.object.doc.main
 --- | parser.object.doc.meta
 --- | parser.object.doc.module
 --- | parser.object.doc.nodiscard
@@ -280,7 +282,6 @@ local util = require('utility')
 
 --- @class parser.object.doc.type : parser.object.doc.base
 --- @field type 'doc.type'
---- @field parent parser.object.doc
 --- @field types parser.object.doc.type.unit[]
 --- @field optional? true
 --- @field firstFinish integer
@@ -349,12 +350,18 @@ local util = require('utility')
 
 local TokenTypes, TokenStarts, TokenFinishs, TokenContents
 local TokenMarks --- @type table<integer,string?>?
---- @type integer
-local Ci
---- @type integer
-local Offset
-local pushWarning, NextComment, Lines
-local parseType, parseTypeUnit
+
+local Ci --- @type integer
+local Offset --- @type integer
+
+local pushWarning
+local NextComment
+
+local Lines --- @type table<integer,integer>
+
+local parseType
+local parseTypeUnit
+
 --- @type any
 local Parser = re.compile(
     [[
@@ -466,7 +473,7 @@ Symbol              <-  ({} {
             TokenTypes[Ci] = 'integer'
             TokenStarts[Ci] = start
             TokenFinishs[Ci] = finish - 1
-            TokenContents[Ci] = math.tointeger(content)
+            TokenContents[Ci] = content
         end,
         Code = function(start, content, finish)
             Ci = Ci + 1
@@ -516,6 +523,9 @@ local function parseTokens(text, offset)
     Ci = 0
 end
 
+--- @param offset? integer
+--- @return string? tokenType
+--- @return string? tokenContent
 local function peekToken(offset)
     offset = offset or 1
     return TokenTypes[Ci + offset], TokenContents[Ci + offset]
@@ -532,9 +542,18 @@ local function nextToken()
     return TokenTypes[Ci], TokenContents[Ci]
 end
 
-local function checkToken(tp, content, offset)
-    offset = offset or 0
-    return TokenTypes[Ci + offset] == tp and TokenContents[Ci + offset] == content
+--- @param tp 'symbol'|'name'
+--- @param content string
+--- @return boolean
+local function checkToken(tp, content)
+    return TokenTypes[Ci + 1] == tp and TokenContents[Ci + 1] == content
+end
+
+--- @param content string
+--- @return boolean
+local function checkSymbol(content)
+    local offset = Ci + 1
+    return TokenTypes[offset] == 'symbol' and TokenContents[offset] == content
 end
 
 local function getStart()
@@ -567,6 +586,8 @@ local function try(callback)
     return suc
 end
 
+--- @param tp any
+--- @param parent? parser.object.doc
 local function parseName(tp, parent)
     local nameTp, nameText = peekToken()
     if nameTp ~= 'name' then
@@ -586,14 +607,12 @@ end
 --- @param symbol string
 --- @return boolean
 local function nextSymbolOrError(symbol)
-    if checkToken('symbol', symbol, 1) then
+    if checkSymbol(symbol) then
         nextToken()
         return true
     end
     pushWarning({
         type = 'LUADOC_MISS_SYMBOL',
-        start = getFinish(),
-        finish = getFinish(),
         info = {
             symbol = symbol,
         },
@@ -601,8 +620,10 @@ local function nextSymbolOrError(symbol)
     return false
 end
 
+--- @param tp string
+--- @param parent? parser.object.doc
 local function parseDots(tp, parent)
-    if not checkToken('symbol', '...', 1) then
+    if not checkSymbol('...') then
         return
     end
     nextToken()
@@ -643,7 +664,7 @@ end
 
 --- @return parser.object.doc.attr?
 local function parseDocAttr(parent)
-    if not checkToken('symbol', '(', 1) then
+    if not checkSymbol('(') then
         return
     end
     nextToken()
@@ -658,7 +679,7 @@ local function parseDocAttr(parent)
     }
 
     while true do
-        if checkToken('symbol', ',', 1) then
+        if checkSymbol(',') then
             nextToken()
         else
             local name = parseName('doc.attr.name', attrs) --[[@as parser.object.doc.attr.name?]]
@@ -678,7 +699,7 @@ end
 
 --- @return parser.object.doc.type?
 local function parseIndexField(parent)
-    if not checkToken('symbol', '[', 1) then
+    if not checkSymbol('[') then
         return
     end
     nextToken()
@@ -691,7 +712,7 @@ end
 --- @param parent parser.object.doc
 --- @return parser.object.doc.type.table?
 local function parseTableOrTuple(isTuple, parent)
-    if not checkToken('symbol', isTuple and '[' or '{', 1) then
+    if not checkSymbol(isTuple and '[' or '{') then
         return
     end
     nextToken()
@@ -706,7 +727,7 @@ local function parseTableOrTuple(isTuple, parent)
 
     local index = 1 -- for tuple
     while true do
-        if checkToken('symbol', isTuple and ']' or '}', 1) then
+        if checkSymbol(isTuple and ']' or '}') then
             nextToken()
             break
         end
@@ -718,7 +739,7 @@ local function parseTableOrTuple(isTuple, parent)
 
         do
             local needCloseParen
-            if checkToken('symbol', '(', 1) then
+            if checkSymbol('(') then
                 nextToken()
                 needCloseParen = true
             end
@@ -748,15 +769,11 @@ local function parseTableOrTuple(isTuple, parent)
                 field.name = parseName('doc.field.name', field) --[[@ss parser.object.doc.field.name?]]
                     or parseIndexField(field)
                 if not field.name then
-                    pushWarning({
-                        type = 'LUADOC_MISS_FIELD_NAME',
-                        start = getFinish(),
-                        finish = getFinish(),
-                    })
+                    pushWarning({ type = 'LUADOC_MISS_FIELD_NAME' })
                     break
                 end
                 field.start = field.start or field.name.start
-                if checkToken('symbol', '?', 1) then
+                if checkSymbol('?') then
                     nextToken()
                     field.optional = true
                 end
@@ -783,7 +800,7 @@ local function parseTableOrTuple(isTuple, parent)
         end
 
         typeUnit.fields[#typeUnit.fields + 1] = field
-        if checkToken('symbol', ',', 1) or checkToken('symbol', ';', 1) then
+        if checkSymbol(',') or checkSymbol(';') then
             nextToken()
         else
             nextSymbolOrError(isTuple and ']' or '}')
@@ -795,7 +812,7 @@ local function parseTableOrTuple(isTuple, parent)
 end
 
 local function parseSigns(parent)
-    if not checkToken('symbol', '<', 1) then
+    if not checkSymbol('<') then
         return
     end
     nextToken()
@@ -803,15 +820,11 @@ local function parseSigns(parent)
     while true do
         local sign = parseName('doc.generic.name', parent) --[[@as parser.object.doc.generic.name?]]
         if not sign then
-            pushWarning({
-                type = 'LUADOC_MISS_SIGN_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_SIGN_NAME' })
             break
         end
         signs[#signs + 1] = sign
-        if checkToken('symbol', ',', 1) then
+        if checkSymbol(',') then
             nextToken()
         else
             break
@@ -823,7 +836,7 @@ end
 
 --- @return parser.object.doc.type.function?
 local function parseTypeUnitFunction(parent)
-    if not checkToken('name', 'fun', 1) then
+    if not checkToken('name', 'fun') then
         return
     end
     nextToken()
@@ -838,7 +851,7 @@ local function parseTypeUnitFunction(parent)
         return
     end
     while true do
-        if checkToken('symbol', ')', 1) then
+        if checkSymbol(')') then
             nextToken()
             break
         end
@@ -849,36 +862,32 @@ local function parseTypeUnitFunction(parent)
         }
         arg.name = parseArgName(arg)
         if not arg.name then
-            pushWarning({
-                type = 'LUADOC_MISS_ARG_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_ARG_NAME' })
             break
         end
         arg.start = arg.start or arg.name.start
-        if checkToken('symbol', '?', 1) then
+        if checkSymbol('?') then
             nextToken()
             arg.optional = true
         end
         arg.finish = getFinish()
-        if checkToken('symbol', ':', 1) then
+        if checkSymbol(':') then
             nextToken()
             arg.extends = parseType(arg)
         end
         arg.finish = getFinish()
         typeUnit.args[#typeUnit.args + 1] = arg
-        if checkToken('symbol', ',', 1) then
+        if checkSymbol(',') then
             nextToken()
         else
             nextSymbolOrError(')')
             break
         end
     end
-    if checkToken('symbol', ':', 1) then
+    if checkSymbol(':') then
         nextToken()
         local needCloseParen
-        if checkToken('symbol', '(', 1) then
+        if checkSymbol('(') then
             nextToken()
             needCloseParen = true
         end
@@ -889,7 +898,7 @@ local function parseTypeUnitFunction(parent)
                 if not returnName then
                     return false
                 end
-                if checkToken('symbol', ':', 1) then
+                if checkSymbol(':') then
                     nextToken()
                     name = returnName
                     return true
@@ -905,12 +914,12 @@ local function parseTypeUnitFunction(parent)
                 break
             end
             rtn.name = name
-            if checkToken('symbol', '?', 1) then
+            if checkSymbol('?') then
                 nextToken()
                 rtn.optional = true
             end
             typeUnit.returns[#typeUnit.returns + 1] = rtn
-            if checkToken('symbol', ',', 1) then
+            if checkSymbol(',') then
                 nextToken()
             else
                 break
@@ -949,7 +958,7 @@ end
 --- @param node parser.object.doc.type.unit
 --- @return parser.object.doc.type.array?
 local function parseTypeUnitArray(parent, node)
-    if not checkToken('symbol', '[]', 1) then
+    if not checkSymbol('[]') then
         return
     end
     nextToken()
@@ -969,7 +978,7 @@ end
 --- @param node parser.object.doc.type.unit
 --- @return parser.object.doc.type.sign?
 local function parseTypeUnitSign(parent, node)
-    if not checkToken('symbol', '<', 1) then
+    if not checkSymbol('<') then
         return
     end
     nextToken()
@@ -986,15 +995,11 @@ local function parseTypeUnitSign(parent, node)
     while true do
         local sign = parseType(result)
         if not sign then
-            pushWarning({
-                type = 'LUA_DOC_MISS_SIGN',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUA_DOC_MISS_SIGN' })
             break
         end
         result.signs[#result.signs + 1] = sign
-        if checkToken('symbol', ',', 1) then
+        if checkSymbol(',') then
             nextToken()
         else
             break
@@ -1008,9 +1013,10 @@ end
 --- @return parser.object.doc.type.string?
 local function parseString(parent)
     local tp, content = peekToken()
-    if not tp or tp ~= 'string' then
+    if tp ~= 'string' then
         return
     end
+    assert(content)
 
     nextToken()
     local mark = getMark()
@@ -1021,6 +1027,7 @@ local function parseString(parent)
             content = content:sub(2, -2)
         end
     end
+    --- @type parser.object.doc.type.string
     local str = {
         type = 'doc.type.string',
         start = getStart(),
@@ -1035,7 +1042,7 @@ end
 --- @return parser.object.doc.type.code?
 local function parseCode(parent)
     local tp, content = peekToken()
-    if not tp or tp ~= 'code' then
+    if tp ~= 'code' then
         return
     end
     nextToken()
@@ -1052,7 +1059,7 @@ end
 --- @return parser.object.doc.type.code?
 local function parseCodePattern(parent)
     local tp, pattern = peekToken()
-    if not tp or tp ~= 'name' then
+    if tp ~= 'name' then
         return
     end
     local codeOffset
@@ -1068,6 +1075,7 @@ local function parseCodePattern(parent)
             -- Discontinuous name, invalid
             return
         end
+        assert(nextContent)
         if next == 'code' then
             if codeOffset and content ~= nextContent then
                 -- Multiple generics are not supported for the time being.
@@ -1103,9 +1111,10 @@ end
 --- @return parser.object.doc.type.integer?
 local function parseInteger(parent)
     local tp, content = peekToken()
-    if not tp or tp ~= 'integer' then
+    if tp ~= 'integer' then
         return
     end
+    assert(content)
 
     nextToken()
     --- @type parser.object.doc.type.integer
@@ -1114,14 +1123,14 @@ local function parseInteger(parent)
         start = getStart(),
         finish = getFinish(),
         parent = parent,
-        [1] = content,
+        [1] = assert(math.tointeger(content)),
     }
 end
 
 --- @return parser.object.doc.type.boolean?
 local function parseBoolean(parent)
     local tp, content = peekToken()
-    if not tp or tp ~= 'name' or (content ~= 'true' and content ~= 'false') then
+    if tp ~= 'name' or (content ~= 'true' and content ~= 'false') then
         return
     end
 
@@ -1139,7 +1148,7 @@ end
 
 --- @return parser.object.doc.type?
 local function parseParen(parent)
-    if not checkToken('symbol', '(', 1) then
+    if not checkSymbol('(') then
         return
     end
     nextToken()
@@ -1193,12 +1202,12 @@ end
 local function parseResume(parent)
     --- Used by alias an enum to mark default and additional types
     local default, additional
-    if checkToken('symbol', '>', 1) then
+    if checkSymbol('>') then
         nextToken()
         default = true
     end
 
-    if checkToken('symbol', '+', 1) then
+    if checkSymbol('+') then
         nextToken()
         additional = true
     end
@@ -1298,7 +1307,7 @@ function parseType(parent)
         result.types[#result.types + 1] = typeUnit
         result.start = result.start or typeUnit.start
 
-        if not checkToken('symbol', '|', 1) then
+        if not checkSymbol('|') then
             break
         end
         nextToken()
@@ -1306,7 +1315,7 @@ function parseType(parent)
 
     result.start = result.start or getFinish()
 
-    if checkToken('symbol', '?', 1) then
+    if checkSymbol('?') then
         nextToken()
         result.optional = true
     end
@@ -1316,11 +1325,7 @@ function parseType(parent)
     doResume(result)
 
     if #result.types == 0 then
-        pushWarning({
-            type = 'LUADOC_MISS_TYPE_NAME',
-            start = getFinish(),
-            finish = getFinish(),
-        })
+        pushWarning({ type = 'LUADOC_MISS_TYPE_NAME' })
         return
     end
     return result
@@ -1347,17 +1352,13 @@ local docSwitch = {
         result.docAttr = parseDocAttr(result)
         result.class = parseName('doc.class.name', result) --[[@as parser.object.doc.class.name?]]
         if not result.class then
-            pushWarning({
-                type = 'LUADOC_MISS_CLASS_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_CLASS_NAME' })
             return
         end
         result.start = getStart()
         result.finish = getFinish()
         result.signs = parseSigns(result)
-        if not checkToken('symbol', ':', 1) then
+        if not checkSymbol(':') then
             return result
         end
         nextToken()
@@ -1370,16 +1371,12 @@ local docSwitch = {
                 or parseTableOrTuple(true, result)
 
             if not extend then
-                pushWarning({
-                    type = 'LUADOC_MISS_CLASS_EXTENDS_NAME',
-                    start = getFinish(),
-                    finish = getFinish(),
-                })
+                pushWarning({ type = 'LUADOC_MISS_CLASS_EXTENDS_NAME' })
                 return result
             end
             result.extends[#result.extends + 1] = extend
             result.finish = getFinish()
-            if not checkToken('symbol', ',', 1) then
+            if not checkSymbol(',') then
                 break
             end
             nextToken()
@@ -1393,7 +1390,7 @@ local docSwitch = {
             return
         end
         local rests
-        while checkToken('symbol', ',', 1) do
+        while checkSymbol(',') do
             nextToken()
             local rest = parseType()
             rests = rests or {}
@@ -1410,22 +1407,14 @@ local docSwitch = {
         result.docAttr = parseDocAttr(result)
         result.alias = parseName('doc.alias.name', result) --[[@as parser.object.doc.alias.name?]]
         if not result.alias then
-            pushWarning({
-                type = 'LUADOC_MISS_ALIAS_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_ALIAS_NAME' })
             return
         end
         result.start = getStart()
         result.signs = parseSigns(result)
         result.extends = parseType(result)
         if not result.extends then
-            pushWarning({
-                type = 'LUADOC_MISS_ALIAS_EXTENDS',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_ALIAS_EXTENDS' })
             return
         end
         result.finish = getFinish()
@@ -1439,14 +1428,10 @@ local docSwitch = {
         }
         result.param = parseParamName(result)
         if not result.param then
-            pushWarning({
-                type = 'LUADOC_MISS_PARAM_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_PARAM_NAME' })
             return
         end
-        if checkToken('symbol', '?', 1) then
+        if checkSymbol('?') then
             nextToken()
             result.optional = true
         end
@@ -1454,11 +1439,7 @@ local docSwitch = {
         result.finish = getFinish()
         result.extends = parseType(result)
         if not result.extends then
-            pushWarning({
-                type = 'LUADOC_MISS_PARAM_EXTENDS',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_PARAM_EXTENDS' })
             return result
         end
         result.finish = getFinish()
@@ -1482,18 +1463,16 @@ local docSwitch = {
                 break
             end
             result.start = result.start or docType.start
-            if checkToken('symbol', '?', 1) then
+            if checkSymbol('?') then
                 nextToken()
                 docType.optional = true
             end
+            docType.name = dots or parseReturnName(docType)
             if dots then
-                docType.name = dots
                 dots.parent = docType
-            else
-                docType.name = parseReturnName(docType)
             end
             result.returns[#result.returns + 1] = docType
-            if not checkToken('symbol', ',', 1) then
+            if not checkSymbol(',') then
                 break
             end
             nextToken()
@@ -1534,25 +1513,17 @@ local docSwitch = {
         --- @type parser.object.doc.field.name|parser.object.doc.type?
         result.field = parseName('doc.field.name', result) or parseIndexField(result)
         if not result.field then
-            pushWarning({
-                type = 'LUADOC_MISS_FIELD_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_FIELD_NAME' })
             return
         end
         result.start = result.start or result.field.start
-        if checkToken('symbol', '?', 1) then
+        if checkSymbol('?') then
             nextToken()
             result.optional = true
         end
         result.extends = parseType(result)
         if not result.extends then
-            pushWarning({
-                type = 'LUADOC_MISS_FIELD_EXTENDS',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_FIELD_EXTENDS' })
             return
         end
         result.finish = getFinish()
@@ -1572,22 +1543,18 @@ local docSwitch = {
             }
             object.generic = parseName('doc.generic.name', object)
             if not object.generic then
-                pushWarning({
-                    type = 'LUADOC_MISS_GENERIC_NAME',
-                    start = getFinish(),
-                    finish = getFinish(),
-                })
+                pushWarning({ type = 'LUADOC_MISS_GENERIC_NAME' })
                 return
             end
             object.start = object.generic.start
             result.start = result.start or object.start
-            if checkToken('symbol', ':', 1) then
+            if checkSymbol(':') then
                 nextToken()
                 object.extends = parseType(object)
             end
             object.finish = getFinish()
             result.generics[#result.generics + 1] = object
-            if not checkToken('symbol', ',', 1) then
+            if not checkSymbol(',') then
                 break
             end
             nextToken()
@@ -1603,11 +1570,7 @@ local docSwitch = {
         }
         result.vararg = parseType(result)
         if not result.vararg then
-            pushWarning({
-                type = 'LUADOC_MISS_VARARG_TYPE',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_VARARG_TYPE' })
             return
         end
         result.start = result.vararg.start
@@ -1618,11 +1581,7 @@ local docSwitch = {
     ['overload'] = function()
         local tp, name = peekToken()
         if tp ~= 'name' or (name ~= 'fun' and name ~= 'async') then
-            pushWarning({
-                type = 'LUADOC_MISS_FUN_AFTER_OVERLOAD',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_FUN_AFTER_OVERLOAD' })
             return
         end
         --- @type parser.object.doc.overload
@@ -1660,11 +1619,7 @@ local docSwitch = {
         while true do
             local tp, text = nextToken()
             if not tp then
-                pushWarning({
-                    type = 'LUADOC_MISS_VERSION',
-                    start = getFinish(),
-                    finish = getFinish(),
-                })
+                pushWarning({ type = 'LUADOC_MISS_VERSION' })
                 break
             end
             result.start = result.start or getStart()
@@ -1686,14 +1641,13 @@ local docSwitch = {
                 pushWarning({
                     type = 'LUADOC_MISS_VERSION',
                     start = getStart(),
-                    finish = getFinish(),
                 })
                 break
             end
             version.version = tonumber(text) or text
             version.finish = getFinish()
             result.versions[#result.versions + 1] = version
-            if not checkToken('symbol', ',', 1) then
+            if not checkSymbol(',') then
                 break
             end
             nextToken()
@@ -1712,11 +1666,7 @@ local docSwitch = {
         }
         result.name = parseName('doc.see.name', result) --[[@as parser.object.doc.see.name?]]
         if not result.name then
-            pushWarning({
-                type = 'LUADOC_MISS_SEE_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_SEE_NAME' })
             return
         end
         result.start = result.name.start
@@ -1731,11 +1681,7 @@ local docSwitch = {
         }
         local nextTP, mode = nextToken()
         if nextTP ~= 'name' then
-            pushWarning({
-                type = 'LUADOC_MISS_DIAG_MODE',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_DIAG_MODE' })
             return
         end
         result.mode = mode
@@ -1754,21 +1700,17 @@ local docSwitch = {
             })
         end
 
-        if checkToken('symbol', ':', 1) then
+        if checkSymbol(':') then
             nextToken()
             result.names = {}
             while true do
                 local name = parseName('doc.diagnostic.name', result)
                 if not name then
-                    pushWarning({
-                        type = 'LUADOC_MISS_DIAG_NAME',
-                        start = getFinish(),
-                        finish = getFinish(),
-                    })
+                    pushWarning({ type = 'LUADOC_MISS_DIAG_NAME' })
                     return result
                 end
                 result.names[#result.names + 1] = name
-                if not checkToken('symbol', ',', 1) then
+                if not checkSymbol(',') then
                     break
                 end
                 nextToken()
@@ -1791,11 +1733,7 @@ local docSwitch = {
             result.finish = getFinish()
             result.smark = getMark()
         else
-            pushWarning({
-                type = 'LUADOC_MISS_MODULE_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_MODULE_NAME' })
         end
         return result
     end,
@@ -1825,11 +1763,7 @@ local docSwitch = {
         --- @type parser.object.doc.cast.name?
         local loc = parseName('doc.cast.name', result)
         if not loc then
-            pushWarning({
-                type = 'LUADOC_MISS_LOCAL_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_LOCAL_NAME' })
             return result
         end
 
@@ -1843,19 +1777,19 @@ local docSwitch = {
                 start = getFinish(),
                 finish = getFinish(),
             }
-            if checkToken('symbol', '+', 1) then
+            if checkSymbol('+') then
                 block.mode = '+'
                 nextToken()
                 block.start = getStart()
                 block.finish = getFinish()
-            elseif checkToken('symbol', '-', 1) then
+            elseif checkSymbol('-') then
                 block.mode = '-'
                 nextToken()
                 block.start = getStart()
                 block.finish = getFinish()
             end
 
-            if checkToken('symbol', '?', 1) then
+            if checkSymbol('?') then
                 block.optional = true
                 nextToken()
                 block.finish = getFinish()
@@ -1872,7 +1806,7 @@ local docSwitch = {
             end
             result.finish = block.finish
 
-            if checkToken('symbol', ',', 1) then
+            if checkSymbol(',') then
                 nextToken()
             else
                 break
@@ -1889,19 +1823,15 @@ local docSwitch = {
         --- @type parser.object.doc.operator.name?
         local op = parseName('doc.operator.name', result)
         if not op then
-            pushWarning({
-                type = 'LUADOC_MISS_OPERATOR_NAME',
-                start = getFinish(),
-                finish = getFinish(),
-            })
+            pushWarning({ type = 'LUADOC_MISS_OPERATOR_NAME' })
             return
         end
         result.op = op
         result.finish = op.finish
 
-        if checkToken('symbol', '(', 1) then
+        if checkSymbol('(') then
             nextToken()
-            if checkToken('symbol', ')', 1) then
+            if checkSymbol(')') then
                 nextToken()
             else
                 local exp = parseType(result)
@@ -2002,7 +1932,6 @@ local function convertTokens(doc)
         pushWarning({
             type = 'LUADOC_MISS_CATE_NAME',
             start = getStart(),
-            finish = getFinish(),
         })
         return
     end
@@ -2095,6 +2024,9 @@ local function buildLuaDoc(comment)
     }
 end
 
+--- @param text string
+--- @param doc? parser.object.doc
+--- @return boolean
 local function isTailComment(text, doc)
     if not doc then
         return false
@@ -2102,10 +2034,13 @@ local function isTailComment(text, doc)
     local left = doc.originalComment.start
     local row, col = guide.rowColOf(left)
     local lineStart = Lines[row] or 0
-    local hasCodeBefore = text:sub(lineStart, lineStart + col):find('[%w_]')
+    local hasCodeBefore = text:sub(lineStart, lineStart + col):find('[%w_]') ~= nil
     return hasCodeBefore
 end
 
+--- @param lastDoc parser.object.doc
+--- @param nextDoc parser.object.doc
+--- @return boolean
 local function isContinuedDoc(lastDoc, nextDoc)
     if not nextDoc then
         return false
@@ -2495,7 +2430,7 @@ local bindDocAccept = {
 
 --- @param state parser.state
 local function bindDocs(state)
-    local text = state.lua
+    local text = assert(state.lua)
     --- @type parser.bindDocAccept[]
     local sources = {}
     --- @param src parser.bindDocAccept
@@ -2533,6 +2468,7 @@ local function bindDocs(state)
 end
 
 --- @param state parser.state
+--- @param doc parser.object.doc
 local function findTouch(state, doc)
     local text = assert(state.lua)
     local pos = guide.positionToOffset(state, doc.originalComment.start)
@@ -2547,13 +2483,17 @@ local function findTouch(state, doc)
     end
 end
 
+local M = {}
+
 --- @param state parser.state
-local function luadoc(state)
+function M.luadoc(state)
     local ast = assert(state.ast)
     local comments = state.comms
+
     table.sort(comments, function(a, b)
         return a.start < b.start
     end)
+
     ast.docs = {
         type = 'doc',
         parent = ast,
@@ -2561,31 +2501,35 @@ local function luadoc(state)
     }
 
     pushWarning = function(err)
+        err.start = err.start or getFinish()
+        err.finish = err.finish or getFinish()
+        err.finish = math.max(err.start, err.finish)
+
         local errs = state.errs
-        if err.finish < err.start then
-            err.finish = err.start
-        end
         local last = errs[#errs]
-        if last then
-            if last.start <= err.start and last.finish >= err.finish then
-                return
-            end
+        if last and last.start <= err.start and last.finish >= err.finish then
+            return
         end
         err.level = err.level or 'Warning'
         errs[#errs + 1] = err
         return err
     end
+
     Lines = state.lines
 
     local ci = 1
+
     NextComment = function(offset, peek)
-        local comment = comments[ci + (offset or 0)]
+        offset = offset or 0
+        local comment = comments[ci + offset]
         if not peek then
-            ci = ci + 1 + (offset or 0)
+            ci = ci + 1 + offset
         end
         return comment
     end
 
+    --- @param doc parser.object.doc
+    --- @param comment parser.object.comment
     local function insertDoc(doc, comment)
         ast.docs[#ast.docs + 1] = doc
         doc.parent = ast.docs
@@ -2638,22 +2582,25 @@ local function luadoc(state)
     bindDocs(state)
 end
 
-return {
-    --- @param src parser.object
-    --- @param comment parser.object.comment.short
-    --- @param group? parser.object.comment.short
-    buildAndBindDoc = function(ast, src, comment, group)
-        local doc = buildLuaDoc(comment)
-        if doc then
-            local pluginDocs = ast.state.pluginDocs or {}
-            pluginDocs[#pluginDocs + 1] = doc
-            doc.special = src
-            doc.originalComment = comment
-            doc.virtual = true
-            doc.specialBindGroup = group
-            ast.state.pluginDocs = pluginDocs
-            return doc
-        end
-    end,
-    luadoc = luadoc,
-}
+--- @param ast parser.object
+--- @param src parser.object
+--- @param comment parser.object.comment.short
+--- @param group? parser.object.comment.short
+--- @return parser.object.doc?
+function M.buildAndBindDoc(ast, src, comment, group)
+    local doc = buildLuaDoc(comment)
+    if not doc then
+        return
+    end
+
+    local pluginDocs = ast.state.pluginDocs or {}
+    pluginDocs[#pluginDocs + 1] = doc
+    doc.special = src
+    doc.originalComment = comment
+    doc.virtual = true
+    doc.specialBindGroup = group
+    ast.state.pluginDocs = pluginDocs
+    return doc
+end
+
+return M
